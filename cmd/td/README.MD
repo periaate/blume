@@ -1,0 +1,3 @@
+# td
+
+Simple timedate getter

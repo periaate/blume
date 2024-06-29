@@ -1,3 +1,3 @@
-module github.com/periaate/blume
+module blume
 
 go 1.22.0
