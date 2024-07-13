@@ -1,5 +1,7 @@
 package gen
 
+import "fmt"
+
 type (
 	Option[T any]   func(T)
 	Pipeable[T any] func(T) T
@@ -106,6 +108,14 @@ func Filter[T any](arr []T, fn func(T) bool) (res []T) {
 		}
 	}
 	return res
+}
+
+func Ln[T any](a T) T { fmt.Println(a); return a }
+
+func For[T any, K any](arr []T, fn func(T)) {
+	for _, v := range arr {
+		fn(v)
+	}
 }
 
 func Map[T any, K any](arr []T, fn func(T) K) []K {

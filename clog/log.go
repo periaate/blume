@@ -33,10 +33,17 @@ var defLog = DefaultClog()
 
 func GetDefaultClog() *slog.Logger { return defLog }
 
-func Error(msg string, args ...any) { defLog.Error(msg, args...) }
-func Info(msg string, args ...any)  { defLog.Info(msg, args...) }
-func Warn(msg string, args ...any)  { defLog.Warn(msg, args...) }
-func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+// func Error(msg string, args ...any) { defLog.Error(msg, args...) }
+// func Info(msg string, args ...any)  { defLog.Info(msg, args...) }
+// func Warn(msg string, args ...any)  { defLog.Warn(msg, args...) }
+// func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+
+var (
+	Error = defLog.Error
+	Info  = defLog.Info
+	Warn  = defLog.Warn
+	Debug = defLog.Debug
+)
 
 func SetLogLoggerLevel(lvl slog.Level) { defLog.Handler().(*ClogHandler).SetLogLoggerLevel(lvl) }
 
@@ -47,12 +54,12 @@ type Logger interface {
 	Debug(msg string, args ...any)
 }
 
-type DummyLogger struct{}
+type Dummy struct{}
 
-func (DummyLogger) Error(_ string, _ ...any) {}
-func (DummyLogger) Info(_ string, _ ...any)  {}
-func (DummyLogger) Warn(_ string, _ ...any)  {}
-func (DummyLogger) Debug(_ string, _ ...any) {}
+func (Dummy) Error(_ string, _ ...any) {}
+func (Dummy) Info(_ string, _ ...any)  {}
+func (Dummy) Warn(_ string, _ ...any)  {}
+func (Dummy) Debug(_ string, _ ...any) {}
 
 func DefaultClog() *slog.Logger { return NewClog(os.Stdout, slog.LevelInfo, MaxLen(50)) }
 
@@ -88,12 +95,10 @@ func NewStyles(st *Styles) *Styles {
 	if st == nil {
 		st = &Styles{}
 	}
-	if len(st.Delim[0]) == 0 && len(st.Delim[1]) == 0 {
-		if st.Delim == [2]string{} {
-			st.Delim = [2]string{
-				":" + val.Color(val.LightYellow, "<"),
-				val.EndColor(">") + "; ",
-			}
+	if st.Delim == [2]string{} {
+		st.Delim = [2]string{
+			":" + val.Color(val.LightYellow, "<"),
+			val.EndColor(">") + "; ",
 		}
 	}
 
@@ -189,10 +194,8 @@ func (h *ClogHandler) Handle(ctx context.Context, r slog.Record) error {
 	str := string(buf)
 
 	str = strings.ReplaceAll(str, "\n", "")
-	str = strings.ReplaceAll(str, "\\n", "")
 	str = strings.ReplaceAll(str, "\r", "")
-	str = strings.ReplaceAll(str, "\\r", "")
-	_, err := h.Out.Write([]byte(fmt.Sprintln(str)))
+	_, err := fmt.Fprintln(h.Out, str)
 
 	return err
 }
