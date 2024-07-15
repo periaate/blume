@@ -75,6 +75,15 @@ func All[T any, K comparable](mustBe K, fns ...func(T) K) func(T) K {
 	}
 }
 
+func Some[K comparable](fn func(K, ...K) bool, a K, b ...K) bool {
+	for _, v := range b {
+		if fn(a, v) {
+			return true
+		}
+	}
+	return false
+}
+
 func Any[T any, K comparable](ifAny K, fns ...func(T) K) func(T) bool {
 	return func(a T) bool {
 		for _, fn := range fns {
