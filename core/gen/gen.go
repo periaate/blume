@@ -1,10 +1,8 @@
 package gen
 
-import "fmt"
-
 type (
-	Option[T any]   func(T)
-	Pipeable[T any] func(T) T
+	Option[T any]     func(T)
+	Composable[T any] func(T) T
 )
 
 // First returns the first element in the slice that satisfies the given predicate.
@@ -118,8 +116,6 @@ func Filter[T any](arr []T, fn func(T) bool) (res []T) {
 	}
 	return res
 }
-
-func Ln[T any](a T) T { fmt.Println(a); return a }
 
 func For[T any, K any](arr []T, fn func(T)) {
 	for _, v := range arr {

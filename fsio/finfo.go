@@ -3,6 +3,7 @@ package fsio
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	fp "path/filepath"
 )
@@ -18,6 +19,41 @@ func (f Finfo) Symlink(dst string) (err error) {
 		return
 	}
 	return
+}
+
+func (f Finfo) ReadDir() (res []string, err error) {
+	if !f.IsDir() {
+		err = fmt.Errorf("%s is not a directory", f.String())
+		return
+	}
+
+	entries, err := os.ReadDir(f.String())
+	if err != nil {
+		return
+	}
+
+	res = make([]string, 0, len(entries))
+
+	for _, entry := range entries {
+		res = append(res, f.Join(entry.Name()))
+	}
+
+	return
+}
+
+type ArbFS struct {
+	paths map[string]string
+}
+
+func (a *ArbFS) Open(path string) (file fs.File, err error) { return os.Open(a.paths[path]) }
+
+func ToFS(paths ...string) *ArbFS {
+	f := &ArbFS{make(map[string]string, 0)}
+	for _, v := range paths {
+		f.paths[v] = v
+	}
+
+	return f
 }
 
 func Abs(f Finfo) (string, error)    { return fp.Abs(string(f)) }

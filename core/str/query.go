@@ -4,6 +4,11 @@ import (
 	"strings"
 )
 
+/*
+These functions, although functional, feel a bit unpolished to me.
+TODO: flesh out fuzzy string search functions.
+*/
+
 func GetScoringFunction(N int, queries ...string) func(string) float32 {
 	queryGrams, _ := GenNgrams(queries, N)
 	n := N

@@ -3,6 +3,8 @@ package str
 import (
 	"sort"
 	"strings"
+
+	"blume/core/num"
 )
 
 func Every(anyM bool, fn func(string, ...string) bool, tars []string, pats ...string) bool {
@@ -85,8 +87,7 @@ func Limit[T ~string | ~[]T](i T, ts ...T) (res []T) {
 }
 
 func Is(str string, is ...string) bool {
-	is = Limit(str, is...)
-	for _, s := range is {
+	for _, s := range Limit(str, is...) {
 		if str == s {
 			return true
 		}
@@ -97,6 +98,7 @@ func Is(str string, is ...string) bool {
 
 // ReplaceAny replaces any found sub strings with the patterns given.
 // Must have an even number of patterns. {from, to}
+// Replacement done in the given order.
 func ReplaceAny(str string, pats ...string) string {
 	if len(pats)%2 != 0 {
 		return str
@@ -112,6 +114,38 @@ func IsDigit(str ...string) bool {
 		for _, r := range s {
 			switch r {
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				continue
+			default:
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func Slice(from, to int, inp string) (res string) {
+	if from == to {
+		return
+	}
+	l := len(inp)
+	from = num.SmartClamp(from, l)
+	to = num.SmartClamp(to, l)
+
+	if from > to {
+		return inp[to:from]
+	}
+
+	return inp[from:to]
+}
+
+func IsNumber(str ...string) bool {
+	for _, s := range str {
+		if HasPrefix(s, "-", "+") {
+			s = Slice(0, 1, s)
+		}
+		for _, r := range s {
+			switch r {
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',':
 				continue
 			default:
 				return false
