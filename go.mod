@@ -1,19 +1,21 @@
-module blume
+module github.com/periaate/blume
 
 go 1.22.0
 
 require (
-	github.com/dolthub/maphash v0.1.0 // indirect
-	github.com/klauspost/compress v1.17.5 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
-	github.com/klauspost/reedsolomon v1.12.2 // indirect
-	github.com/lxzan/gws v1.8.5 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
-	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
-	github.com/templexxx/xor v0.0.0-20191217153810-f85b25db303b // indirect
-	github.com/tjfoc/gmsm v1.4.1 // indirect
-	github.com/xtaci/kcp-go v5.4.20+incompatible // indirect
-	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/net v0.27.0 // indirect
+	github.com/charmbracelet/lipgloss v0.12.1
+	github.com/gorilla/websocket v1.5.3
+	github.com/periaate/common v0.0.10
+	golang.org/x/term v0.22.0
+)
+
+require (
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/charmbracelet/x/ansi v0.1.4 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 )

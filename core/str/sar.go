@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"blume/clog"
+	"github.com/periaate/blume/clog"
 )
 
 // SplitWithAll splits given string into an array, using all other `match` strings as

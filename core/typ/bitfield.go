@@ -1,6 +1,6 @@
 package typ
 
-import "blume/core/num"
+import "github.com/periaate/blume/core/num"
 
 func AND[N num.UInteger](a, b N) N    { return a & b }
 func NOT[N num.UInteger](a, b N) N    { return a &^ b }

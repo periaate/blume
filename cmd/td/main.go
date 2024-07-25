@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	. "blume/core"
-	"blume/core/val"
+	. "github.com/periaate/blume/core"
+	"github.com/periaate/blume/core/val"
 )
 
 func main() { fmt.Println(Must(val.TimeDate(strings.Join(Args(), " ")))) }

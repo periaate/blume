@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"blume/clog"
-	"blume/core"
-	"blume/core/gen"
-	"blume/fsio"
+	"github.com/periaate/blume/clog"
+	"github.com/periaate/blume/core"
+	"github.com/periaate/blume/core/gen"
+	"github.com/periaate/blume/fsio"
 )
 
 func main() {

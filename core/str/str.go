@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"blume/core/num"
+	"github.com/periaate/blume/core/num"
 )
 
 func Every(anyM bool, fn func(string, ...string) bool, tars []string, pats ...string) bool {

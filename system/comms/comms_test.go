@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"blume/clog"
+	"github.com/periaate/blume/clog"
 )
 
 func registerSpace(space string) {

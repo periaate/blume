@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"blume/clog"
+	"github.com/periaate/blume/clog"
 
 	ws "github.com/gorilla/websocket"
 )

@@ -12,8 +12,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"blume/core/gen"
-	"blume/core/val"
+	"github.com/periaate/blume/core/gen"
+	"github.com/periaate/blume/core/val"
 )
 
 type ClogHandler struct {

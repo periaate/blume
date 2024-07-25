@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"blume/core/num"
+	"github.com/periaate/blume/core/num"
 )
 
 func HumanNumber(num string) string {
