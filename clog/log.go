@@ -45,6 +45,8 @@ var (
 	Debug = defLog.Debug
 )
 
+func Fatal(msg string, args ...any) { defLog.Error(msg, args...); os.Exit(1) }
+
 func SetLogLoggerLevel(lvl slog.Level) { defLog.Handler().(*ClogHandler).SetLogLoggerLevel(lvl) }
 
 type Logger interface {

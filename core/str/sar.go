@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"blume/clog"
 )
 
 // SplitWithAll splits given string into an array, using all other `match` strings as
@@ -32,6 +34,7 @@ func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 	var lastI int
 
 	for i := 0; i < len(str); i++ {
+		clog.Debug("pr", "a", res, "v", string(str[i]))
 		for _, pattern := range match {
 			if i+len(pattern) > len(str) {
 				continue
@@ -41,9 +44,11 @@ func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 				continue
 			}
 
+			clog.Debug("diff", "_", string(str[lastI:i]))
 			if len(str[lastI:i]) != 0 {
 				res = append(res, str[lastI:i])
 			}
+			clog.Debug("pr", "b", res)
 
 			lastI = i + len(pattern)*mult
 			if len(pattern) != 0 {
@@ -57,10 +62,12 @@ func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 		res = append(res, str[lastI:])
 	}
 
+	clog.Debug("pr", "c", res)
 	if len(res) == 0 {
 		return []string{str}
 	}
 
+	clog.Debug("pr", "d", res)
 	return res
 }
 

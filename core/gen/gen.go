@@ -1,9 +1,22 @@
 package gen
 
+import "fmt"
+
 type (
 	Option[T any]     func(T)
 	Composable[T any] func(T) T
 )
+
+func Contains[C comparable](A ...C) func(C) bool {
+	return func(B C) bool {
+		for _, a := range A {
+			if a == B {
+				return true
+			}
+		}
+		return false
+	}
+}
 
 // First returns the first element in the slice that satisfies the given predicate.
 // Returns -1 if no element satisfies the predicate.
@@ -82,6 +95,8 @@ func Some[K comparable](fn func(K, ...K) bool, a K, b ...K) bool {
 	return false
 }
 
+func Is[C comparable](a C) func(C) bool { return func(b C) bool { return a == b } }
+
 func Any[T any, K comparable](ifAny K, fns ...func(T) K) func(T) bool {
 	return func(a T) bool {
 		for _, fn := range fns {
@@ -93,9 +108,8 @@ func Any[T any, K comparable](ifAny K, fns ...func(T) K) func(T) bool {
 	}
 }
 
-func Negate[T any](fn func(T) bool) func(T) bool {
-	return func(t T) bool { return !fn(t) }
-}
+func Negate[T any](fn func(T) bool) func(T) bool { return func(t T) bool { return !fn(t) } }
+func Not[T any](fn func(T) bool) func(T) bool    { return func(t T) bool { return !fn(t) } }
 
 func Pipe[T any](fns ...func(T) T) func(T) T {
 	return func(t T) T {
@@ -108,6 +122,30 @@ func Pipe[T any](fns ...func(T) T) func(T) T {
 	}
 }
 
+func Pipes[T any](ts ...T) func(...func(T) T) []T {
+	return func(fns ...func(T) T) (res []T) {
+		for _, t := range ts {
+			res = append(res, Pipe(fns...)(t))
+		}
+		return res
+	}
+}
+
+func Ln(s string) {
+	fmt.Println(s)
+}
+
+func Filters[T any](fn func(T) bool) func(...T) []T {
+	return func(arr ...T) (res []T) {
+		for _, v := range arr {
+			if fn(v) {
+				res = append(res, v)
+			}
+		}
+		return res
+	}
+}
+
 func Filter[T any](arr []T, fn func(T) bool) (res []T) {
 	for _, v := range arr {
 		if fn(v) {
@@ -117,9 +155,19 @@ func Filter[T any](arr []T, fn func(T) bool) (res []T) {
 	return res
 }
 
-func For[T any, K any](arr []T, fn func(T)) {
+func For[T any](arr []T, fn func(T)) {
 	for _, v := range arr {
 		fn(v)
+	}
+}
+
+func Maps[T any, K any](fn func(T) K) func(...T) []K {
+	return func(arr ...T) (res []K) {
+		res = make([]K, 0, len(arr))
+		for _, v := range arr {
+			res = append(res, fn(v))
+		}
+		return res
 	}
 }
 

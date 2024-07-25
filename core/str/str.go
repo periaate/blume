@@ -109,6 +109,10 @@ func ReplaceAny(str string, pats ...string) string {
 	return str
 }
 
+func ReplacesAny(pats ...string) func(string) string {
+	return func(str string) string { return ReplaceAny(str, pats...) }
+}
+
 func IsDigit(str ...string) bool {
 	for _, s := range str {
 		for _, r := range s {

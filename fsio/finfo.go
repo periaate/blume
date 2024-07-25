@@ -8,6 +8,9 @@ import (
 	fp "path/filepath"
 )
 
+// Normalize cleans and converts the path to use forward slashes.
+func Normalize(path string) string { return fp.ToSlash(fp.Clean(path)) }
+
 func tf(path string) Finfo      { return Finfo(Clean(path)) }
 func ToFinfo(path string) Finfo { return tf(path) }
 
@@ -50,10 +53,18 @@ func (a *ArbFS) Open(path string) (file fs.File, err error) { return os.Open(a.p
 func ToFS(paths ...string) *ArbFS {
 	f := &ArbFS{make(map[string]string, 0)}
 	for _, v := range paths {
+		v = Normalize(v)
 		f.paths[v] = v
 	}
 
 	return f
+}
+
+func (f Finfo) Ext() string { return fp.Ext(string(f)) }
+func (f Finfo) Name() string {
+	b := f.Base()
+	r := b[:len(b)-len(fp.Ext(b))]
+	return r
 }
 
 func Abs(f Finfo) (string, error)    { return fp.Abs(string(f)) }
@@ -125,6 +136,34 @@ func Clean(f string) string   { return fp.ToSlash(fp.Clean(f)) }
 
 func (f Finfo) IsDir() bool {
 	info, err := os.Stat(string(f))
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func Walk(fn func(string) bool) func(string) (res []string, err error) {
+	return func(root string) (res []string, err error) {
+		err = fp.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !fn(path) {
+				return nil
+			}
+
+			path = Normalize(path)
+
+			res = append(res, path)
+			return nil
+		})
+
+		return
+	}
+}
+
+func IsDir(f string) bool {
+	info, err := os.Stat(f)
 	if err != nil {
 		return false
 	}

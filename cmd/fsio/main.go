@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"blume/clog"
@@ -12,24 +11,26 @@ import (
 )
 
 func main() {
-	args := os.Args[1:]
-	if len(args) < 2 {
-		return
-	}
+	args := core.Args()
 	cmd := args[0]
-	path := fsio.ToFinfo(args[1])
+	args = args[1:]
 
-	if path.Exists() && !path.IsDir() {
-		clog.Error("path exists and is not dir", "path", path.String())
-	}
-
-	if err := path.EnsureDir(); err != nil {
-		panic(err)
-	}
-
+	path := fsio.ToFinfo(args[0])
 	var err error
 
 	switch cmd {
+	case "name":
+		for _, arg := range args {
+			fmt.Println(fsio.ToFinfo(arg).Name())
+		}
+	case "dir":
+		for _, arg := range args {
+			fmt.Println(fsio.ToFinfo(arg).Dir())
+		}
+	case "base":
+		for _, arg := range args {
+			fmt.Println(fsio.ToFinfo(arg).Base())
+		}
 	case "abs":
 		fmt.Println(path.Abs())
 	case "join":
@@ -37,15 +38,15 @@ func main() {
 	case "exists":
 		fmt.Println(path.Exists())
 	case "ensure":
-		switch args[1] {
+		switch args[0] {
 		case "file", "f":
-			path = fsio.ToFinfo(args[2])
+			path = fsio.ToFinfo(args[1])
 			err = path.EnsureFile()
 			if err == nil {
 				fmt.Println("Successfully ensured file", path.String())
 			}
 		case "dir", "directory", "d", "folder":
-			path = fsio.ToFinfo(args[2])
+			path = fsio.ToFinfo(args[1])
 			fallthrough
 		default:
 			err = path.EnsureDir()
@@ -54,26 +55,42 @@ func main() {
 			}
 		}
 	case "copy", "cp":
-		piped := core.ReadPipe()
-		piped = append(args[2:], piped...)
-		err = Copy(path.String(), piped...)
+		err = Copy(path.String(), args...)
 	case "copyrel", "rel", "cr":
-		piped := core.ReadPipe()
-		piped = append(args[2:], piped...)
-		err = CopyRel(path.String(), piped...)
+		err = CopyRel(path.String(), args...)
 	case "move", "mv":
 		err = fmt.Errorf("not implemented")
 	case "sym", "symlink", "ln":
-		arg := args[2]
+		arg := args[0]
 		err = path.Symlink(arg)
+	case "read":
+		for _, arg := range args {
+			f := fsio.ToFinfo(arg)
+			if f.IsDir() {
+				continue
+			}
+
+			b, err := f.ReadAll()
+			if err != nil {
+				clog.Error("error reading file", "file", f.String(), "err", err)
+				continue
+			}
+
+			fmt.Println(string(b))
+		}
 	default:
-		gen.Map(args, gen.Pipe(fsio.Clean, gen.Ln)) // lol
+		gen.Map(args, gen.Pipe(fsio.Clean, Ln)) // lol
 	}
 
 	if err != nil {
 		clog.Error("error running fsio", "cmd", cmd, "err", err)
 		panic(err)
 	}
+}
+
+func Ln[T any](str T) T {
+	fmt.Println(str)
+	return str
 }
 
 func Copy(dst string, args ...string) (err error) {

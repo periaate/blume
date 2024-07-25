@@ -8,6 +8,8 @@ import (
 	"github.com/periaate/common"
 )
 
+// TODO: Only one parser is necessary. fmt does not work.
+
 var (
 	ns = time.Nanosecond.Nanoseconds()
 	us = time.Microsecond.Nanoseconds()
