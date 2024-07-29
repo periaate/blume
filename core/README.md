@@ -8,8 +8,6 @@ import "github.com/periaate/blume/core"
 
 Package core includes packages that define primitive routines and types.
 
-\- [blume/core/gen](<https://pkg.go.dev/blume/core/gen/>) \- [blume/core/num](<https://pkg.go.dev/blume/core/num/>) \- [blume/core/str](<https://pkg.go.dev/blume/core/str/>) \- [blume/core/typ](<https://pkg.go.dev/blume/core/typ/>)
-
 ## Index
 
 - [func Args\(\) \(res \[\]string\)](<#Args>)
