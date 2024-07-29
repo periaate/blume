@@ -1,4 +1,4 @@
-package num
+package typ
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ func TestSmartClamp(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got := SmartClamp(c.inp, c.max)
+		got := Clamp(0, c.max)(c.inp)
 		if got != c.exp {
 			t.Errorf("SmartClamp(%d, %d) == %d, want %d", c.inp, c.max, got, c.exp)
 		}

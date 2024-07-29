@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/periaate/blume/core/val"
+	"github.com/periaate/blume/val"
 )
 
 type show struct {

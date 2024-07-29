@@ -9,15 +9,20 @@ import "github.com/periaate/blume/fsio"
 ## Index
 
 - [func AppendTo\(f string, r io.Reader\) \(err error\)](<#AppendTo>)
+- [func Args\(\) \(res \[\]string\)](<#Args>)
 - [func Copy\(dst string, overwrite bool\) func\(string\) \(err error\)](<#Copy>)
 - [func EnsureDir\(f string\) error](<#EnsureDir>)
 - [func EnsureFile\(f string\) \(err error\)](<#EnsureFile>)
 - [func Exists\(f string\) bool](<#Exists>)
+- [func HasPipe\(\) bool](<#HasPipe>)
 - [func IsDir\(f string\) bool](<#IsDir>)
 - [func Name\(f string\) string](<#Name>)
 - [func Normalize\(path string\) string](<#Normalize>)
 - [func ReadDir\(f string\) \(res \[\]string, err error\)](<#ReadDir>)
+- [func ReadPipe\(\) \(res \[\]string\)](<#ReadPipe>)
+- [func ReadRawPipe\(\) \(res \[\]byte\)](<#ReadRawPipe>)
 - [func Symlink\(dst string\) func\(string\) error](<#Symlink>)
+- [func UsePipe\(fn func\(string\)\)](<#UsePipe>)
 - [func Walk\(fn func\(string\) bool\) func\(string\) \(res \[\]string, err error\)](<#Walk>)
 - [func WriteAll\(f string, r io.Reader\) \(err error\)](<#WriteAll>)
 - [func WriteNew\(f string, r io.Reader\) \(err error\)](<#WriteNew>)
@@ -33,7 +38,16 @@ import "github.com/periaate/blume/fsio"
 func AppendTo(f string, r io.Reader) (err error)
 ```
 
+AppendTo appends the contents of the reader to the file.
 
+<a name="Args"></a>
+## func Args
+
+```go
+func Args() (res []string)
+```
+
+Args returns the command\-line arguments without the program name, and including any piped inputs.
 
 <a name="Copy"></a>
 ## func Copy
@@ -42,7 +56,7 @@ func AppendTo(f string, r io.Reader) (err error)
 func Copy(dst string, overwrite bool) func(string) (err error)
 ```
 
-
+This is currently incorrectly implemented.
 
 <a name="EnsureDir"></a>
 ## func EnsureDir
@@ -51,7 +65,7 @@ func Copy(dst string, overwrite bool) func(string) (err error)
 func EnsureDir(f string) error
 ```
 
-
+EnsureDir creates the directory if it does not exist.
 
 <a name="EnsureFile"></a>
 ## func EnsureFile
@@ -60,7 +74,7 @@ func EnsureDir(f string) error
 func EnsureFile(f string) (err error)
 ```
 
-
+EnsureFile creates the file if it does not exist, along with the directory.
 
 <a name="Exists"></a>
 ## func Exists
@@ -69,7 +83,16 @@ func EnsureFile(f string) (err error)
 func Exists(f string) bool
 ```
 
+Exists checks if the input exists.
 
+<a name="HasPipe"></a>
+## func HasPipe
+
+```go
+func HasPipe() bool
+```
+
+HasPipe evaluates whether stdin is being piped in to.
 
 <a name="IsDir"></a>
 ## func IsDir
@@ -78,7 +101,7 @@ func Exists(f string) bool
 func IsDir(f string) bool
 ```
 
-
+IsDir checks if input is a directory.
 
 <a name="Name"></a>
 ## func Name
@@ -87,7 +110,7 @@ func IsDir(f string) bool
 func Name(f string) string
 ```
 
-
+Name returns the file name without the extension and directory.
 
 <a name="Normalize"></a>
 ## func Normalize
@@ -105,7 +128,25 @@ Normalize cleans and converts the path to use forward slashes.
 func ReadDir(f string) (res []string, err error)
 ```
 
+ReadDir reads the directory and returns a list of files.
 
+<a name="ReadPipe"></a>
+## func ReadPipe
+
+```go
+func ReadPipe() (res []string)
+```
+
+ReadPipe reads from stdin and returns a slice of lines.
+
+<a name="ReadRawPipe"></a>
+## func ReadRawPipe
+
+```go
+func ReadRawPipe() (res []byte)
+```
+
+ReadRawPipe reads from stdin and returns a slice of bytes.
 
 <a name="Symlink"></a>
 ## func Symlink
@@ -114,7 +155,16 @@ func ReadDir(f string) (res []string, err error)
 func Symlink(dst string) func(string) error
 ```
 
+Symlink creates a symbolic link to the destination.
 
+<a name="UsePipe"></a>
+## func UsePipe
+
+```go
+func UsePipe(fn func(string))
+```
+
+UsePipe reads from stdin and calls the given function for each line.
 
 <a name="Walk"></a>
 ## func Walk
@@ -123,7 +173,7 @@ func Symlink(dst string) func(string) error
 func Walk(fn func(string) bool) func(string) (res []string, err error)
 ```
 
-
+Walk walks the directory and returns a list of files that pass the predicate.
 
 <a name="WriteAll"></a>
 ## func WriteAll
@@ -132,7 +182,7 @@ func Walk(fn func(string) bool) func(string) (res []string, err error)
 func WriteAll(f string, r io.Reader) (err error)
 ```
 
-
+WriteAll writes the contents of the reader to the file, overwriting existing files.
 
 <a name="WriteNew"></a>
 ## func WriteNew
@@ -141,12 +191,12 @@ func WriteAll(f string, r io.Reader) (err error)
 func WriteNew(f string, r io.Reader) (err error)
 ```
 
-
+WriteNew writes the contents of the reader to a new file, will not overwrite existing files.
 
 <a name="ArbFS"></a>
 ## type ArbFS
 
-
+ArbFS is a file system that maps paths to files.
 
 ```go
 type ArbFS struct {
@@ -161,7 +211,7 @@ type ArbFS struct {
 func ToFS(paths ...string) ArbFS
 ```
 
-
+ToFS creates an [ArbFS](<#ArbFS>) from the given paths, which implements the fs.FS interface.
 
 <a name="ArbFS.Open"></a>
 ### func \(ArbFS\) Open
@@ -170,6 +220,6 @@ func ToFS(paths ...string) ArbFS
 func (a ArbFS) Open(path string) (file fs.File, err error)
 ```
 
-
+Open opens the file for reading.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

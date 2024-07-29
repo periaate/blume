@@ -1,6 +1,10 @@
 /*
-Package gen implements functions and defines types used commonly
-in tacit, combinatorial, functional, and array programming.
+Package gen implements generic types and functional forms which make use of them.
+
+## TODO
+
+  - [ ] Support for error handling.
+  - [ ] Functional forms for nested types.
 */
 package gen
 
@@ -16,6 +20,8 @@ type (
 	Predicate[A any] Monadic[A, bool]
 	// Comparator is a function that compares two arguments.
 	Comparator[A any] Dyadic[A, A, bool]
+	// Transformer is a function that takes a single argument and returns a modified value.
+	Transformer[A any] Monadic[A, A]
 
 	// Mapper is a function that takes variadic arguments and returns a slice.
 	Mapper[A, B any] Monadic[[]A, []B]
@@ -86,6 +92,21 @@ func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Reducer[A, B] {
 		}
 		return res
 	}
+}
+
+// Pipe combines variadic [Transformer]s into a single [Transformer].
+func Pipe[A any](fns ...Transformer[A]) Transformer[A] {
+	return func(a A) A {
+		for _, fn := range fns {
+			a = fn(a)
+		}
+		return a
+	}
+}
+
+// Cat concatenates two [Monadic] functions into a single [Monadic] function.
+func Cat[A, B, C any](a Monadic[A, B], b Monadic[B, C]) Monadic[A, C] {
+	return func(c A) C { return b(a(c)) }
 }
 
 // Not negates a [Predicate].

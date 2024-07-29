@@ -4,7 +4,7 @@ package str
 import (
 	"strings"
 
-	"github.com/periaate/blume/core/gen"
+	"github.com/periaate/blume/gen"
 )
 
 // Contains returns a predicate that checks if the input string contains any of the given substrings.

@@ -3,7 +3,7 @@
 # str
 
 ```go
-import "github.com/periaate/blume/core/str"
+import "github.com/periaate/blume/str"
 ```
 
 Package str provides type constraints and functions for string types.

@@ -1,3 +1,12 @@
+/*
+Package val implements functions for formatting values.
+
+## Todo
+
+  - [ ] Inverse parsing of human-like values.
+  - [ ] Configurable options for humanizing functions.
+  - [ ] Decide whether or not terminal colors should be included in this package.
+*/
 package val
 
 import (
@@ -6,62 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/periaate/blume/core/num"
+	"github.com/periaate/blume/typ"
 )
 
 // HumanizeNumber converts a number into a human-readable string.
 // `.` is used as a decimal separator.
 // `,` is used as a thousands separator.
-func HumanizeNumber(n any) (res string, err error) {
-	switch v := n.(type) {
-	case string:
-		res = HumanNumber(v)
-	case uint:
-		res = HumanNumb(v)
-	case uint8:
-		res = HumanNumb(v)
-	case uint16:
-		res = HumanNumb(v)
-	case uint32:
-		res = HumanNumb(v)
-	case uint64:
-		res = HumanNumb(v)
-	case int:
-		res = HumanNumb(v)
-	case int8:
-		res = HumanNumb(v)
-	case int16:
-		res = HumanNumb(v)
-	case int32:
-		res = HumanNumb(v)
-	case int64:
-		res = HumanNumb(v)
-	case float32:
-		res = HumanNumb(v)
-	case float64:
-		res = HumanNumb(v)
-	default:
-		err = fmt.Errorf("unsupported type: %T", n)
-	}
-	return
-}
-
-func HumanNumber(num string) string {
-	ind := strings.Index(num, ".")
-	var temp string
-	if ind != -1 {
-		temp = num[ind:]
-		num = num[:ind]
-	}
-
-	for i := len(num) - 3; i > 0; i -= 3 {
-		num = num[:i] + "," + num[i:]
-	}
-
-	return num + temp
-}
-
-func HumanNumb[N num.Numeric](n N) string {
+func HumanizeNumber[N typ.Numeric](n N) string {
 	num := fmt.Sprintf("%v", n)
 	ind := strings.Index(num, ".")
 	var temp string
@@ -78,8 +38,8 @@ func HumanNumb[N num.Numeric](n N) string {
 }
 
 // HumanizeBytes converts an integer byte value into a human-readable string.
-// base of 0 means the input is in bytes, of 1 in kB, ...
-func HumanizeBytes[I num.Integer](base int, val I, decimals int, asKiB bool) string {
+// base of 0 means the input is in bytes, of 1 in kB, 2 in MB, ...
+func HumanizeBytes[I typ.Integer](base int, val I, decimals int, asKiB bool) string {
 	var unit float64 = 1000 // Use 1000 as base for KB, MB, GB...
 	suffixes := []string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
 	if asKiB {
@@ -93,7 +53,7 @@ func HumanizeBytes[I num.Integer](base int, val I, decimals int, asKiB bool) str
 	}
 
 	negative := val < 0
-	val = num.Abs(val)
+	val = typ.Abs(val)
 
 	size := float64(val)
 	i := 0
@@ -109,12 +69,8 @@ func HumanizeBytes[I num.Integer](base int, val I, decimals int, asKiB bool) str
 	return fmt.Sprintf("%.*f %s", decimals, size, suffixes[i])
 }
 
-func RelativeTime(s string) string {
-	inp, err := time.Parse(time.DateTime, s)
-	if err != nil {
-		return ""
-	}
-
+// RelativeTime returns a human-readable relative time string.
+func RelativeTime(inp time.Time) string {
 	dur := time.Since(inp)
 	days := dur.Hours() / 24
 	switch {

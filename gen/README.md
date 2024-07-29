@@ -3,14 +3,27 @@
 # gen
 
 ```go
-import "github.com/periaate/blume/core/gen"
+import "github.com/periaate/blume/gen"
 ```
 
-Package gen implements functions and defines types used commonly in tacit, combinatorial, functional, and array programming.
+Package gen implements generic types and functional forms which make use of them.
+
+\#\# TODO
+
+- \[ \] Support for error handling.
+- \[ \] Functional forms for nested types.
 
 ## Index
 
 - [func Comp\[A any\]\(fn Comparator\[A\]\) func\(...A\) Predicate\[A\]](<#Comp>)
+- [func Ignore\[A, B any\]\(a A, \_ B\) A](<#Ignore>)
+- [func Ignores\[A, B, C any\]\(fn func\(A\) \(B, C\)\) func\(A\) B](<#Ignores>)
+- [func Join\[A any\]\(a ...\[\]A\) \(res \[\]A\)](<#Join>)
+- [func Must\[A any\]\(a A, err error\) A](<#Must>)
+- [func Product\[A any\]\(a \[\]A, B \[\]A\) \(res \[\]\[2\]A\)](<#Product>)
+- [func Reverse\[A any\]\(arr \[\]A\) \(res \[\]A\)](<#Reverse>)
+- [func Reverses\[A any\]\(arr \[\]A\)](<#Reverses>)
+- [func V\[A any\]\(a ...A\) \[\]A](<#V>)
 - [type Comparator](<#Comparator>)
   - [func Negate\[T any\]\(fn Comparator\[T\]\) Comparator\[T\]](<#Negate>)
 - [type Dyadic](<#Dyadic>)
@@ -18,10 +31,12 @@ Package gen implements functions and defines types used commonly in tacit, combi
   - [func Filter\[A any\]\(fn Predicate\[A\]\) Mapper\[A, A\]](<#Filter>)
   - [func Map\[A, B any\]\(fn func\(A\) B\) Mapper\[A, B\]](<#Map>)
 - [type Monadic](<#Monadic>)
+  - [func Cat\[A, B, C any\]\(a Monadic\[A, B\], b Monadic\[B, C\]\) Monadic\[A, C\]](<#Cat>)
   - [func Thunk\[A, B any\]\(fn Monadic\[A, B\]\) Monadic\[A, Niladic\[B\]\]](<#Thunk>)
 - [type Niladic](<#Niladic>)
 - [type Predicate](<#Predicate>)
   - [func And\[A any\]\(fns ...Predicate\[A\]\) Predicate\[A\]](<#And>)
+  - [func Deduplicate\[A any, C comparable\]\(fn func\(A\) C\) Predicate\[A\]](<#Deduplicate>)
   - [func Is\[C comparable\]\(A ...C\) Predicate\[C\]](<#Is>)
   - [func Isnt\[C comparable\]\(A ...C\) Predicate\[C\]](<#Isnt>)
   - [func Not\[T any\]\(fn Predicate\[T\]\) Predicate\[T\]](<#Not>)
@@ -30,6 +45,9 @@ Package gen implements functions and defines types used commonly in tacit, combi
   - [func All\[A any\]\(fn Predicate\[A\]\) Reducer\[A, bool\]](<#All>)
   - [func Any\[A any\]\(fn Predicate\[A\]\) Reducer\[A, bool\]](<#Any>)
   - [func Reduce\[A any, B any\]\(fn Dyadic\[B, A, B\], init B\) Reducer\[A, B\]](<#Reduce>)
+- [type Transformer](<#Transformer>)
+  - [func Middleware\[A, B any\]\(mw func\(A\)\) Transformer\[Monadic\[A, B\]\]](<#Middleware>)
+  - [func Pipe\[A any\]\(fns ...Transformer\[A\]\) Transformer\[A\]](<#Pipe>)
 
 
 <a name="Comp"></a>
@@ -40,6 +58,78 @@ func Comp[A any](fn Comparator[A]) func(...A) Predicate[A]
 ```
 
 Comp takes a [Comparator](<#Comparator>), variadic arguments, and returns a [Predicate](<#Predicate>). If any of the arguments pass the [Comparator](<#Comparator>), the [Predicate](<#Predicate>) returns true.
+
+<a name="Ignore"></a>
+## func Ignore
+
+```go
+func Ignore[A, B any](a A, _ B) A
+```
+
+Ignore returns the first argument and ignores the second.
+
+<a name="Ignores"></a>
+## func Ignores
+
+```go
+func Ignores[A, B, C any](fn func(A) (B, C)) func(A) B
+```
+
+Ignores transforms a function from F : A \-\> \(B, C\) to [Monadic](<#Monadic>) F : A \-\> B.
+
+<a name="Join"></a>
+## func Join
+
+```go
+func Join[A any](a ...[]A) (res []A)
+```
+
+Join multiple slices into a new slice.
+
+<a name="Must"></a>
+## func Must
+
+```go
+func Must[A any](a A, err error) A
+```
+
+Must panics if the error is not nil.
+
+<a name="Product"></a>
+## func Product
+
+```go
+func Product[A any](a []A, B []A) (res [][2]A)
+```
+
+Product returns the cartesian product of two slices.
+
+<a name="Reverse"></a>
+## func Reverse
+
+```go
+func Reverse[A any](arr []A) (res []A)
+```
+
+Reverse copies and reverses the given slice.
+
+<a name="Reverses"></a>
+## func Reverses
+
+```go
+func Reverses[A any](arr []A)
+```
+
+Reverses the given slice in place.
+
+<a name="V"></a>
+## func V
+
+```go
+func V[A any](a ...A) []A
+```
+
+V turns variadic arguments into a slice.
 
 <a name="Comparator"></a>
 ## type Comparator
@@ -104,6 +194,15 @@ Monadic is a function that takes a single argument and returns a single value.
 type Monadic[A, B any] func(A) B
 ```
 
+<a name="Cat"></a>
+### func Cat
+
+```go
+func Cat[A, B, C any](a Monadic[A, B], b Monadic[B, C]) Monadic[A, C]
+```
+
+Cat concatenates two [Monadic](<#Monadic>) functions into a single [Monadic](<#Monadic>) function.
+
 <a name="Thunk"></a>
 ### func Thunk
 
@@ -139,6 +238,15 @@ func And[A any](fns ...Predicate[A]) Predicate[A]
 ```
 
 And combines variadic \[Predicate\]s with an AND operation.
+
+<a name="Deduplicate"></a>
+### func Deduplicate
+
+```go
+func Deduplicate[A any, C comparable](fn func(A) C) Predicate[A]
+```
+
+Deduplicate returns a predicate that filters out duplicates based on the given function.
 
 <a name="Is"></a>
 ### func Is
@@ -211,5 +319,32 @@ func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Reducer[A, B]
 ```
 
 Reduce applies the function to each argument and returns the result.
+
+<a name="Transformer"></a>
+## type Transformer
+
+Transformer is a function that takes a single argument and returns a modified value.
+
+```go
+type Transformer[A any] Monadic[A, A]
+```
+
+<a name="Middleware"></a>
+### func Middleware
+
+```go
+func Middleware[A, B any](mw func(A)) Transformer[Monadic[A, B]]
+```
+
+Middleware wraps a function with a middleware, calling it before the next function.
+
+<a name="Pipe"></a>
+### func Pipe
+
+```go
+func Pipe[A any](fns ...Transformer[A]) Transformer[A]
+```
+
+Pipe combines variadic \[Transformer\]s into a single [Transformer](<#Transformer>).
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

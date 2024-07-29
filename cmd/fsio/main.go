@@ -1,3 +1,52 @@
+/*
+Package main is the entry point for the fsio command line tool.
+
+Fsio is an early proof of concept for the fsio library.
+
+Most commands accept variadic arguments.
+Piped values are interpreted as normal arguments.
+
+Commands:
+
+	:: Get the filename without the extension.
+	name		[...string, pipe]
+
+	:: Get the directory of the strings inputted
+	dir			[...string, pipe]
+
+	:: Get the base of the strings inputted
+	base		[...string, pipe]
+
+	:: Get the absolute path of the strings inputted
+	abs			[...string, pipe]
+
+	:: Join the strings inputted
+	join		[...string, pipe]
+
+	:: Check if the file exists
+	exists		[string, pipe]
+
+	:: Ensure the directory exists
+	ensure dir	[string, pipe]
+
+	:: Ensure the file exists
+	ensure file	[string, pipe]
+
+	:: Copy the files to the destination.
+	copy	dst string  [...string, pipe]
+
+	:: Copy the files to the destination with their paths relative to current working directory.
+	copyrel	dst string	[...string, pipe]
+
+	:: Move the files to the destination.
+	move	dst [...string, pipe]
+
+	:: Create a symlink to the destination.
+	sym		dst tar
+
+	:: Read the files and print their contents.
+	read	[string, pipe]
+*/
 package main
 
 import (
@@ -6,12 +55,12 @@ import (
 	"path/filepath"
 
 	"github.com/periaate/blume/clog"
-	"github.com/periaate/blume/core"
 	"github.com/periaate/blume/fsio"
+	"github.com/periaate/blume/gen"
 )
 
 func main() {
-	args := core.Args()
+	args := fsio.Args()
 	cmd := args[0]
 	args = args[1:]
 
@@ -33,7 +82,7 @@ func main() {
 		}
 	case "abs":
 		for _, arg := range args {
-			fmt.Println(fsio.Normalize(core.Must(filepath.Abs(arg))))
+			fmt.Println(fsio.Normalize(gen.Must(filepath.Abs(arg))))
 		}
 	case "join":
 		fmt.Println(fsio.Normalize(filepath.Join(args...)))
@@ -56,9 +105,9 @@ func main() {
 			}
 		}
 	case "copy", "cp":
-		err = Copy(path, args...)
+		err = copyTo(path, args...)
 	case "copyrel", "rel", "cr":
-		err = CopyRel(path, args...)
+		err = copyRel(path, args...)
 	case "move", "mv":
 		err = fmt.Errorf("not implemented")
 	case "sym", "symlink", "ln":
@@ -91,7 +140,7 @@ func main() {
 	}
 }
 
-func Copy(dst string, args ...string) (err error) {
+func copyTo(dst string, args ...string) (err error) {
 	for _, arg := range args {
 		destination := filepath.Join(dst, filepath.Base(arg))
 		err = fsio.Copy(destination, false)(arg)
@@ -102,7 +151,7 @@ func Copy(dst string, args ...string) (err error) {
 	return
 }
 
-func CopyRel(dst string, args ...string) (err error) {
+func copyRel(dst string, args ...string) (err error) {
 	for _, arg := range args {
 		fmt.Println(filepath.Join(dst, arg))
 		destination := filepath.Join(dst, arg)
@@ -114,6 +163,4 @@ func CopyRel(dst string, args ...string) (err error) {
 	return
 }
 
-func Move(dst string, args ...string) (err error) {
-	return
-}
+func move(_ string, _ ...string) (err error) { return }

@@ -1,3 +1,23 @@
+/*
+Package main - td, time and date parsing DSL.
+
+Example:
+
+	> td
+	2024-07-29
+
+	> td 1d
+	2024-07-30
+
+	> td -1d
+	2024-07-28
+
+	> td h
+	17:00
+
+	> td d h
+	2024-07-29 17:00
+*/
 package main
 
 import (
@@ -6,11 +26,12 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/periaate/blume/core"
-	"github.com/periaate/blume/core/str"
+	"github.com/periaate/blume/fsio"
+	. "github.com/periaate/blume/gen"
+	"github.com/periaate/blume/str"
 )
 
-func main() { fmt.Println(Must(TimeDaten(strings.Join(Args(), " ")))) }
+func main() { fmt.Println(Must(timeDaten(strings.Join(fsio.Args(), " ")))) }
 
 // TODO: Only one parser is necessary. fmt does not work.
 
@@ -40,7 +61,7 @@ var timeMap = map[string]int64{
 	"y":  y,
 }
 
-func TimeDaten(inp string) (res time.Duration, err error) {
+func timeDaten(inp string) (res time.Duration, err error) {
 	/*
 		ns, us, ms, s, m, h, d, M, y
 		any order
@@ -87,33 +108,31 @@ func TimeDaten(inp string) (res time.Duration, err error) {
 			part = part[1:]
 			neg = true
 		}
-		switch {
-		case str.IsDigit(part):
-			if len(parts) <= i+1 {
-				err = fmt.Errorf("missing unit for %s", part)
-				return
-			}
 
-			var mult int64
-			var ok bool
-			if mult, ok = timeMap[parts[i+1]]; !ok {
-				err = fmt.Errorf("invalid unit %s", parts[i+1])
-				return
-			}
-
-			var arg int64
-
-			arg, err = strconv.ParseInt(part, 10, 64)
-			if err != nil {
-				return
-			}
-			if neg {
-				arg = -arg
-			}
-
-			res += time.Duration(arg) * time.Duration(mult)
-			i++
+		if len(parts) <= i+1 {
+			err = fmt.Errorf("missing unit for %s", part)
+			return
 		}
+
+		var mult int64
+		var ok bool
+		if mult, ok = timeMap[parts[i+1]]; !ok {
+			err = fmt.Errorf("invalid unit %s", parts[i+1])
+			return
+		}
+
+		var arg int64
+
+		arg, err = strconv.ParseInt(part, 10, 64)
+		if err != nil {
+			return
+		}
+		if neg {
+			arg = -arg
+		}
+
+		res += time.Duration(arg) * time.Duration(mult)
+		i++
 	}
 
 	return

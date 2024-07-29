@@ -1,3 +1,17 @@
+/*
+Package clog wraps log/slog with a normalized indent, humanized, and colorized style.
+
+Example:
+
+	DEBUG @ main.go:111      MSG:<a message>; KEY:<Values here>; err:<nil>;
+	DEBUG @ main.go:111      MSG:<another message>; KEY:<Values here longer value>; err:<nil>;
+	DEBUG @ main.go:111      MSG:<a message>;       KEY:<err will be adjusted>;     err:<nil>;
+
+## TODO
+
+  - [ ] Rewrite the handler for greater flexibility and customization.
+  - [ ] Decide whether to use external libraries for coloring and formatting.
+*/
 package clog
 
 import (
@@ -12,9 +26,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/periaate/blume/core/val"
+	"github.com/periaate/blume/val"
 )
 
+// ClogHandler is a log/slog handler.
 type ClogHandler struct {
 	St    *Styles
 	Level slog.Leveler
@@ -23,28 +38,40 @@ type ClogHandler struct {
 	Mut *sync.Mutex
 	Out io.Writer
 
+	// MaxLen is the maximum length of a single value. If the value is longer, it will be cut.
 	MaxLen int
 
+	// indLens is used internally to store the length at the index of the key.
+	// Updated whenever an index is larger than the current length.
 	indLens map[int]int
 }
 
 var defLog = DefaultClog()
 
-func GetDefaultClog() *slog.Logger { return defLog }
+func GetDefaultClog() *slog.Logger  { return defLog }
+func SetDefaultClog(l *slog.Logger) { defLog = l }
 
-// func Error(msg string, args ...any) { defLog.Error(msg, args...) }
-// func Info(msg string, args ...any)  { defLog.Info(msg, args...) }
-// func Warn(msg string, args ...any)  { defLog.Warn(msg, args...) }
-// func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+// Error logs with the default clog logger.
+func Error(msg string, args ...any) { defLog.Error(msg, args...) }
 
-var (
-	Error = defLog.Error
-	Info  = defLog.Info
-	Warn  = defLog.Warn
-	Debug = defLog.Debug
-)
+// Info logs with the default clog logger.
+func Info(msg string, args ...any) { defLog.Info(msg, args...) }
 
+// Warn logs with the default clog logger.
+func Warn(msg string, args ...any) { defLog.Warn(msg, args...) }
+
+// Debug logs with the default clog logger.
+func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+
+// Error logs with the "ERROR" level and exits the program with code 1.
 func Fatal(msg string, args ...any) { defLog.Error(msg, args...); os.Exit(1) }
+
+const (
+	LevelError = slog.LevelError
+	LevelInfo  = slog.LevelInfo
+	LevelWarn  = slog.LevelWarn
+	LevelDebug = slog.LevelDebug
+)
 
 func SetLogLoggerLevel(lvl slog.Level) { defLog.Handler().(*ClogHandler).SetLogLoggerLevel(lvl) }
 
@@ -55,6 +82,7 @@ type Logger interface {
 	Debug(msg string, args ...any)
 }
 
+// Dummy is a dummy logger that does nothing.
 type Dummy struct{}
 
 func (Dummy) Error(_ string, _ ...any) {}
@@ -62,8 +90,9 @@ func (Dummy) Info(_ string, _ ...any)  {}
 func (Dummy) Warn(_ string, _ ...any)  {}
 func (Dummy) Debug(_ string, _ ...any) {}
 
-func DefaultClog() *slog.Logger { return NewClog(os.Stdout, slog.LevelInfo, MaxLen(50)) }
+func DefaultClog() *slog.Logger { return NewClog(os.Stdout, LevelInfo, MaxLen(50)) }
 
+// NewClog creates a new clog logger with the given writer, level, and options.
 func NewClog(w io.Writer, lvl slog.Level, opts ...func(*ClogHandler)) *slog.Logger {
 	h := New(w, lvl, nil)
 
@@ -110,8 +139,12 @@ func (h *ClogHandler) DefGetV(vall slog.Value) string {
 	switch vall.Kind() {
 	case slog.KindTime:
 		return vall.Time().Format(time.RFC3339Nano)
-	case slog.KindInt64, slog.KindUint64, slog.KindFloat64:
-		return val.HumanNumber(vall.String())
+	case slog.KindInt64:
+		return val.HumanizeNumber(vall.Int64())
+	case slog.KindUint64:
+		return val.HumanizeNumber(vall.Uint64())
+	case slog.KindFloat64:
+		return val.HumanizeNumber(vall.Float64())
 	case slog.KindGroup:
 		arr := []string{}
 		for _, v := range vall.Group() {
@@ -122,7 +155,7 @@ func (h *ClogHandler) DefGetV(vall slog.Value) string {
 		v := vall.String()
 
 		if h.MaxLen > 0 {
-			v = MaxStrLen(v, h.MaxLen)
+			v = maxStrLen(v, h.MaxLen)
 		}
 
 		return v
@@ -202,6 +235,7 @@ func (h *ClogHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func (h *ClogHandler) appendAttr(attr slog.Attr) (buf []byte) {
+	// TODO: Figure out how and if to add custom levels, such as FATAL.
 	attr.Value = attr.Value.Resolve()
 	if attr.Equal(slog.Attr{}) {
 		return buf
@@ -247,7 +281,7 @@ func (h *ClogHandler) fmtKV(val slog.Attr) (res string, ok bool) {
 	return fmt.Sprintf("%s%s%s%s", strings.ToUpper(val.Key), h.St.Delim[0], h.DefGetV(val.Value), h.St.Delim[1]), true
 }
 
-func MaxStrLen(str string, max int) string {
+func maxStrLen(str string, max int) string {
 	if len(str) > max {
 		// cut the beginning
 		str = "..." + str[len(str)-(max-3):]

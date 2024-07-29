@@ -6,17 +6,36 @@
 import "github.com/periaate/blume/clog"
 ```
 
+Package clog wraps log/slog with a normalized indent, humanized, and colorized style.
+
+Example:
+
+```
+DEBUG @ main.go:111      MSG:<a message>; KEY:<Values here>; err:<nil>;
+DEBUG @ main.go:111      MSG:<another message>; KEY:<Values here longer value>; err:<nil>;
+DEBUG @ main.go:111      MSG:<a message>;       KEY:<err will be adjusted>;     err:<nil>;
+```
+
+\#\# TODO
+
+- \[ \] Rewrite the handler for greater flexibility and customization.
+- \[ \] Decide whether to use external libraries for coloring and formatting.
+
 ## Index
 
-- [Variables](<#variables>)
+- [Constants](<#constants>)
+- [func Debug\(msg string, args ...any\)](<#Debug>)
 - [func DefaultClog\(\) \*slog.Logger](<#DefaultClog>)
+- [func Error\(msg string, args ...any\)](<#Error>)
 - [func Fatal\(msg string, args ...any\)](<#Fatal>)
 - [func GetDefaultClog\(\) \*slog.Logger](<#GetDefaultClog>)
+- [func Info\(msg string, args ...any\)](<#Info>)
 - [func MaxLen\(l int\) func\(\*ClogHandler\)](<#MaxLen>)
-- [func MaxStrLen\(str string, max int\) string](<#MaxStrLen>)
 - [func NewClog\(w io.Writer, lvl slog.Level, opts ...func\(\*ClogHandler\)\) \*slog.Logger](<#NewClog>)
+- [func SetDefaultClog\(l \*slog.Logger\)](<#SetDefaultClog>)
 - [func SetLogLoggerLevel\(lvl slog.Level\)](<#SetLogLoggerLevel>)
 - [func Style\(st \*Styles\) func\(\*ClogHandler\)](<#Style>)
+- [func Warn\(msg string, args ...any\)](<#Warn>)
 - [type ClogHandler](<#ClogHandler>)
   - [func New\(out io.Writer, lvl slog.Level, st \*Styles\) \*ClogHandler](<#New>)
   - [func \(h \*ClogHandler\) DefGetV\(vall slog.Value\) string](<#ClogHandler.DefGetV>)
@@ -35,18 +54,27 @@ import "github.com/periaate/blume/clog"
   - [func NewStyles\(st \*Styles\) \*Styles](<#NewStyles>)
 
 
-## Variables
+## Constants
 
-<a name="Error"></a>
+<a name="LevelError"></a>
 
 ```go
-var (
-    Error = defLog.Error
-    Info  = defLog.Info
-    Warn  = defLog.Warn
-    Debug = defLog.Debug
+const (
+    LevelError = slog.LevelError
+    LevelInfo  = slog.LevelInfo
+    LevelWarn  = slog.LevelWarn
+    LevelDebug = slog.LevelDebug
 )
 ```
+
+<a name="Debug"></a>
+## func Debug
+
+```go
+func Debug(msg string, args ...any)
+```
+
+Debug logs with the default clog logger.
 
 <a name="DefaultClog"></a>
 ## func DefaultClog
@@ -57,6 +85,15 @@ func DefaultClog() *slog.Logger
 
 
 
+<a name="Error"></a>
+## func Error
+
+```go
+func Error(msg string, args ...any)
+```
+
+Error logs with the default clog logger.
+
 <a name="Fatal"></a>
 ## func Fatal
 
@@ -64,7 +101,7 @@ func DefaultClog() *slog.Logger
 func Fatal(msg string, args ...any)
 ```
 
-
+Error logs with the "ERROR" level and exits the program with code 1.
 
 <a name="GetDefaultClog"></a>
 ## func GetDefaultClog
@@ -75,6 +112,15 @@ func GetDefaultClog() *slog.Logger
 
 
 
+<a name="Info"></a>
+## func Info
+
+```go
+func Info(msg string, args ...any)
+```
+
+Info logs with the default clog logger.
+
 <a name="MaxLen"></a>
 ## func MaxLen
 
@@ -84,20 +130,20 @@ func MaxLen(l int) func(*ClogHandler)
 
 
 
-<a name="MaxStrLen"></a>
-## func MaxStrLen
-
-```go
-func MaxStrLen(str string, max int) string
-```
-
-
-
 <a name="NewClog"></a>
 ## func NewClog
 
 ```go
 func NewClog(w io.Writer, lvl slog.Level, opts ...func(*ClogHandler)) *slog.Logger
+```
+
+NewClog creates a new clog logger with the given writer, level, and options.
+
+<a name="SetDefaultClog"></a>
+## func SetDefaultClog
+
+```go
+func SetDefaultClog(l *slog.Logger)
 ```
 
 
@@ -120,10 +166,19 @@ func Style(st *Styles) func(*ClogHandler)
 
 
 
+<a name="Warn"></a>
+## func Warn
+
+```go
+func Warn(msg string, args ...any)
+```
+
+Warn logs with the default clog logger.
+
 <a name="ClogHandler"></a>
 ## type ClogHandler
 
-
+ClogHandler is a log/slog handler.
 
 ```go
 type ClogHandler struct {
@@ -134,6 +189,7 @@ type ClogHandler struct {
     Mut *sync.Mutex
     Out io.Writer
 
+    // MaxLen is the maximum length of a single value. If the value is longer, it will be cut.
     MaxLen int
     // contains filtered or unexported fields
 }
@@ -205,7 +261,7 @@ func (h *ClogHandler) WithGroup(name string) slog.Handler
 <a name="Dummy"></a>
 ## type Dummy
 
-
+Dummy is a dummy logger that does nothing.
 
 ```go
 type Dummy struct{}

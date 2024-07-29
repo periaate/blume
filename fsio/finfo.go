@@ -11,6 +11,7 @@ import (
 // Normalize cleans and converts the path to use forward slashes.
 func Normalize(path string) string { return fp.ToSlash(fp.Clean(path)) }
 
+// Symlink creates a symbolic link to the destination.
 func Symlink(dst string) func(string) error {
 	return func(f string) (err error) {
 		err = os.Symlink(f, dst)
@@ -21,6 +22,7 @@ func Symlink(dst string) func(string) error {
 	}
 }
 
+// ReadDir reads the directory and returns a list of files.
 func ReadDir(f string) (res []string, err error) {
 	if !IsDir(f) {
 		err = fmt.Errorf("%s is not a directory", f)
@@ -41,12 +43,13 @@ func ReadDir(f string) (res []string, err error) {
 	return
 }
 
-type ArbFS struct {
-	paths map[string]string
-}
+// ArbFS is a file system that maps paths to files.
+type ArbFS struct{ paths map[string]string }
 
-func (a ArbFS) Open(path string) (file fs.File, err error) { return os.Open(a.paths[path]) }
+// Open opens the file for reading.
+func (a ArbFS) Open(path string) (file fs.File, err error) { return os.Open(a.paths[Normalize(path)]) }
 
+// ToFS creates an [ArbFS] from the given paths, which implements the fs.FS interface.
 func ToFS(paths ...string) ArbFS {
 	f := ArbFS{make(map[string]string, 0)}
 	for _, v := range paths {
@@ -57,12 +60,14 @@ func ToFS(paths ...string) ArbFS {
 	return f
 }
 
+// Name returns the file name without the extension and directory.
 func Name(f string) string {
 	b := fp.Base(f)
 	r := b[:len(b)-len(fp.Ext(b))]
 	return Normalize(r)
 }
 
+// WriteAll writes the contents of the reader to the file, overwriting existing files.
 func WriteAll(f string, r io.Reader) (err error) {
 	file, err := os.Create(f)
 	if err != nil {
@@ -74,6 +79,7 @@ func WriteAll(f string, r io.Reader) (err error) {
 	return err
 }
 
+// WriteNew writes the contents of the reader to a new file, will not overwrite existing files.
 func WriteNew(f string, r io.Reader) (err error) {
 	if Exists(f) {
 		return fmt.Errorf("file %s already exists", f)
@@ -88,6 +94,7 @@ func WriteNew(f string, r io.Reader) (err error) {
 	return err
 }
 
+// AppendTo appends the contents of the reader to the file.
 func AppendTo(f string, r io.Reader) (err error) {
 	// Open the file in append mode, create if not exists
 	file, err := os.OpenFile(f, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
@@ -100,6 +107,7 @@ func AppendTo(f string, r io.Reader) (err error) {
 	return err
 }
 
+// Walk walks the directory and returns a list of files that pass the predicate.
 func Walk(fn func(string) bool) func(string) (res []string, err error) {
 	return func(root string) (res []string, err error) {
 		err = fp.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -120,6 +128,7 @@ func Walk(fn func(string) bool) func(string) (res []string, err error) {
 	}
 }
 
+// IsDir checks if input is a directory.
 func IsDir(f string) bool {
 	info, err := os.Stat(f)
 	if err != nil {
@@ -128,11 +137,13 @@ func IsDir(f string) bool {
 	return info.IsDir()
 }
 
+// Exists checks if the input exists.
 func Exists(f string) bool {
 	_, err := os.Stat(f)
 	return !os.IsNotExist(err)
 }
 
+// EnsureDir creates the directory if it does not exist.
 func EnsureDir(f string) error {
 	if Exists(f) {
 		return nil
@@ -140,6 +151,7 @@ func EnsureDir(f string) error {
 	return os.MkdirAll(f, 0o755)
 }
 
+// EnsureFile creates the file if it does not exist, along with the directory.
 func EnsureFile(f string) (err error) {
 	if err = EnsureDir(fp.Dir(f)); err != nil {
 		return
@@ -149,6 +161,7 @@ func EnsureFile(f string) (err error) {
 	return
 }
 
+// This is currently incorrectly implemented.
 func Copy(dst string, overwrite bool) func(string) (err error) {
 	fd := Normalize(dst)
 	return func(src string) (err error) {

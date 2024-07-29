@@ -6,37 +6,56 @@
 import "github.com/periaate/blume/cmd/fsio"
 ```
 
+Package main is the entry point for the fsio command line tool.
+
+Fsio is an early proof of concept for the fsio library.
+
+Most commands accept variadic arguments. Piped values are interpreted as normal arguments.
+
+Commands:
+
+```
+:: Get the filename without the extension.
+name		[...string, pipe]
+
+:: Get the directory of the strings inputted
+dir			[...string, pipe]
+
+:: Get the base of the strings inputted
+base		[...string, pipe]
+
+:: Get the absolute path of the strings inputted
+abs			[...string, pipe]
+
+:: Join the strings inputted
+join		[...string, pipe]
+
+:: Check if the file exists
+exists		[string, pipe]
+
+:: Ensure the directory exists
+ensure dir	[string, pipe]
+
+:: Ensure the file exists
+ensure file	[string, pipe]
+
+:: Copy the files to the destination.
+copy	dst string  [...string, pipe]
+
+:: Copy the files to the destination with their paths relative to current working directory.
+copyrel	dst string	[...string, pipe]
+
+:: Move the files to the destination.
+move	dst [...string, pipe]
+
+:: Create a symlink to the destination.
+sym		dst tar
+
+:: Read the files and print their contents.
+read	[string, pipe]
+```
+
 ## Index
-
-- [func Copy\(dst string, args ...string\) \(err error\)](<#Copy>)
-- [func CopyRel\(dst string, args ...string\) \(err error\)](<#CopyRel>)
-- [func Move\(dst string, args ...string\) \(err error\)](<#Move>)
-
-
-<a name="Copy"></a>
-## func Copy
-
-```go
-func Copy(dst string, args ...string) (err error)
-```
-
-
-
-<a name="CopyRel"></a>
-## func CopyRel
-
-```go
-func CopyRel(dst string, args ...string) (err error)
-```
-
-
-
-<a name="Move"></a>
-## func Move
-
-```go
-func Move(dst string, args ...string) (err error)
-```
 
 
 
