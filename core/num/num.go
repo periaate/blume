@@ -1,6 +1,5 @@
+// Package num provides type constraints and functions for numeric types.
 package num
-
-import "github.com/periaate/blume/core/gen"
 
 // Numeric is a type constraint that represents numeric types.
 // Numeric does not include complex numbers.
@@ -52,4 +51,4 @@ func Clamp[N Numeric](lower, upper N) func(N) N {
 func SameSign[N Numeric](a, b N) bool { return (a > 0 && b > 0) || (a < 0 && b < 0) }
 
 // IsSameSign returns a predicate that checks if all arguments have the same sign.
-func IsSameSign[N Numeric](a ...N) gen.Predicate[N] { return gen.Comp(SameSign[N])(a...) }
+// func IsSameSign[N Numeric](a ...N) gen.Predicate[N] { return gen.Comp(SameSign[N])(a...) }

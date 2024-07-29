@@ -1,16 +1,17 @@
+// Package str provides type constraints and functions for string types.
 package str
 
 import (
 	"strings"
 
 	"github.com/periaate/blume/core/gen"
-	"github.com/periaate/blume/core/num"
 )
 
-func Contains(args ...string) gen.Predicate[string] {
-	return func(str string) bool {
+// Contains returns a predicate that checks if the input string contains any of the given substrings.
+func Contains[S ~string](args ...S) gen.Predicate[S] {
+	return func(str S) bool {
 		for _, s := range args {
-			if strings.Contains(str, s) {
+			if strings.Contains(string(str), string(s)) {
 				return true
 			}
 		}
@@ -18,9 +19,10 @@ func Contains(args ...string) gen.Predicate[string] {
 	}
 }
 
+// HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
 func HasPrefix(args ...string) gen.Predicate[string] {
 	return func(str string) bool {
-		for _, arg := range Limit(str, args...) {
+		for _, arg := range Limit(str, args) {
 			if str[:len(arg)] == arg {
 				return true
 			}
@@ -30,9 +32,10 @@ func HasPrefix(args ...string) gen.Predicate[string] {
 	}
 }
 
+// HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
 func HasSuffix(args ...string) gen.Predicate[string] {
 	return func(str string) bool {
-		for _, arg := range Limit(str, args...) {
+		for _, arg := range Limit(str, args) {
 			if str[len(str)-len(arg):] == arg {
 				return true
 			}
@@ -42,9 +45,10 @@ func HasSuffix(args ...string) gen.Predicate[string] {
 	}
 }
 
-func Limit[T ~string | ~[]T](i T, ts ...T) (res []T) {
-	for _, r := range ts {
-		if len(r) <= len(i) {
+// Limit filters the args to be less than or equal to the given Max length.
+func Limit[T ~string | ~[]any](Max T, args []T) (res []T) {
+	for _, r := range args {
+		if len(r) <= len(Max) {
 			res = append(res, r)
 		}
 	}
@@ -66,44 +70,29 @@ func Replace(pats ...string) gen.Monadic[string, string] {
 	}
 }
 
-func IsDigit(str string) bool {
-	for _, r := range str {
-		switch r {
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			continue
-		default:
-			return false
-		}
-	}
-	return true
-}
-
-func Slice(from, to int, inp string) (res string) {
-	if from == to {
-		return
-	}
-	l := len(inp)
-	from = num.SmartClamp(from, l)
-	to = num.SmartClamp(to, l)
-
-	if from > to {
-		return inp[to:from]
-	}
-
-	return inp[from:to]
-}
-
-func IsNumber(str string) bool {
-	if HasPrefix("-", "+")(str) {
-		str = Slice(0, 1, str)
-	}
-	for _, r := range str {
-		switch r {
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',':
-			continue
-		default:
-			return false
-		}
-	}
-	return true
-}
+// func IsDigit(str string) bool {
+// 	for _, r := range str {
+// 		switch r {
+// 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+// 			continue
+// 		default:
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
+//
+// func IsNumber(str string) bool {
+// 	if HasPrefix("-", "+")(str) {
+// 		str = Slice(0, 1, str)
+// 	}
+// 	for _, r := range str {
+// 		switch r {
+// 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',':
+// 			continue
+// 		default:
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }

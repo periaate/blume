@@ -1,5 +1,7 @@
 package core
 
+// TODO: Find a better package for this functionality.
+
 import (
 	"bufio"
 	"log"
