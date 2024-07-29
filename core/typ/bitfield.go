@@ -2,20 +2,20 @@ package typ
 
 import "github.com/periaate/blume/core/num"
 
-func AND[N num.UInteger](a, b N) N    { return a & b }
-func NOT[N num.UInteger](a, b N) N    { return a &^ b }
-func OR[N num.UInteger](a, b N) N     { return a | b }
-func XOR[N num.UInteger](a, b N) N    { return a ^ b }
-func HAS[N num.UInteger](a, b N) bool { return (a & b) != 0 }
+func AND[N num.Unsigned](a, b N) N    { return a & b }
+func NOT[N num.Unsigned](a, b N) N    { return a &^ b }
+func OR[N num.Unsigned](a, b N) N     { return a | b }
+func XOR[N num.Unsigned](a, b N) N    { return a ^ b }
+func HAS[N num.Unsigned](a, b N) bool { return (a & b) != 0 }
 
-func Include[N num.UInteger](src N, args ...N) N {
+func Include[N num.Unsigned](src N, args ...N) N {
 	for _, v := range args {
 		src |= v
 	}
 	return src
 }
 
-type BitField[K comparable, N num.UInteger] struct {
+type BitField[K comparable, N num.Unsigned] struct {
 	Aliases map[K]N
 }
 

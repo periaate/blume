@@ -13,7 +13,7 @@ func TestContains(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !Contains(ex.tar, ex.args...) {
+		if !Contains(ex.args...)(ex.tar) {
 			t.Fatal("match not found", ex.tar, ex.args)
 		}
 	}
@@ -28,7 +28,7 @@ func TestPre(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !HasPrefix(ex.tar, ex.args...) {
+		if !HasPrefix(ex.args...)(ex.tar) {
 			t.Fatal("match not found", ex.tar, ex.args)
 		}
 	}
@@ -43,7 +43,7 @@ func TestSuf(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !HasSuffix(ex.tar, ex.args...) {
+		if !HasSuffix(ex.args...)(ex.tar) {
 			t.Fatal("match not found", ex.tar, ex.args)
 		}
 	}

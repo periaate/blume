@@ -5,13 +5,11 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 )
 
 func UsePipe(fn func(string)) {
-	fileInfo, _ := os.Stdin.Stat()
-	if (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+	if HasPipe() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			fn(scanner.Text())
@@ -20,8 +18,7 @@ func UsePipe(fn func(string)) {
 }
 
 func ReadPipe() (res []string) {
-	fileInfo, _ := os.Stdin.Stat()
-	if (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+	if HasPipe() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			res = append(res, scanner.Text())
@@ -31,8 +28,7 @@ func ReadPipe() (res []string) {
 }
 
 func ReadRawPipe() (res []byte) {
-	fileInfo, _ := os.Stdin.Stat()
-	if (fileInfo.Mode() & os.ModeCharDevice) == 0 {
+	if HasPipe() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			res = append(res, scanner.Bytes()...)
@@ -41,48 +37,9 @@ func ReadRawPipe() (res []byte) {
 	return
 }
 
-func HasPipe() bool {
-	fileInfo, _ := os.Stdin.Stat()
-	return (fileInfo.Mode() & os.ModeCharDevice) == 0
-}
+func HasPipe() bool { return (Ignore(os.Stdin.Stat()).Mode() & os.ModeCharDevice) == 0 }
 
-func Args() (res []string) {
-	return append(os.Args[1:], ReadPipe()...)
-}
-
-// Filepaths returns all valid filepaths in the input array.
-// Choice integer is a fitler for either files, directories, or both.
-// 0: both, 1: files, -1: directories
-func Filepaths(sar []string, choice int8) (res []string, errs []error) {
-	for _, s := range sar {
-		s, err := filepath.Abs(s)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		fi, err := os.Stat(s)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		switch choice {
-		case 1:
-			if !fi.Mode().IsRegular() {
-				// errs = append(errs, fmt.Errorf("%s is not a file", s))
-				continue
-			}
-		case -1:
-			if !fi.Mode().IsDir() {
-				// errs = append(errs, fmt.Errorf("%s is not a directory", s))
-				continue
-			}
-		}
-
-		res = append(res, s)
-	}
-
-	return
-}
+func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
 
 func WaitForKill() {
 	sigChan := make(chan os.Signal, 1)

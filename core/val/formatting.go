@@ -9,6 +9,43 @@ import (
 	"github.com/periaate/blume/core/num"
 )
 
+// HumanizeNumber converts a number into a human-readable string.
+// `.` is used as a decimal separator.
+// `,` is used as a thousands separator.
+func HumanizeNumber(n any) (res string, err error) {
+	switch v := n.(type) {
+	case string:
+		res = HumanNumber(v)
+	case uint:
+		res = HumanNumb(v)
+	case uint8:
+		res = HumanNumb(v)
+	case uint16:
+		res = HumanNumb(v)
+	case uint32:
+		res = HumanNumb(v)
+	case uint64:
+		res = HumanNumb(v)
+	case int:
+		res = HumanNumb(v)
+	case int8:
+		res = HumanNumb(v)
+	case int16:
+		res = HumanNumb(v)
+	case int32:
+		res = HumanNumb(v)
+	case int64:
+		res = HumanNumb(v)
+	case float32:
+		res = HumanNumb(v)
+	case float64:
+		res = HumanNumb(v)
+	default:
+		err = fmt.Errorf("unsupported type: %T", n)
+	}
+	return
+}
+
 func HumanNumber(num string) string {
 	ind := strings.Index(num, ".")
 	var temp string
@@ -42,7 +79,7 @@ func HumanNumb[N num.Numeric](n N) string {
 
 // HumanizeBytes converts an integer byte value into a human-readable string.
 // base of 0 means the input is in bytes, of 1 in kB, ...
-func HumanizeBytes[T num.Integer](base int, val T, decimals int, asKiB bool) string {
+func HumanizeBytes[I num.Integer](base int, val I, decimals int, asKiB bool) string {
 	var unit float64 = 1000 // Use 1000 as base for KB, MB, GB...
 	suffixes := []string{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"}
 	if asKiB {
@@ -124,13 +161,13 @@ const (
 )
 
 func Color(colorCode int, v string) string {
-	return fmt.Sprintf("\033[%sm%s", strconv.Itoa(colorCode), v)
+	return fmt.Sprintf("\033[%dm%s", colorCode, v)
 }
 
 func EndColor(v string) string { return fmt.Sprintf("%s%s", v, reset) }
 
 func Colorize(colorCode int, v string) string {
-	return fmt.Sprintf("\033[%sm%s%s", strconv.Itoa(colorCode), v, reset)
+	return fmt.Sprintf("\033[%dm%s%s", colorCode, v, reset)
 }
 
 func FmtF(f string, args ...string) (res string, err error) {
@@ -152,7 +189,4 @@ func FmtF(f string, args ...string) (res string, err error) {
 	return res, nil
 }
 
-var escapeMap = map[string]rune{
-	"\\n": '\n',
-	"\\t": '\t',
-}
+var escapeMap = map[string]rune{"\\n": '\n', "\\t": '\t'}

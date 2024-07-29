@@ -12,7 +12,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/periaate/blume/core/gen"
 	"github.com/periaate/blume/core/val"
 )
 
@@ -65,7 +64,7 @@ func (Dummy) Debug(_ string, _ ...any) {}
 
 func DefaultClog() *slog.Logger { return NewClog(os.Stdout, slog.LevelInfo, MaxLen(50)) }
 
-func NewClog(w io.Writer, lvl slog.Level, opts ...gen.Option[*ClogHandler]) *slog.Logger {
+func NewClog(w io.Writer, lvl slog.Level, opts ...func(*ClogHandler)) *slog.Logger {
 	h := New(w, lvl, nil)
 
 	for _, opt := range opts {
@@ -83,8 +82,8 @@ func NewClog(w io.Writer, lvl slog.Level, opts ...gen.Option[*ClogHandler]) *slo
 	return slog.New(h)
 }
 
-func Style(st *Styles) gen.Option[*ClogHandler] { return func(h *ClogHandler) { h.St = st } }
-func MaxLen(l int) gen.Option[*ClogHandler]     { return func(h *ClogHandler) { h.MaxLen = l } }
+func Style(st *Styles) func(*ClogHandler) { return func(h *ClogHandler) { h.St = st } }
+func MaxLen(l int) func(*ClogHandler)     { return func(h *ClogHandler) { h.MaxLen = l } }
 
 func (l *ClogHandler) SetLogLoggerLevel(lvl slog.Level) { l.Lvl = int(lvl) }
 
