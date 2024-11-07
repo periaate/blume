@@ -2,6 +2,7 @@ package fsio
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 )
 
@@ -65,3 +66,43 @@ func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
 // 		log.Fatalln("not enough arguments")
 // 	}
 // }
+
+// GetArg attemts to get the index given as argument from os.Args. Returns empty string if OOB.
+func GetArg(i int) (res string) {
+	if len(os.Args) == 0 {
+		return
+	}
+	args := os.Args[1:]
+	if len(args) < i || len(args) == 0 {
+		return
+	}
+
+	return args[i]
+}
+
+func Pipes() (input, output chan string) {
+	input = make(chan string)
+	output = make(chan string)
+	go func() {
+		args := os.Args[1:]
+		for _, arg := range args {
+			input <- arg
+		}
+
+		if HasPipe() {
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				input <- scanner.Text()
+			}
+		}
+	}()
+
+	go func() {
+		for {
+			a := <-output
+			fmt.Println(a)
+		}
+	}()
+
+	return
+}

@@ -1,5 +1,7 @@
 package typ
 
+import "github.com/periaate/blume/gen"
+
 // AND bitwise operation.
 func AND[N Unsigned](a, b N) N { return a & b }
 
@@ -41,3 +43,12 @@ func HAS[N Unsigned](a, b N) bool { return (a & b) != 0 }
 // 		bf.Aliases[key] |= n
 // 	}
 // }
+
+func inc[N Unsigned](a ...N) gen.Monadic[N, N] {
+	return func(b N) (res N) {
+		for _, v := range a {
+			res = OR(b, v)
+		}
+		return
+	}
+}

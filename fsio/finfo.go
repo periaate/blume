@@ -1,15 +1,26 @@
 package fsio
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	fp "path/filepath"
+	"strings"
+
+	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/str"
+	"github.com/periaate/blume/val"
 )
 
 // Normalize cleans and converts the path to use forward slashes.
-func Normalize(path string) string { return fp.ToSlash(fp.Clean(path)) }
+func Normalize(path string) string {
+	if str.HasSuffix("/")(path) {
+		return fp.ToSlash(fp.Clean(path)) + "/"
+	}
+	return fp.ToSlash(fp.Clean(path))
+}
 
 // Symlink creates a symbolic link to the destination.
 func Symlink(dst string) func(string) error {
@@ -22,8 +33,21 @@ func Symlink(dst string) func(string) error {
 	}
 }
 
+var Home = gen.Ignore(os.UserHomeDir())
+
+func Get(path, name string) (res string, ok bool) {
+	res = Normalize(fp.Join(path, name))
+	ok = Exists(res)
+
+	return
+}
+
 // ReadDir reads the directory and returns a list of files.
 func ReadDir(f string) (res []string, err error) {
+	if str.HasPrefix("~")(f) {
+		f = strings.Replace(f, "~", Home, 1)
+	}
+
 	if !IsDir(f) {
 		err = fmt.Errorf("%s is not a directory", f)
 		return
@@ -44,20 +68,40 @@ func ReadDir(f string) (res []string, err error) {
 }
 
 // ArbFS is a file system that maps paths to files.
-type ArbFS struct{ paths map[string]string }
+type ArbFS struct {
+	paths map[string]string
+	items [][2]string
+}
 
 // Open opens the file for reading.
-func (a ArbFS) Open(path string) (file fs.File, err error) { return os.Open(a.paths[Normalize(path)]) }
+func (a ArbFS) List() [][2]string {
+	return a.items
+}
+
+// Open opens the file for reading.
+func (a ArbFS) Open(path string) (file fs.File, err error) {
+	return os.Open(a.paths[path])
+}
 
 // ToFS creates an [ArbFS] from the given paths, which implements the fs.FS interface.
-func ToFS(paths ...string) ArbFS {
-	f := ArbFS{make(map[string]string, 0)}
-	for _, v := range paths {
-		v = Normalize(v)
-		f.paths[v] = v
+func ToFS(paths ...string) (vfs ArbFS, err error) {
+	vfs = ArbFS{
+		make(map[string]string, 0),
+		make([][2]string, 0, len(paths)),
 	}
 
-	return f
+	for _, value := range paths {
+		value = Normalize(value)
+		name := Name(value)
+		hash := val.Sha256(value)
+		key := base64.URLEncoding.EncodeToString(hash)
+		key += fp.Ext(value)
+
+		vfs.paths[key] = value
+		vfs.items = append(vfs.items, [2]string{key, name})
+	}
+
+	return
 }
 
 // Name returns the file name without the extension and directory.
@@ -153,8 +197,14 @@ func EnsureDir(f string) error {
 
 // EnsureFile creates the file if it does not exist, along with the directory.
 func EnsureFile(f string) (err error) {
-	if err = EnsureDir(fp.Dir(f)); err != nil {
-		return
+	if Exists(f) {
+		return nil
+	}
+
+	if !Exists(fp.Dir(f)) {
+		if err = EnsureDir(fp.Dir(f)); err != nil {
+			return
+		}
 	}
 
 	_, err = os.Create(f)

@@ -28,6 +28,18 @@ func Join[A any](a ...[]A) (res []A) {
 	return res
 }
 
+// Lim filters the args to be less than or equal to the given Max length.
+func Lim[A ~string | ~[]any](Max int) Mapper[A, A] {
+	return func(args []A) (res []A) {
+		for _, a := range args {
+			if len(a) <= Max {
+				res = append(res, a)
+			}
+		}
+		return
+	}
+}
+
 // Reverses the given slice in place.
 func Reverses[A any](arr []A) {
 	for i := 0; i < len(arr)/2; i++ {

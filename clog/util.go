@@ -14,21 +14,6 @@ var defLog = DefaultClog()
 func GetDefaultClog() *slog.Logger  { return defLog }
 func SetDefaultClog(l *slog.Logger) { defLog = l }
 
-// Error logs with the default clog logger.
-func Error(msg string, args ...any) { defLog.Error(msg, args...) }
-
-// Info logs with the default clog logger.
-func Info(msg string, args ...any) { defLog.Info(msg, args...) }
-
-// Warn logs with the default clog logger.
-func Warn(msg string, args ...any) { defLog.Warn(msg, args...) }
-
-// Debug logs with the default clog logger.
-func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
-
-// Error logs with the "ERROR" level and exits the program with code 1.
-func Fatal(msg string, args ...any) { defLog.Error(msg, args...); os.Exit(1) }
-
 const (
 	LevelError = slog.LevelError
 	LevelInfo  = slog.LevelInfo

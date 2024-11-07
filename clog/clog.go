@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -28,6 +29,25 @@ import (
 	"github.com/periaate/blume/str"
 	"github.com/periaate/blume/val"
 )
+
+// Error logs with the default clog logger.
+func Error(msg string, args ...any) { defLog.Error(msg, args...) }
+
+// Info logs with the default clog logger.
+func Info(msg string, args ...any) { defLog.Info(msg, args...) }
+
+// Warn logs with the default clog logger.
+func Warn(msg string, args ...any) { defLog.Warn(msg, args...) }
+
+// Debug logs with the default clog logger.
+func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+
+// Error logs with the "ERROR" level and exits the program with code 1.
+func Fatal(msg string, args ...any) { defLog.Error(msg, args...); os.Exit(1) }
+
+// keyStyle = lg.NewStyle().Width(20)
+// valStyle = lg.NewStyle().Width(50).Foreground(lg.Color(fmt.Sprint(val.LightYellow)))
+// var header = lg.NewStyle().Width(w())
 
 // ClogHandler is a log/slog handler.
 type ClogHandler struct {
@@ -55,7 +75,7 @@ func (h *ClogHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
 func (h *ClogHandler) WithGroup(name string) slog.Handler       { return h }
 func (h *ClogHandler) WithAttrs(attrs []slog.Attr) slog.Handler { return h }
 
-var pred = str.Contains("blume/clog", "slog/logger")
+var pred = str.Contains("blume/clog/clog.go", "clog/utils.go", "slog/logger")
 
 func (h *ClogHandler) Handle(ctx context.Context, r slog.Record) error {
 	var nbuf []byte

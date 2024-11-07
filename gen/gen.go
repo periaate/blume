@@ -35,6 +35,21 @@ func Thunk[A, B any](fn Monadic[A, B]) Monadic[A, Niladic[B]] {
 	return func(a A) Niladic[B] { return func() B { return fn(a) } }
 }
 
+func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
+	return func(args []A) (res [][]A) {
+		res = make([][]A, 2)
+		for _, arg := range args {
+			switch fn(arg) {
+			case false:
+				res[0] = append(res[0], arg)
+			case true:
+				res[1] = append(res[1], arg)
+			}
+		}
+		return res
+	}
+}
+
 // All returns true if all arguments pass the [Predicate].
 func All[A any](fn Predicate[A]) Reducer[A, bool] {
 	return func(args []A) bool {
@@ -124,6 +139,19 @@ func Is[C comparable](A ...C) Predicate[C] {
 			}
 		}
 		return false
+	}
+}
+
+// Is returns a [Predicate] that checks if the argument is in the list.
+func Ism[C comparable](A ...C) Predicate[C] {
+	in := make(map[C]bool, len(A))
+	for _, a := range A {
+		in[a] = true
+	}
+
+	return func(B C) bool {
+		_, ok := in[B]
+		return ok
 	}
 }
 

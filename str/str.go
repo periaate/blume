@@ -22,7 +22,8 @@ func Contains[S ~string](args ...S) gen.Predicate[S] {
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
 func HasPrefix(args ...string) gen.Predicate[string] {
 	return func(str string) bool {
-		for _, arg := range Limit(str, args) {
+		l := gen.Lim[string](len(str))(args)
+		for _, arg := range l {
 			if str[:len(arg)] == arg {
 				return true
 			}
@@ -35,7 +36,8 @@ func HasPrefix(args ...string) gen.Predicate[string] {
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
 func HasSuffix(args ...string) gen.Predicate[string] {
 	return func(str string) bool {
-		for _, arg := range Limit(str, args) {
+		l := gen.Lim[string](len(str))(args)
+		for _, arg := range l {
 			if str[len(str)-len(arg):] == arg {
 				return true
 			}
@@ -43,16 +45,6 @@ func HasSuffix(args ...string) gen.Predicate[string] {
 
 		return false
 	}
-}
-
-// Limit filters the args to be less than or equal to the given Max length.
-func Limit[T ~string | ~[]any](Max T, args []T) (res []T) {
-	for _, r := range args {
-		if len(r) <= len(Max) {
-			res = append(res, r)
-		}
-	}
-	return
 }
 
 // Replace replaces any found sub strings with the patterns given.
@@ -96,3 +88,23 @@ func Replace(pats ...string) gen.Monadic[string, string] {
 // 	}
 // 	return true
 // }
+
+func Shift[A string](count int) gen.Transformer[A] {
+	return func(a A) (res A) {
+		if len(a) < count {
+			return
+		}
+
+		return a[count:]
+	}
+}
+
+func Pop[A string](count int) gen.Transformer[A] {
+	return func(a A) (res A) {
+		if len(a) < count {
+			return
+		}
+
+		return a[:count]
+	}
+}

@@ -1,5 +1,9 @@
 package gen
 
+type Lennable interface {
+	~[]any | ~string | ~map[any]any | ~chan any
+}
+
 // Must panics if the error is not nil.
 func Must[A any](a A, err error) A {
 	if err != nil {
