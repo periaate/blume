@@ -8,8 +8,22 @@ func Product[A any](a []A, B []A) (res [][2]A) {
 			res = append(res, [2]A{v, w})
 		}
 	}
-
 	return
+}
+
+func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
+	return func(args []A) (res [][]A) {
+		res = make([][]A, 2)
+		for _, arg := range args {
+			switch fn(arg) {
+			case false:
+				res[0] = append(res[0], arg)
+			case true:
+				res[1] = append(res[1], arg)
+			}
+		}
+		return res
+	}
 }
 
 // V turns variadic arguments into a slice.
@@ -67,4 +81,34 @@ func Deduplicate[A any, C comparable](fn func(A) C) Predicate[A] {
 		seen[c] = struct{}{}
 		return true
 	}
+}
+
+func Shift[A any](a []A, count int) (res []A) {
+	if len(a) < count {
+		return
+	}
+
+	return a[count:]
+}
+
+func Pop[A any](a []A, count int) (res []A) {
+	if len(a) < count {
+		return
+	}
+
+	return a[:count]
+}
+
+func GetShift[A any](a []A) (res A, ok bool) {
+	if len(a) == 0 {
+		return
+	}
+	return a[0], true
+}
+
+func GetPop[A any](a []A) (res A, ok bool) {
+	if len(a) == 0 {
+		return
+	}
+	return a[len(a)-1], true
 }

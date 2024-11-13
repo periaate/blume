@@ -33,3 +33,9 @@ func CORS(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func Pre(pref string) func(http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return http.StripPrefix(pref, http.HandlerFunc(next)).ServeHTTP
+	}
+}

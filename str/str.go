@@ -62,33 +62,6 @@ func Replace(pats ...string) gen.Monadic[string, string] {
 	}
 }
 
-// func IsDigit(str string) bool {
-// 	for _, r := range str {
-// 		switch r {
-// 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-// 			continue
-// 		default:
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
-//
-// func IsNumber(str string) bool {
-// 	if HasPrefix("-", "+")(str) {
-// 		str = Slice(0, 1, str)
-// 	}
-// 	for _, r := range str {
-// 		switch r {
-// 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', ',':
-// 			continue
-// 		default:
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
-
 func Shift[A string](count int) gen.Transformer[A] {
 	return func(a A) (res A) {
 		if len(a) < count {

@@ -1,11 +1,4 @@
-/*
-Package gen implements generic types and functional forms which make use of them.
-
-## TODO
-
-  - [ ] Support for error handling.
-  - [ ] Functional forms for nested types.
-*/
+// Package gen implements generic types and functional forms which make use of them.
 package gen
 
 type (
@@ -18,8 +11,6 @@ type (
 
 	// Predicate is a function that takes a single argument and returns a boolean.
 	Predicate[A any] Monadic[A, bool]
-	// Comparator is a function that compares two arguments.
-	Comparator[A any] Dyadic[A, A, bool]
 	// Transformer is a function that takes a single argument and returns a modified value.
 	Transformer[A any] Monadic[A, A]
 
@@ -28,27 +19,6 @@ type (
 	// Reducer is a function that takes variadic arguments and returns a single value.
 	Reducer[A, B any] Monadic[[]A, B]
 )
-
-// Thunk takes a [Monadic] function, its argument, and returns a [Niladic] function.
-// When the [Niladic] function is called, it will call the [Monadic] function with the argument.
-func Thunk[A, B any](fn Monadic[A, B]) Monadic[A, Niladic[B]] {
-	return func(a A) Niladic[B] { return func() B { return fn(a) } }
-}
-
-func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
-	return func(args []A) (res [][]A) {
-		res = make([][]A, 2)
-		for _, arg := range args {
-			switch fn(arg) {
-			case false:
-				res[0] = append(res[0], arg)
-			case true:
-				res[1] = append(res[1], arg)
-			}
-		}
-		return res
-	}
-}
 
 // All returns true if all arguments pass the [Predicate].
 func All[A any](fn Predicate[A]) Reducer[A, bool] {
@@ -71,6 +41,18 @@ func Any[A any](fn Predicate[A]) Reducer[A, bool] {
 			}
 		}
 		return false
+	}
+}
+
+// First returns the first value which passes the [Predicate].
+func First[A any](fn Predicate[A]) Reducer[A, A] {
+	return func(args []A) (res A) {
+		for _, arg := range args {
+			if fn(arg) {
+				return arg
+			}
+		}
+		return res
 	}
 }
 
@@ -109,26 +91,32 @@ func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Reducer[A, B] {
 	}
 }
 
-// Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipe[A any](fns ...Transformer[A]) Transformer[A] {
-	return func(a A) A {
-		for _, fn := range fns {
-			a = fn(a)
-		}
-		return a
-	}
-}
-
-// Cat concatenates two [Monadic] functions into a single [Monadic] function.
-func Cat[A, B, C any](a Monadic[A, B], b Monadic[B, C]) Monadic[A, C] {
-	return func(c A) C { return b(a(c)) }
-}
-
 // Not negates a [Predicate].
 func Not[T any](fn Predicate[T]) Predicate[T] { return func(t T) bool { return !fn(t) } }
 
-// Negate negates a [Comparator].
-func Negate[T any](fn Comparator[T]) Comparator[T] { return func(a, b T) bool { return !fn(a, b) } }
+// Or combines variadic [Predicate]s with an OR operation.
+func Or[A any](fns ...Predicate[A]) Predicate[A] {
+	return func(a A) bool {
+		for _, fn := range fns {
+			if fn(a) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// And combines variadic [Predicate]s with an AND operation.
+func And[A any](fns ...Predicate[A]) Predicate[A] {
+	return func(a A) bool {
+		for _, fn := range fns {
+			if !fn(a) {
+				return false
+			}
+		}
+		return true
+	}
+}
 
 // Is returns a [Predicate] that checks if the argument is in the list.
 func Is[C comparable](A ...C) Predicate[C] {
@@ -167,41 +155,17 @@ func Isnt[C comparable](A ...C) Predicate[C] {
 	}
 }
 
-// Comp takes a [Comparator], variadic arguments, and returns a [Predicate].
-// If any of the arguments pass the [Comparator], the [Predicate] returns true.
-func Comp[A any](fn Comparator[A]) func(...A) Predicate[A] {
-	return func(args ...A) Predicate[A] {
-		return func(a A) bool {
-			for _, arg := range args {
-				if fn(arg, a) {
-					return true
-				}
-			}
-			return false
+// Pipe combines variadic [Transformer]s into a single [Transformer].
+func Pipe[A any](fns ...Transformer[A]) Transformer[A] {
+	return func(a A) A {
+		for _, fn := range fns {
+			a = fn(a)
 		}
+		return a
 	}
 }
 
-// Or combines variadic [Predicate]s with an OR operation.
-func Or[A any](fns ...Predicate[A]) Predicate[A] {
-	return func(a A) bool {
-		for _, fn := range fns {
-			if fn(a) {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// And combines variadic [Predicate]s with an AND operation.
-func And[A any](fns ...Predicate[A]) Predicate[A] {
-	return func(a A) bool {
-		for _, fn := range fns {
-			if !fn(a) {
-				return false
-			}
-		}
-		return true
-	}
+// Cat concatenates two [Monadic] functions into a single [Monadic] function.
+func Cat[A, B, C any](a Monadic[A, B], b Monadic[B, C]) Monadic[A, C] {
+	return func(c A) C { return b(a(c)) }
 }

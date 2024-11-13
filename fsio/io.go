@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
+
+	"github.com/periaate/blume/gen"
 )
 
 // UsePipe reads from stdin and calls the given function for each line.
@@ -49,6 +52,24 @@ func HasPipe() bool {
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
+
+// QArgs returns the command-line arguments without the program name, and including any piped inputs.
+// Returned type is an alias of []string which includes various helper functions.
+// Helper functions will panic if they fail.
+func QArgs() (res []Arg) {
+	args := Args()
+	res = make([]Arg, len(args))
+	for i, arg := range args {
+		res[i] = Arg(arg)
+	}
+	return
+}
+
+type Arg string
+
+func (a Arg) String() string { return string(a) }
+func (a Arg) Bytes() []byte  { return []byte(a) }
+func (a Arg) Int() int       { return gen.Must(strconv.Atoi(string(a))) }
 
 // func WaitForKill() {
 // 	sigChan := make(chan os.Signal, 1)
