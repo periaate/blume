@@ -14,9 +14,34 @@ import (
 // Normalize cleans and converts the path to use forward slashes.
 func Normalize(path string) string {
 	if str.HasSuffix("/")(path) {
-		return fp.ToSlash(fp.Clean(path)) + "/"
+		return ToSlash(Clean(path))
 	}
-	return fp.ToSlash(fp.Clean(path))
+	return ToSlash(Clean(path))
+}
+
+func Clean(path string) string {
+	var pre string
+	split := str.SplitWithAll(path, false, "://")
+	if len(split) >= 2 {
+		if str.Contains("/")(split[0]) {
+			return strings.Join(split, "://")
+		}
+
+		path = strings.Join(split[1:], "://")
+		pre = split[0] + "://"
+	}
+
+	path = ToSlash(path)
+
+	regexp := regexp.MustCompile(`[/]+`)
+	path = regexp.ReplaceAllString(path, "/")
+
+	path = pre + path
+	return path
+}
+
+func ToSlash(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }
 
 var Home = gen.IgnoresNil(os.UserHomeDir)
@@ -129,13 +154,12 @@ func Join(elems ...string) (res string) {
 	}
 
 	isRel = str.HasPrefix(".", "./", `.\`)(elems[0]) && !str.HasPrefix("/", `\`, "..")(elems[0])
+	// elems = gen.Map(func(str string) string {
+	// 	regexp := regexp.MustCompile(`[/\\]+`)
+	// 	return regexp.ReplaceAllString(str, "/")
+	// })(elems)
 
-	elems = gen.Map(func(str string) string {
-		regexp := regexp.MustCompile(`[/\\]+`)
-		return regexp.ReplaceAllString(str, "/")
-	})(elems)
-
-	res = fp.Join(elems...)
+	res = Clean(strings.Join(elems, "/"))
 	if isDir {
 		res += "/"
 	}
@@ -152,5 +176,6 @@ func Join(elems ...string) (res string) {
 			)(res)
 		}
 	}
+
 	return res
 }
