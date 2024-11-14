@@ -59,8 +59,8 @@ func TestJoin(t *testing.T) {
 		{[]string{`.`}, `./`},
 
 		{[]string{`./blob/`, `test/AAAA`}, `./blob/test/AAAA`},
-		{[]string{`http://127.0.0.1:8085`,`b`, `test/AAAAAAAAAAAAAAAAAAA`},
-		`http://127.0.0.1:8085/b/test/AAAAAAAAAAAAAAAAAAA`},
+		{[]string{`http://127.0.0.1:8085`,`b`, `./`, `test/AAAAAAAAAAAAAAAAAAA`},
+		`http://127.0.0.1:8085/b/./test/AAAAAAAAAAAAAAAAAAA`},
 	}
 
 	clog.SetLogLoggerLevel(clog.LevelDebug)
