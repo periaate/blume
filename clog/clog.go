@@ -8,9 +8,8 @@ Example:
 	DEBUG @ main.go:111      MSG:<a message>;       KEY:<err will be adjusted>;     err:<nil>;
 
 ## TODO
-
-  - [ ] Rewrite the handler for greater flexibility and customization.
-  - [ ] Decide whether to use external libraries for coloring and formatting.
+- [ ] Rewrite the handler for greater flexibility and customization.
+- [ ] Decide whether to use external libraries for coloring and formatting.
 */
 package clog
 
@@ -27,7 +26,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/periaate/blume/str"
-	"github.com/periaate/blume/val"
 )
 
 // Error logs with the default clog logger.
@@ -75,7 +73,7 @@ func (h *ClogHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
 func (h *ClogHandler) WithGroup(name string) slog.Handler       { return h }
 func (h *ClogHandler) WithAttrs(attrs []slog.Attr) slog.Handler { return h }
 
-var pred = str.Contains("blume/clog/clog.go", "clog/utils.go", "slog/logger")
+var pred = str.Contains("blume/clog/clog.go", "clog/.go", "slog/logger")
 
 func (h *ClogHandler) Handle(ctx context.Context, r slog.Record) error {
 	var nbuf []byte
@@ -145,13 +143,13 @@ func (h *ClogHandler) appendAttr(attr slog.Attr) (buf []byte) {
 		nv := attr.Value.String()
 		switch nv {
 		case "DEBUG":
-			res = val.Colorize(val.White, nv)
+			res = Colorize(White, nv)
 		case "INFO":
-			res = val.Colorize(val.Cyan, nv+" ")
+			res = Colorize(Cyan, nv+" ")
 		case "WARN":
-			res = val.Colorize(val.Yellow, nv+" ")
+			res = Colorize(Yellow, nv+" ")
 		case "ERROR":
-			res = val.Colorize(val.Red, nv)
+			res = Colorize(Red, nv)
 		}
 	case slog.TimeKey:
 		if h.St.TimeStamp {
@@ -187,11 +185,11 @@ func DefaultGetter(vall slog.Value) (res string) {
 	case slog.KindTime:
 		res = vall.Time().Format(time.RFC3339Nano)
 	case slog.KindInt64:
-		res = val.HumanizeNumber(vall.Int64())
+		res = HumanizeNumber(vall.Int64())
 	case slog.KindUint64:
-		res = val.HumanizeNumber(vall.Uint64())
+		res = HumanizeNumber(vall.Uint64())
 	case slog.KindFloat64:
-		res = val.HumanizeNumber(vall.Float64())
+		res = HumanizeNumber(vall.Float64())
 	default:
 		res = vall.String()
 	}

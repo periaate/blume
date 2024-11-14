@@ -4,8 +4,6 @@ import (
 	"log/slog"
 	"os"
 	"testing"
-
-	"github.com/periaate/blume/val"
 )
 
 type show struct {
@@ -19,8 +17,8 @@ func TestLog(t *testing.T) {
 	clog := NewClog(os.Stdout, slog.LevelDebug, Style(&Styles{
 		TimeStamp: false,
 		Delim: [2]string{
-			":" + val.Color(val.LightYellow, "<"),
-			val.EndColor(">") + "; ",
+			":" + Color(LightYellow, "<"),
+			EndColor(">") + "; ",
 		},
 	}))
 

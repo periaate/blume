@@ -1,4 +1,4 @@
-package typ
+package gen
 
 // AND bitwise operation.
 func AND[N Unsigned](a, b N) N { return a & b }

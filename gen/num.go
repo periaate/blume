@@ -1,4 +1,4 @@
-package typ
+package gen
 
 // Numeric is a type constraint that represents numeric types.
 // Numeric does not include complex numbers.

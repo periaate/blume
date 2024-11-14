@@ -1,4 +1,4 @@
-package typ
+package gen
 
 // Invert creates and inverted index of the given map.
 func Invert[K, V comparable](m map[K]V) (res map[V][]K) {
