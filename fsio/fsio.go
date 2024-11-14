@@ -118,14 +118,17 @@ func Touch(f string) error {
 
 // Join joins the path elements.
 func Join(elems ...string) (res string) {
+	elems = gen.Filter(func(str string) bool { return str != "" })(elems)
 	if len(elems) == 0 {
 		return ""
 	}
+	var isDir, isRel bool
 
-	elems = gen.Filter(func(str string) bool { return str != "" })(elems)
+	if len(elems) > 1 {
+		isDir = str.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
+	}
 
-	isDir := str.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
-	isRel := str.HasPrefix(".", "./", `.\`)(elems[0]) && !str.HasPrefix("/", `\`, "..")(elems[0])
+	isRel = str.HasPrefix(".", "./", `.\`)(elems[0]) && !str.HasPrefix("/", `\`, "..")(elems[0])
 
 	elems = gen.Map(func(str string) string {
 		regexp := regexp.MustCompile(`[/\\]+`)
@@ -138,9 +141,15 @@ func Join(elems ...string) (res string) {
 	}
 
 	res = Normalize(res)
-	if isRel {
-		if !str.HasPrefix("./", `.\`)(res) {
+	if isRel || str.HasPrefix(".")(res) {
+		if !str.HasPrefix("./", `.\`, ".")(res) {
 			res = "./" + res
+		} else if !str.HasPrefix("..")(res) {
+			res = str.ReplacePrefix(
+				"./", "./",
+				`.\`, "./",
+				`.`, "./",
+			)(res)
 		}
 	}
 	return res

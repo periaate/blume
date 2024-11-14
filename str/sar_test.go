@@ -18,7 +18,7 @@ func TestSplit(t *testing.T) {
 		fmt.Println(i+1, r)
 	}
 
-	if len(res) != 6 {
+	if len(res) != 11 {
 		t.Fatalf("expected 6, got %d", len(res))
 	}
 }

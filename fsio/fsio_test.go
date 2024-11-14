@@ -50,6 +50,14 @@ var TestCases = []PathCase{
 
 	{[]string{`~\`, `hi\`, `\\world\`}, `~/hi/world/`},
 	{[]string{`\`, `hi\\`, `\\world\`}, `/hi/world/`},
+
+	{[]string{`/`}, `/`},
+	{[]string{`\`}, `/`},
+	{[]string{`./`}, `./`},
+	{[]string{`.\`}, `./`},
+
+	{[]string{``}, ``},
+	{[]string{`.`}, `./`},
 }
 
 func TestJoin(t *testing.T) {
