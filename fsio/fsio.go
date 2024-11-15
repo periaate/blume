@@ -11,14 +11,6 @@ import (
 	"github.com/periaate/blume/str"
 )
 
-// Normalize cleans and converts the path to use forward slashes.
-func Normalize(path string) string {
-	if str.HasSuffix("/")(path) {
-		return ToSlash(Clean(path))
-	}
-	return ToSlash(Clean(path))
-}
-
 func Clean(path string) string {
 	var pre string
 	split := str.SplitWithAll(path, false, "://")
@@ -40,9 +32,7 @@ func Clean(path string) string {
 	return path
 }
 
-func ToSlash(path string) string {
-	return strings.ReplaceAll(path, "\\", "/")
-}
+func ToSlash(path string) string { return strings.ReplaceAll(path, "\\", "/") }
 
 var Home = gen.IgnoresNil(os.UserHomeDir)
 
@@ -65,7 +55,7 @@ func ReadDir(f string) (res []string, err error) {
 	res = make([]string, 0, len(entries))
 
 	for _, entry := range entries {
-		res = append(res, fp.Join(f, entry.Name()))
+		res = append(res, Join(f, entry.Name()))
 	}
 
 	return
@@ -74,13 +64,14 @@ func ReadDir(f string) (res []string, err error) {
 // Name returns the file name without the extension and directory.
 // TODO: create map of extensions and split by them.
 func Name(f string) string {
-	b := fp.Base(f)
-	r := b[:len(b)-len(fp.Ext(b))]
-	return Normalize(r)
+	b := Base(f)
+	r := b[:len(b)-len(Ext(b))]
+	return Clean(r)
 }
 
 func Dir(f string) string  { return fp.Dir(f) }
 func Base(f string) string { return fp.Base(f) }
+func Ext(f string) string  { return fp.Ext(f) }
 
 // Walk walks the directory and returns a list of files that pass the predicate.
 func Walk(fn func(string) bool) func(string) (res []string, err error) {
@@ -93,7 +84,7 @@ func Walk(fn func(string) bool) func(string) (res []string, err error) {
 				return nil
 			}
 
-			path = Normalize(path)
+			path = Clean(path)
 
 			res = append(res, path)
 			return nil
@@ -131,7 +122,7 @@ func Touch(f string) error {
 	if Exists(f) {
 		return nil
 	}
-	if err := EnsureDir(fp.Dir(f)); err != nil {
+	if err := EnsureDir(Dir(f)); err != nil {
 		return err
 	}
 	file, err := os.Create(f)
@@ -154,17 +145,13 @@ func Join(elems ...string) (res string) {
 	}
 
 	isRel = str.HasPrefix(".", "./", `.\`)(elems[0]) && !str.HasPrefix("/", `\`, "..")(elems[0])
-	// elems = gen.Map(func(str string) string {
-	// 	regexp := regexp.MustCompile(`[/\\]+`)
-	// 	return regexp.ReplaceAllString(str, "/")
-	// })(elems)
 
 	res = Clean(strings.Join(elems, "/"))
 	if isDir {
 		res += "/"
 	}
 
-	res = Normalize(res)
+	res = Clean(res)
 	if isRel || str.HasPrefix(".")(res) {
 		if !str.HasPrefix("./", `.\`, ".")(res) {
 			res = "./" + res
