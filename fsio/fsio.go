@@ -62,7 +62,11 @@ func ReadDir(f string) (res []string, err error) {
 	res = make([]string, 0, len(entries))
 
 	for _, entry := range entries {
-		res = append(res, Join(f, entry.Name()))
+		fp := entry.Name()
+		if entry.IsDir() {
+			fp += "/"
+		}
+		res = append(res, Join(f, fp))
 	}
 
 	return
@@ -147,7 +151,7 @@ func Join(elems ...string) (res string) {
 	}
 	var isDir, isRel bool
 
-	if len(elems) > 1 {
+	if len(elems) >= 1 {
 		isDir = str.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
 	}
 
