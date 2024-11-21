@@ -112,3 +112,5 @@ func GetPop[A any](a []A) (res A, ok bool) {
 	}
 	return a[len(a)-1], true
 }
+
+func IsLen[L Lennable](n int) Predicate[L] { return func(l L) bool { return len(l) == n } }

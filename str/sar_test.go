@@ -40,10 +40,7 @@ func TestEmbed(t *testing.T) {
 
 		res = gen.Filter(gen.Isnt(" "))(res)
 
-		ebd, err := EmbedDelims(res, [2]string{"(", ")"})
-		if err != nil {
-			t.Fatal("error", err)
-		}
+		ebd := EmbedDelims(res, [2]string{"(", ")"})
 
 		fmt.Printf("|||\n")
 		traverse(ebd, 0)
@@ -51,10 +48,10 @@ func TestEmbed(t *testing.T) {
 	fmt.Printf("|||\n")
 }
 
-func traverse(h Hierarchy, depth int) {
+func traverse(h gen.Tree[string], depth int) {
 	f := true
-	for _, v := range h.Arr {
-		if len(v.Arr) != 0 {
+	for _, v := range h.Nodes {
+		if len(v.Nodes) != 0 {
 			f = true
 			traverse(v, depth+4)
 			continue
@@ -66,7 +63,7 @@ func traverse(h Hierarchy, depth int) {
 			f = false
 		}
 
-		fmt.Printf("%s%s\"%s\"\n", strings.Repeat(" ", depth), add, v.Str)
+		fmt.Printf("%s%s\"%s\"\n", strings.Repeat(" ", depth), add, v.Value)
 	}
 }
 
@@ -78,31 +75,28 @@ func TestEval(t *testing.T) {
 
 	res = gen.Filter(gen.Isnt(" "))(res)
 
-	ebd, err := EmbedDelims(res, [2]string{"(", ")"})
-	if err != nil {
-		t.Fatal("error", err)
-	}
+	ebd := EmbedDelims(res, [2]string{"(", ")"})
 
-	traverse(ebd.Arr[0], 0)
+	traverse(ebd.Nodes[0], 0)
 
-	nres := eval(ebd.Arr[0])
+	nres := eval(ebd.Nodes[0])
 	fmt.Println(nres)
 }
 
-func eval(h Hierarchy) string {
+func eval(h gen.Tree[string]) string {
 	sar := []string{}
-	for _, v := range h.Arr {
-		if len(v.Arr) != 0 {
+	for _, v := range h.Nodes {
+		if len(v.Nodes) != 0 {
 			found := eval(v)
 			sar = append(sar, found)
 			fmt.Println("found from eval", found)
 			continue
 		}
-		sar = append(sar, v.Str)
+		sar = append(sar, v.Value)
 	}
 
 	vals := []int{}
-	fmt.Println("0th", h.Arr[0])
+	fmt.Println("0th", h.Nodes[0])
 
 	for _, v := range sar[1:] {
 		fmt.Println(v)

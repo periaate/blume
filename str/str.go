@@ -2,6 +2,7 @@
 package str
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/periaate/blume/gen"
@@ -101,6 +102,16 @@ func Replace(pats ...string) gen.Transformer[string] {
 			str = strings.ReplaceAll(str, pats[i], pats[i+1])
 		}
 		return str
+	}
+}
+
+func ReplaceRegex(pat string, rep string) gen.Transformer[string] {
+	matcher, err := regexp.Compile(pat)
+	if err != nil {
+		return func(s string) string { return "" }
+	}
+	return func(s string) string {
+		return string(matcher.ReplaceAll([]byte(s), []byte(rep)))
 	}
 }
 

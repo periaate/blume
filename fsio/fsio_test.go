@@ -1,6 +1,7 @@
 package fsio
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -59,8 +60,13 @@ func TestJoin(t *testing.T) {
 		{[]string{`.`}, `./`},
 
 		{[]string{`./blob/`, `test/AAAA`}, `./blob/test/AAAA`},
-		{[]string{`http://127.0.0.1:8085`,`b`, `./`, `test/AAAAAAAAAAAAAAAAAAA`},
-		`http://127.0.0.1:8085/b/./test/AAAAAAAAAAAAAAAAAAA`},
+		{
+			[]string{`http://127.0.0.1:8085`, `b`, `./`, `test/AAAAAAAAAAAAAAAAAAA`},
+			`http://127.0.0.1:8085/b/./test/AAAAAAAAAAAAAAAAAAA`,
+		},
+
+		{[]string{`http://`, `0.0.0.0:8000`, `/`}, `http://0.0.0.0:8000/`},
+		{[]string{`http://`, `//0.0.0.0:8000/`, `//`}, `http://0.0.0.0:8000/`},
 	}
 
 	clog.SetLogLoggerLevel(clog.LevelDebug)
@@ -71,7 +77,7 @@ func TestJoin(t *testing.T) {
 				clog.Error("unexpcted result", "res", res, "expected", tc.Expected)
 				t.Fail()
 			}
-			clog.Debug("comparison", "res", res, "filepath", filepath.Join(tc.Elems...))
+			clog.Debug("comparison", "res", res, "filepath", filepath.Join(tc.Elems...), "path", path.Join(tc.Elems...))
 		})
 	}
 }
@@ -85,6 +91,7 @@ func TestClean(t *testing.T) {
 		{`base\\clean`, "base/clean"},
 
 		{"http://base//clean", "http://base/clean"},
+		{"http:///base//clean", "http://base/clean"},
 	}
 
 	clog.SetLogLoggerLevel(clog.LevelDebug)

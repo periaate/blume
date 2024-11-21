@@ -2,7 +2,18 @@ package str
 
 import (
 	"sort"
+
+	"github.com/periaate/blume/gen"
 )
+
+// func SplitNth(str string, n int, match ...string) (res []string, ok bool) {
+// 	r := SplitWithAll(str, false, match...)
+// 	if len(r) >= n {
+// 		return
+// 	}
+// 	panic("TODO")
+// 	return
+// }
 
 func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 	if len(match) == 0 || len(str) == 0 {
@@ -43,31 +54,26 @@ func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 	return res
 }
 
-type Hierarchy struct {
-	Arr []Hierarchy
-	Str string
-}
-
-func EmbedDelims(sar []string, delims ...[2]string) (Hierarchy, error) {
-	car := make([]Hierarchy, len(sar))
+func EmbedDelims(sar []string, delims ...[2]string) gen.Tree[string] {
+	car := make([]gen.Tree[string], len(sar))
 	for i, s := range sar {
-		car[i].Str = s
+		car[i].Value = s
 	}
 	res, _ := embeds(car, delims)
-	return res, nil
+	return res
 }
 
-func embeds(car []Hierarchy, delims [][2]string) (Hierarchy, int) {
-	var res Hierarchy
+func embeds(car []gen.Tree[string], delims [][2]string) (gen.Tree[string], int) {
+	var res gen.Tree[string]
 	for i := 0; len(car) > i; i++ {
 		v := car[i]
 		matched := false
 		for _, delim := range delims {
-			switch v.Str {
+			switch v.Value {
 			case delim[0]:
 				r, k := embeds(car[i+1:], delims)
 				i += k
-				res.Arr = append(res.Arr, r)
+				res.Nodes = append(res.Nodes, r)
 				matched = true
 			case delim[1]:
 				return res, i + 1
@@ -77,7 +83,7 @@ func embeds(car []Hierarchy, delims [][2]string) (Hierarchy, int) {
 			}
 		}
 		if !matched {
-			res.Arr = append(res.Arr, v)
+			res.Nodes = append(res.Nodes, v)
 		}
 	}
 

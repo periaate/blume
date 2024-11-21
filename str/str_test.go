@@ -88,3 +88,26 @@ func TestReplaceSuf(t *testing.T) {
 		}
 	}
 }
+
+// Test Rep
+func TestRep(t *testing.T) {
+	tests := []struct {
+		pattern  string
+		repl     string
+		input    string
+		expected string
+	}{
+		{".*://", "http://", "https://example.com", "http://example.com"},
+		{".*://", "ftp://", "https://example.com", "ftp://example.com"},
+		{"example", "test", "http://example.com", "http://test.com"},
+		{"[0-9]+", "X", "abc123def456", "abcXdefX"},
+	}
+
+	for _, tt := range tests {
+		transformer := ReplaceRegex(tt.pattern, tt.repl)
+		result := transformer(tt.input)
+		if result != tt.expected {
+			t.Errorf("Rep(%q, %q)(%q) = %q; want %q", tt.pattern, tt.repl, tt.input, result, tt.expected)
+		}
+	}
+}

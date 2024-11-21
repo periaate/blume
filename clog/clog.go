@@ -28,17 +28,25 @@ import (
 	"github.com/periaate/blume/str"
 )
 
-// Error logs with the default clog logger.
-func Error(msg string, args ...any) { defLog.Error(msg, args...) }
+// // Error logs with the default clog logger.
+// func Error(msg string, args ...any) { defLog.Error(msg, args...) }
+//
+// // Info logs with the default clog logger.
+// func Info(msg string, args ...any) { defLog.Info(msg, args...) }
+//
+// // Warn logs with the default clog logger.
+// func Warn(msg string, args ...any) { defLog.Warn(msg, args...) }
+//
+// // Debug logs with the default clog logger.
+// func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+//
 
-// Info logs with the default clog logger.
-func Info(msg string, args ...any) { defLog.Info(msg, args...) }
-
-// Warn logs with the default clog logger.
-func Warn(msg string, args ...any) { defLog.Warn(msg, args...) }
-
-// Debug logs with the default clog logger.
-func Debug(msg string, args ...any) { defLog.Debug(msg, args...) }
+var (
+	Error = defLog.Error
+	Info  = defLog.Info
+	Warn  = defLog.Warn
+	Debug = defLog.Debug
+)
 
 // Error logs with the "ERROR" level and exits the program with code 1.
 func Fatal(msg string, args ...any) { defLog.Error(msg, args...); os.Exit(1) }

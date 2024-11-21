@@ -1,5 +1,0 @@
-
-pat (
-	GET . index
-	(@ GET POST) API 
-)

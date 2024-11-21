@@ -20,6 +20,21 @@ type (
 	Reducer[A, B any] Monadic[[]A, B]
 )
 
+func Or[C comparable](a, b C) (res C) {
+	if a == res {
+		return b
+	}
+	return a
+}
+
+func Tern[C comparable, A any](c C, a, b A) A {
+	var zero C
+	if c == zero {
+		return b
+	}
+	return a
+}
+
 // All returns true if all arguments pass the [Predicate].
 func All[A any](fn Predicate[A]) Reducer[A, bool] {
 	return func(args []A) bool {
@@ -33,8 +48,8 @@ func All[A any](fn Predicate[A]) Reducer[A, bool] {
 }
 
 // Any returns true if any argument passes the [Predicate].
-func Any[A any](fn Predicate[A]) Reducer[A, bool] {
-	return func(args []A) bool {
+func Any[A any](fn Predicate[A]) func(...A) bool {
+	return func(args ...A) bool {
 		for _, arg := range args {
 			if fn(arg) {
 				return true
@@ -94,8 +109,8 @@ func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Reducer[A, B] {
 // Not negates a [Predicate].
 func Not[T any](fn Predicate[T]) Predicate[T] { return func(t T) bool { return !fn(t) } }
 
-// Or combines variadic [Predicate]s with an OR operation.
-func Or[A any](fns ...Predicate[A]) Predicate[A] {
+// POr combines variadic [Predicate]s with an OR operation.
+func POr[A any](fns ...Predicate[A]) Predicate[A] {
 	return func(a A) bool {
 		for _, fn := range fns {
 			if fn(a) {

@@ -5,31 +5,53 @@ import (
 	"time"
 
 	"github.com/periaate/blume/clog"
+	"github.com/periaate/blume/gen"
 )
 
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		clog.Info("request", "method", r.Method, "URL", r.RequestURI, "time", time.Since(start))
 		next.ServeHTTP(w, r)
+		clog.Info("request", "method", r.Method, "URL", r.RequestURI, "time", time.Since(start))
 	})
 }
 
-func CORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow any origin on localhost, modify this for a production setup
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Adjust as needed
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
+const (
+	ACA_ORIGIN      = "Access-Control-Allow-Origin"
+	ACA_METHODS     = "Access-Control-Allow-Methods"
+	ACA_HEADERS     = "Access-Control-Allow-Headers"
+	ACA_CREDENTIALS = "Access-Control-Allow-Credentials"
 
-		// Handle preflight requests
+	DEF_ACA_ORIGIN      = "*"
+	DEF_ACA_METHODS     = "GET, POST, PUT, DELETE, OPTIONS"
+	DEF_ACA_HEADERS     = "Content-Type, Authorization"
+	DEF_ACA_CREDENTIALS = "true"
+)
+
+type CORS struct {
+	ACA_Origin      string
+	ACA_Methods     string
+	ACA_Headers     string
+	ACA_Credentials string
+}
+
+func (c CORS) Handler(next http.Handler) http.Handler {
+	acao := gen.Or(c.ACA_Origin, DEF_ACA_ORIGIN)
+	acam := gen.Or(c.ACA_Methods, DEF_ACA_METHODS)
+	acah := gen.Or(c.ACA_Headers, DEF_ACA_HEADERS)
+	acac := gen.Or(c.ACA_Credentials, DEF_ACA_CREDENTIALS)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set(ACA_ORIGIN, acao)
+		w.Header().Set(ACA_ORIGIN, acam)
+		w.Header().Set(ACA_ORIGIN, acah)
+		w.Header().Set(ACA_ORIGIN, acac)
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
-		// Continue to the next handler
 		next.ServeHTTP(w, r)
 	})
 }

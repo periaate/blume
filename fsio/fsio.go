@@ -13,22 +13,29 @@ import (
 
 func Clean(path string) string {
 	var pre string
+	var spl string
+	var aft string
+	aft = path
 	split := str.SplitWithAll(path, false, "://")
 	if len(split) >= 2 {
 		if str.Contains("/")(split[0]) {
 			return strings.Join(split, "://")
 		}
 
-		path = strings.Join(split[1:], "://")
-		pre = split[0] + "://"
+		pre = split[0]
+		spl = "://"
+		aft = strings.Join(split[1:], "/")
+		if str.HasPrefix("/")(aft) {
+			aft = aft[1:]
+		}
 	}
 
-	path = ToSlash(path)
+	path = ToSlash(aft)
 
 	regexp := regexp.MustCompile(`[/]+`)
 	path = regexp.ReplaceAllString(path, "/")
 
-	path = pre + path
+	path = pre + spl + path
 	return path
 }
 

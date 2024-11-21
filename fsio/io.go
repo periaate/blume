@@ -53,6 +53,9 @@ func HasPipe() bool {
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
 
+// Args returns the command-line arguments without the program name, and including any piped inputs.
+func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
+
 // QArgs returns the command-line arguments without the program name, and including any piped inputs.
 // Returned type is an alias of []string which includes various helper functions.
 // Helper functions will panic if they fail.

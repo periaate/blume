@@ -7,5 +7,5 @@ var (
 	IsEven            = func(n int) bool { return n%2 == 0 }
 	IsPositive        = func(n int) bool { return n > 0 }
 	IsEvenAndPositive = And(IsEven, IsPositive)
-	_                 = And(IsEven, Or(IsPositive, Is(-20)))
+	_                 = And(IsEven, POr(IsPositive, Is(-20)))
 )
