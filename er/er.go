@@ -43,9 +43,23 @@ type BadRequest struct {
 	Msg       string
 }
 
-type NotFound BadRequest
+type NotFound struct {
+	Requested string
+	From      string
+	With      string
+	Msg       string
+}
 
-func (e NotFound) Error() string { return e.Error() }
+func (e NotFound) Error() string {
+	switch {
+	case e.Requested == "", e.From == "":
+		return e.Msg
+	case e.With != "":
+		return fmt.Sprintf("requested [%s] from [%s] with [%s]: %s", e.Requested, e.From, e.With, e.Msg)
+	default:
+		return fmt.Sprintf("requested [%s] from [%s]: %s", e.Requested, e.From, e.Msg)
+	}
+}
 
 func (e BadRequest) Error() string {
 	switch {
