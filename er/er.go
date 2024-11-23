@@ -99,3 +99,10 @@ type Custom struct {
 
 func (e Custom) Error() string { return e.Msg }
 func (e Custom) Status() int   { return e.HTTPStatus }
+
+type Internal struct {
+	Msg string
+}
+
+func (e Internal) Error() string { return e.Msg }
+func (e Internal) Status() int   { return http.StatusInternalServerError }
