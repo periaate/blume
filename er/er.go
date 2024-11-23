@@ -2,6 +2,9 @@ package er
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/periaate/blume/gen"
 )
 
 func Is[A any](a any) (ok bool) {
@@ -21,15 +24,24 @@ type Log interface {
 
 type Unexpected struct {
 	Msg string
+
+	StatusError
 }
 
+type StatusError struct{ HTTPStatus int }
+
+// OrStatus returns the custom status code or the default status code of a Net error.
+func (e StatusError) OrStatus(def int) int { return gen.Or(e.HTTPStatus, def) }
+
 func (e Unexpected) Error() string { return e.Msg }
-func (e Unexpected) Status() int   { return 500 }
+func (e Unexpected) Status() int   { return e.OrStatus(http.StatusInternalServerError) }
 
 type InvalidData struct {
 	Has     string
 	Expects string
 	Msg     string
+
+	StatusError
 }
 
 func (e InvalidData) Error() string {
@@ -41,6 +53,8 @@ type BadRequest struct {
 	From      string
 	With      string
 	Msg       string
+
+	StatusError
 }
 
 type NotFound struct {
@@ -48,6 +62,8 @@ type NotFound struct {
 	From      string
 	With      string
 	Msg       string
+
+	StatusError
 }
 
 func (e NotFound) Error() string {
@@ -72,7 +88,14 @@ func (e BadRequest) Error() string {
 	}
 }
 
-func (e BadRequest) Status() int { return 400 }
-func (e NotFound) Status() int   { return 404 }
+func (e BadRequest) Status() int { return e.OrStatus(http.StatusBadRequest) }
+func (e NotFound) Status() int   { return e.OrStatus(http.StatusNotFound) }
 
-// func (e InvalidData) Status() int { return 500 }
+type Custom struct {
+	Msg string
+
+	HTTPStatus int
+}
+
+func (e Custom) Error() string { return e.Msg }
+func (e Custom) Status() int   { return e.HTTPStatus }
