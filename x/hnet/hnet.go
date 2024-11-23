@@ -8,11 +8,25 @@ import (
 	"github.com/periaate/blume/gen"
 )
 
+type LogHandler struct {
+	http.ResponseWriter
+	r     *http.Request
+	start time.Time
+}
+
+func (h *LogHandler) WriteHeader(code int) {
+	h.ResponseWriter.WriteHeader(code)
+	if code >= 400 {
+		clog.Error("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+	} else {
+		clog.Info("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+	}
+}
+
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		next.ServeHTTP(w, r)
-		clog.Info("request", "method", r.Method, "URL", r.RequestURI, "time", time.Since(start))
+		next.ServeHTTP(&LogHandler{w, r, start}, r)
 	})
 }
 
