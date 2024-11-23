@@ -50,6 +50,15 @@ func HasPipe() bool {
 	return (a.Mode() & os.ModeCharDevice) == 0
 }
 
+// HasPipe evaluates whether stdin is being piped in to.
+func HasOutPipe() bool {
+	a, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (a.Mode() & os.ModeCharDevice) == 0
+}
+
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
 
