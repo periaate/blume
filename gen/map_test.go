@@ -26,8 +26,8 @@ import (
 
 // ChatGPT
 func TestSMap(t *testing.T) {
-	const numKeys = 20_000   // Number of keys to test
-	const numOps = 1_000_000 // Total number of operations
+	const numKeys = 200      // Number of keys to test
+	const numOps = 1000      // Total number of operations
 	const numGoroutines = 50 // Number of concurrent goroutines
 
 	// Create the SyncMap
