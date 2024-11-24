@@ -2,12 +2,21 @@ package fsio
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
 	"github.com/periaate/blume/gen"
 )
+
+func B(bar []byte) io.ReadWriter {
+	if bar == nil {
+		return bytes.NewBuffer([]byte{})
+	}
+	return bytes.NewBuffer(bar)
+}
 
 // UsePipe reads from stdin and calls the given function for each line.
 func UsePipe(fn func(string)) {
