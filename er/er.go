@@ -1,108 +1,75 @@
 package er
 
 import (
-	"fmt"
 	"net/http"
-
-	"github.com/periaate/blume/gen"
+	"strings"
 )
-
-func Is[A any](a any) (ok bool) {
-	_, ok = a.(A)
-	return
-}
 
 type Net interface {
 	error
 	Status() int
+	Respond(w http.ResponseWriter)
 }
-
-type Log interface {
-	// Log must be a slog compliant logger.
-	Log(msg string, args ...any)
-}
-
-type Unexpected struct {
-	Msg string
-
-	StatusError
-}
-
-type StatusError struct{ HTTPStatus int }
-
-// OrStatus returns the custom status code or the default status code of a Net error.
-func (e StatusError) OrStatus(def int) int { return gen.Or(e.HTTPStatus, def) }
-
-func (e Unexpected) Error() string { return e.Msg }
-func (e Unexpected) Status() int   { return e.OrStatus(http.StatusInternalServerError) }
-
-type InvalidData struct {
-	Has     string
-	Expects string
-	Msg     string
-
-	StatusError
-}
-
-func (e InvalidData) Error() string {
-	return fmt.Sprintf("%s: has: [%s] expects: [%s]", e.Msg, e.Has, e.Expects)
-}
-
-type BadRequest struct {
-	Requested string
-	From      string
-	With      string
-	Msg       string
-
-	StatusError
-}
-
-type NotFound struct {
-	Requested string
-	From      string
-	With      string
-	Msg       string
-
-	StatusError
-}
-
-func (e NotFound) Error() string {
-	switch {
-	case e.Requested == "", e.From == "":
-		return e.Msg
-	case e.With != "":
-		return fmt.Sprintf("requested [%s] from [%s] with [%s]: %s", e.Requested, e.From, e.With, e.Msg)
-	default:
-		return fmt.Sprintf("requested [%s] from [%s]: %s", e.Requested, e.From, e.Msg)
-	}
-}
-
-func (e BadRequest) Error() string {
-	switch {
-	case e.Requested == "", e.From == "":
-		return e.Msg
-	case e.With != "":
-		return fmt.Sprintf("requested [%s] from [%s] with [%s]: %s", e.Requested, e.From, e.With, e.Msg)
-	default:
-		return fmt.Sprintf("requested [%s] from [%s]: %s", e.Requested, e.From, e.Msg)
-	}
-}
-
-func (e BadRequest) Status() int { return e.OrStatus(http.StatusBadRequest) }
-func (e NotFound) Status() int   { return e.OrStatus(http.StatusNotFound) }
 
 type Custom struct {
-	Msg string
-
 	HTTPStatus int
+	Msg        string
 }
 
-func (e Custom) Error() string { return e.Msg }
-func (e Custom) Status() int   { return e.HTTPStatus }
-
-type Internal struct {
-	Msg string
+func (c Custom) Error() string { return c.Msg }
+func (c Custom) Status() int   { return c.HTTPStatus }
+func (c Custom) Respond(w http.ResponseWriter) {
+	http.Error(w, c.Msg, c.HTTPStatus)
 }
 
-func (e Internal) Error() string { return e.Msg }
-func (e Internal) Status() int   { return http.StatusInternalServerError }
+func Free(status int, pairs ...string) Net {
+	sb := strings.Builder{}
+	var i int
+	for i = 0; i < len(pairs); i += 2 {
+		sb.WriteString(pairs[i])
+		sb.WriteString(" [")
+		sb.WriteString(pairs[i+1])
+		sb.WriteString("] ")
+	}
+
+	if i < len(pairs) {
+		sb.WriteString(pairs[i])
+	}
+
+	return Custom{
+		HTTPStatus: status,
+		Msg:        sb.String(),
+	}
+}
+
+// 4xx
+func BadRequest(pairs ...string) Net   { return Free(http.StatusBadRequest, pairs...) }   // 400
+func Unauthorized(pairs ...string) Net { return Free(http.StatusUnauthorized, pairs...) } // 401
+func Forbidden(pairs ...string) Net    { return Free(http.StatusForbidden, pairs...) }    // 403
+
+func NotFound(kind, val, from string, pairs ...string) Net {
+	pairs = append([]string{"error:", kind, "with value", val, "not found in", from}, pairs...)
+	return Free(http.StatusNotFound, pairs...)
+}
+
+func MethodNotAllowed(pairs ...string) Net { return Free(http.StatusMethodNotAllowed, pairs...) } // 405
+func Timeout(pairs ...string) Net          { return Free(http.StatusRequestTimeout, pairs...) }
+func Conflict(pairs ...string) Net         { return Free(http.StatusConflict, pairs...) } // 409
+func LengthRequired(pairs ...string) Net   { return Free(http.StatusLengthRequired, pairs...) }
+
+func UnsupportedMediaType(pairs ...string) Net {
+	return Free(http.StatusUnsupportedMediaType, pairs...)
+}
+
+func TypeRequired() Net {
+	return Free(http.StatusBadRequest, "Server rejected the request because the [Content-Type] header field is not defined and the server requires it.")
+}
+
+func Exists(name string) Net {
+	return Free(http.StatusConflict, "The resource", name, "already exists.")
+}
+
+// 5xx
+func InternalServerError(pairs ...string) Net { return Free(http.StatusInternalServerError, pairs...) } // 500
+func NotImplemented(pairs ...string) Net      { return Free(http.StatusNotImplemented, pairs...) }
+func InsufficientStorage(pairs ...string) Net { return Free(http.StatusInsufficientStorage, pairs...) }

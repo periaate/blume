@@ -66,7 +66,7 @@ func TestS(t *testing.T) {
 	// Validation: Ensure map integrity (no panics occurred and map is consistent)
 	totalKeys := 0
 	sm.mut.RLock()
-	for k, v := range sm.val {
+	for k, v := range sm.Values {
 		t.Logf("Key: %d, Value: %d", k, v)
 		totalKeys++
 	}
