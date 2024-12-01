@@ -99,11 +99,11 @@ func Pop[A any](a []A, count int) (res []A) {
 	return a[:count]
 }
 
-func GetShift[A any](a []A) (res A, ok bool) {
-	if len(a) == 0 {
+func GetShift[A any](n int, a []A) (res A, ok bool) {
+	if len(a)-1 < n {
 		return
 	}
-	return a[0], true
+	return a[n], true
 }
 
 func GetPop[A any](a []A) (res A, ok bool) {
@@ -112,5 +112,3 @@ func GetPop[A any](a []A) (res A, ok bool) {
 	}
 	return a[len(a)-1], true
 }
-
-func IsLen[L Lennable](n int) Predicate[L] { return func(l L) bool { return len(l) == n } }

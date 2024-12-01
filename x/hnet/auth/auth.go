@@ -1,30 +1,48 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"encoding/json"
+	"io"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/periaate/blume/clog"
+	"github.com/periaate/blume/maps"
 )
 
 func NewManager() *Manager {
 	return &Manager{
-		Links:    make(map[string]*Link),
-		Sessions: make(map[string]*Session),
+		Links:    maps.NewExpiring[string, Link](),
+		Sessions: maps.NewExpiring[string, Session](),
 	}
 }
 
 type Session struct {
-	Key string
-	T   time.Time
+	Cookie string    `json:"cookie"`
+	Label  string    `json:"label"`
+	T      time.Time `json:"expires"`
+}
+
+func (s *Session) Encode(w io.Writer) error {
+	return json.NewEncoder(w).Encode(&s)
+}
+
+func (s *Session) Decode(r io.Reader) error {
+	return json.NewDecoder(r).Decode(&s)
+}
+
+func (s *Session) Reader() io.Reader {
+	rw := bytes.NewBuffer([]byte{})
+	s.Encode(rw)
+	return rw
 }
 
 type Link struct {
-	Key string
+	Key   string
+	Label string
 	// T is the time when the link will expire
 	T time.Time
 	// Uses is the number of times the link can be used
@@ -34,35 +52,6 @@ type Link struct {
 	Duration time.Duration
 }
 
-func (l *Link) Use(w http.ResponseWriter) (sess *Session, err error) {
-	if l.Uses <= 0 {
-		err = fmt.Errorf("link has no uses")
-		return
-	}
-	if isExpired(l.T) {
-		err = fmt.Errorf("link has expired")
-		return
-	}
-
-	l.Uses--
-
-	key := RandKey(32)
-	sess = &Session{
-		Key: key,
-		T:   time.Now().Add(l.Duration),
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:    "X-Session",
-		Value:   key,
-		Expires: sess.T,
-	})
-
-	return
-}
-
-func isExpired(t time.Time) bool { return t.Before(time.Now()) }
-
 func RandKey(length int) string {
 	val := make([]byte, length)
 	rand.Read(val)
@@ -70,81 +59,58 @@ func RandKey(length int) string {
 }
 
 type Manager struct {
-	Links    map[string]*Link
-	Sessions map[string]*Session
+	Links    *maps.Expiring[string, Link]
+	Sessions *maps.Expiring[string, Session]
 	mut      sync.Mutex
 }
 
-func (m *Manager) GetSession(key string) (sess *Session, ok bool) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
-	sess, ok = m.Sessions[key]
-	if isExpired(sess.T) {
-		delete(m.Sessions, key)
-		ok = false
-	}
-
-	return
+func (m *Manager) Register(s Session) (ok bool) {
+	return m.Sessions.Set(s.Cookie, s, s.T)
 }
 
-func (m *Manager) NewLink(uses int, duration time.Duration) (key string) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
+func (m *Manager) NewLink(uses int, label string, duration time.Duration) (key string, ok bool) {
+	if uses <= 0 {
+		return
+	}
 	key = RandKey(32)
-	m.Links[key] = &Link{
+	ok = m.Links.Set(key, Link{
+		Label:    label,
 		Key:      key,
 		T:        time.Now().Add(duration),
 		Uses:     uses,
 		Duration: duration,
-	}
+	}, time.Now().Add(duration))
 
 	return
 }
 
-func (m *Manager) Stringify() {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-	clog.Info("found sessions", "len", len(m.Sessions))
-	for _, v := range m.Sessions {
-		clog.Info("session found", "key", v)
-	}
-}
-
-func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess *Session, err error) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
-	link, ok := m.Links[key]
+func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok bool) {
+	link, ok := m.Links.Get(key)
 	if !ok {
-		err = fmt.Errorf("link not found")
 		return
 	}
 
-	sess, err = link.Use(w)
-	if err != nil {
-		delete(m.Links, key)
+	cookie := RandKey(32)
+	sess = Session{
+		Cookie: cookie,
+		Label:  link.Label,
+		T:      time.Now().Add(link.Duration),
 	}
 
-	m.Sessions[sess.Key] = sess
+	http.SetCookie(w, &http.Cookie{
+		Name:    "X-Session",
+		Value:   cookie,
+		Expires: time.Now().Add(link.Duration),
+	})
 
+	m.Sessions.Set(sess.Cookie, sess, sess.T)
+
+	link.Uses--
+	if link.Uses <= 0 {
+		m.Links.Del(key)
+		return
+	}
+
+	m.Links.Set(key, link, link.T)
 	return
-}
-
-func (m *Manager) IsValidSession(key string) bool {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-
-	sess, ok := m.Sessions[key]
-	if !ok {
-		return false
-	}
-
-	if isExpired(sess.T) {
-		delete(m.Sessions, key)
-		return false
-	}
-
-	return true
 }

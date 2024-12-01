@@ -1,16 +1,15 @@
-package gen
+package maps
 
 import (
 	"math/rand"
 	"sync"
 	"testing"
-	"time"
 )
 
-// func TestSMap(t *testing.T) {}
+// func TestS(t *testing.T) {}
 
-// func FuzzSMap(f *testing.F) {
-// 	sm := NewSyncMap[uint64, uint8]()
+// func FuzzS(f *testing.F) {
+// 	sm := NewSync[uint64, uint8]()
 // 	f.Add(uint8(0), uint64(0), uint8(0))
 // 	f.Fuzz(func(t *testing.T, action uint8, k uint64, v uint8) {
 // 		switch action {
@@ -25,16 +24,13 @@ import (
 // }
 
 // ChatGPT
-func TestSMap(t *testing.T) {
+func TestS(t *testing.T) {
 	const numKeys = 200      // Number of keys to test
 	const numOps = 1000      // Total number of operations
 	const numGoroutines = 50 // Number of concurrent goroutines
 
-	// Create the SyncMap
-	sm := NewSyncMap[int, int]()
-
-	// Seed the random number generator for fuzzing
-	rand.Seed(time.Now().UnixNano())
+	// Create the Sync
+	sm := NewSync[int, int]()
 
 	// Synchronization for all goroutines
 	var wg sync.WaitGroup
