@@ -26,6 +26,24 @@ func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
 	}
 }
 
+// Split returns a predicate that splits the given slice based on the given function.
+func Split[A any](fn func(A) bool) Mapper[A, []A] {
+	return func(args []A) (res [][]A) {
+		res = [][]A{}
+		temp := []A{}
+		for _, arg := range args {
+			if fn(arg) {
+				res = append(res, temp)
+				temp = []A{}
+			} else {
+				temp = append(temp, arg)
+			}
+		}
+		res = append(res, temp)
+		return res
+	}
+}
+
 // V turns variadic arguments into a slice.
 func V[A any](a ...A) []A { return a }
 

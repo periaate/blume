@@ -104,7 +104,7 @@ func TestRep(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		transformer := ReplaceRegex(tt.pattern, tt.repl)
+		transformer := ReplaceRegex[string](tt.pattern, tt.repl)
 		result := transformer(tt.input)
 		if result != tt.expected {
 			t.Errorf("Rep(%q, %q)(%q) = %q; want %q", tt.pattern, tt.repl, tt.input, result, tt.expected)

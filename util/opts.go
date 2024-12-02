@@ -1,4 +1,4 @@
-package options
+package util
 
 import (
 	"fmt"
@@ -13,6 +13,16 @@ type Answer[A any] struct {
 }
 
 type Condition[A any] func(A) *Answer[A]
+
+func LongerThan[L gen.Lennable](min int) Condition[L] {
+	return func(l L) *Answer[L] {
+		ans := &Answer[L]{"LongerThan", fmt.Sprintf("length less than %v", min), l}
+		if len(l) <= min {
+			return ans
+		}
+		return nil
+	}
+}
 
 func AtLeast[N gen.Numeric](min N) Condition[N] {
 	return func(i N) *Answer[N] {

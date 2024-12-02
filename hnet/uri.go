@@ -9,7 +9,8 @@ import (
 
 // HasProtocol checks whether the given string s starts with a valid protocol scheme followed by "://"
 // According to RFC 3986, the scheme must start with a letter, followed by letters, digits, "+", "-", or "."
-func HasProtocol(s string) bool {
+func HasProtocol[S ~string](str S) bool {
+	s := string(str)
 	// Define the separator
 	sep := "://"
 

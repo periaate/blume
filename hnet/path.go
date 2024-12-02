@@ -5,19 +5,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/periaate/blume/er"
-	"github.com/periaate/blume/options"
+	"github.com/periaate/blume/util"
 )
 
 type PathReader struct {
 	r       *http.Request
-	Nerrors []er.Net
+	Nerrors []NetErr
 }
 
-func (pr PathReader) Int(name string, conds ...options.Condition[int]) (res int) {
+func (pr PathReader) Int(name string, conds ...util.Condition[int]) (res int) {
 	val, err := strconv.Atoi(pr.r.PathValue(name))
 	if err != nil {
-		nerr := er.Free(http.StatusBadRequest,
+		nerr := Free(http.StatusBadRequest,
 			"path item", name,
 			"in request", pr.r.RequestURI,
 			"expected", "int",
@@ -30,7 +29,7 @@ func (pr PathReader) Int(name string, conds ...options.Condition[int]) (res int)
 
 	for _, opt := range conds {
 		if ans := opt(res); ans != nil {
-			nerr := er.Free(http.StatusBadRequest,
+			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
 				"failed condition", ans.Name,
@@ -44,10 +43,10 @@ func (pr PathReader) Int(name string, conds ...options.Condition[int]) (res int)
 	return
 }
 
-func (pr PathReader) String(name string, conds ...options.Condition[string]) (res string) {
+func (pr PathReader) String(name string, conds ...util.Condition[string]) (res string) {
 	res = pr.r.PathValue(name)
 	if res == "" {
-		nerr := er.Free(http.StatusBadRequest,
+		nerr := Free(http.StatusBadRequest,
 			"path item", name,
 			"in request", pr.r.RequestURI,
 			"expected", "string",
@@ -57,7 +56,7 @@ func (pr PathReader) String(name string, conds ...options.Condition[string]) (re
 
 	for _, opt := range conds {
 		if ans := opt(res); ans != nil {
-			nerr := er.Free(http.StatusBadRequest,
+			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
 				"failed condition", ans.Name,
@@ -71,10 +70,10 @@ func (pr PathReader) String(name string, conds ...options.Condition[string]) (re
 	return
 }
 
-func (pr PathReader) URL(name string, conds ...options.Condition[string]) (res string) {
-	res = pr.r.PathValue(name)
+func (pr PathReader) URL(name string, conds ...util.Condition[string]) (res URL) {
+	res = URL(pr.r.PathValue(name))
 	if res == "" {
-		nerr := er.Free(http.StatusBadRequest,
+		nerr := Free(http.StatusBadRequest,
 			"path item", name,
 			"in request", pr.r.RequestURI,
 			"expected", "URL",
@@ -85,8 +84,8 @@ func (pr PathReader) URL(name string, conds ...options.Condition[string]) (res s
 	res = URL(res)
 
 	for _, opt := range conds {
-		if ans := opt(res); ans != nil {
-			nerr := er.Free(http.StatusBadRequest,
+		if ans := opt(string(res)); ans != nil {
+			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
 				"failed condition", ans.Name,
@@ -100,11 +99,11 @@ func (pr PathReader) URL(name string, conds ...options.Condition[string]) (res s
 	return
 }
 
-func (pr PathReader) Duration(name string, conds ...options.Condition[time.Duration]) (res time.Duration) {
+func (pr PathReader) Duration(name string, conds ...util.Condition[time.Duration]) (res time.Duration) {
 	res = time.Duration(pr.Int(name))
 	for _, opt := range conds {
 		if ans := opt(res); ans != nil {
-			nerr := er.Free(http.StatusBadRequest,
+			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
 				"failed condition", ans.Name,
@@ -118,5 +117,5 @@ func (pr PathReader) Duration(name string, conds ...options.Condition[time.Durat
 }
 
 func PathValue(r *http.Request) PathReader {
-	return PathReader{r, []er.Net{}}
+	return PathReader{r, []NetErr{}}
 }

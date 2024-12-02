@@ -21,36 +21,34 @@ func Contains[S ~string](args ...S) gen.Predicate[S] {
 }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix(args ...string) gen.Predicate[string] {
-	return func(str string) bool {
-		l := gen.Lim[string](len(str))(args)
+func HasPrefix[S ~string](args ...S) gen.Predicate[S] {
+	return func(str S) bool {
+		l := gen.Lim[S](len(str))(args)
 		for _, arg := range l {
-			if str[:len(arg)] == arg {
+			if string(str[:len(arg)]) == string(arg) {
 				return true
 			}
 		}
-
 		return false
 	}
 }
 
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix(args ...string) gen.Predicate[string] {
-	return func(str string) bool {
-		l := gen.Lim[string](len(str))(args)
+func HasSuffix[S ~string](args ...S) gen.Predicate[S] {
+	return func(str S) bool {
+		l := gen.Lim[S](len(str))(args)
 		for _, arg := range l {
-			if str[len(str)-len(arg):] == arg {
+			if string(str[len(str)-len(arg):]) == string(arg) {
 				return true
 			}
 		}
-
 		return false
 	}
 }
 
-// ReplacePrefix
-func ReplacePrefix(pats ...string) gen.Transformer[string] {
-	return func(str string) string {
+// ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
+func ReplacePrefix[S ~string](pats ...S) gen.Transformer[S] {
+	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
 		}
@@ -60,8 +58,8 @@ func ReplacePrefix(pats ...string) gen.Transformer[string] {
 				continue
 			}
 
-			if p == str[:len(p)] {
-				return pats[i+1] + str[len(p):]
+			if string(p) == string(str[:len(p)]) {
+				return S(string(pats[i+1]) + string(str[len(p):]))
 			}
 		}
 
@@ -69,9 +67,9 @@ func ReplacePrefix(pats ...string) gen.Transformer[string] {
 	}
 }
 
-// ReplaceSuffix
-func ReplaceSuffix(pats ...string) gen.Transformer[string] {
-	return func(str string) string {
+// ReplaceSuffix replaces the suffix of a string if it matches any of the given patterns.
+func ReplaceSuffix[S ~string](pats ...S) gen.Transformer[S] {
+	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
 		}
@@ -81,8 +79,8 @@ func ReplaceSuffix(pats ...string) gen.Transformer[string] {
 			}
 			p := pats[i]
 
-			if p == str[len(str)-len(p):] {
-				return str[:len(str)-len(p)] + pats[i+1]
+			if string(p) == string(str[len(str)-len(p):]) {
+				return S(string(str[:len(str)-len(p)]) + string(pats[i+1]))
 			}
 		}
 
@@ -90,47 +88,48 @@ func ReplaceSuffix(pats ...string) gen.Transformer[string] {
 	}
 }
 
-// Replace replaces any found sub strings with the patterns given.
-// Must have an even number of patterns. {from, to}
-// Replacement done in the given order.
-func Replace(pats ...string) gen.Transformer[string] {
-	return func(str string) string {
+// Replace replaces any found substrings with the patterns given.
+func Replace[S ~string](pats ...S) gen.Transformer[S] {
+	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
 		}
 		for i := 0; i < len(pats); i += 2 {
-			str = strings.ReplaceAll(str, pats[i], pats[i+1])
+			str = S(strings.ReplaceAll(string(str), string(pats[i]), string(pats[i+1])))
 		}
 		return str
 	}
 }
 
-func ReplaceRegex(pat string, rep string) gen.Transformer[string] {
+// ReplaceRegex replaces substrings matching a regex pattern.
+func ReplaceRegex[S ~string](pat string, rep string) gen.Transformer[S] {
 	matcher, err := regexp.Compile(pat)
 	if err != nil {
-		return func(s string) string { return "" }
+		return func(_ S) (_ S) { return }
 	}
-	return func(s string) string {
-		return string(matcher.ReplaceAll([]byte(s), []byte(rep)))
+	return func(s S) S {
+		return S(matcher.ReplaceAll([]byte(string(s)), []byte(rep)))
 	}
 }
 
-func Shift(count int) gen.Transformer[string] {
-	return func(a string) (res string) {
+// Shift removes the first `count` characters from a string.
+func Shift[S ~string](count int) gen.Transformer[S] {
+	return func(a S) (res S) {
 		if len(a) < count {
 			return
 		}
 
-		return a[count:]
+		return S(string(a[count:]))
 	}
 }
 
-func Pop(count int) gen.Transformer[string] {
-	return func(a string) (res string) {
+// Pop removes all but the first `count` characters from a string.
+func Pop[S ~string](count int) gen.Transformer[S] {
+	return func(a S) (res S) {
 		if len(a) < count {
 			return
 		}
 
-		return a[:count]
+		return S(string(a[:count]))
 	}
 }

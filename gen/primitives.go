@@ -1,7 +1,7 @@
 package gen
 
 type Lennable interface {
-	~[]any | ~string | ~map[any]any | ~chan any
+	~[]any | ~string | ~map[any]any | ~chan any | ~[]string
 }
 
 // Must panics if the error is not nil.

@@ -144,7 +144,10 @@ func Touch(f string) error {
 }
 
 // Join joins the path elements.
-func Join(elems ...string) (res string) {
+func Join[S ~string](args ...S) S {
+	elems := gen.Map(func(str S) string { return string(str) })(args)
+	var res string
+
 	elems = gen.Filter(func(str string) bool { return str != "" })(elems)
 	if len(elems) == 0 {
 		return ""
@@ -175,5 +178,5 @@ func Join(elems ...string) (res string) {
 		}
 	}
 
-	return res
+	return S(res)
 }

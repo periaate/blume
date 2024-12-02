@@ -14,7 +14,7 @@ func IsDigit(str string) bool {
 
 func IsNumber(str string) bool {
 	if HasPrefix("-", "+")(str) {
-		str = Shift(1)(str)
+		str = Shift[string](1)(str)
 	}
 
 	for _, r := range str {

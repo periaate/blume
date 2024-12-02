@@ -6,6 +6,11 @@ import (
 	"sync"
 )
 
+/*
+rewrite the hook system, replace with internal/external APIs
+use `With` pattern to capture/replace pre/post values
+*/
+
 func (sm *Sync[K, V]) Keys() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		sm.mut.RLock()

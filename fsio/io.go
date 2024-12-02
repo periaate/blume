@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/util"
 )
 
-func B(bar []byte) io.ReadWriter {
+func B(bar []byte) *bytes.Buffer {
 	if bar == nil {
 		return bytes.NewBuffer([]byte{})
 	}
@@ -69,7 +69,15 @@ func HasOutPipe() bool {
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args() (res []string) { return append(os.Args[1:], ReadPipe()...) }
+func Args(opts ...util.Condition[[]string]) (res []string, ans *util.Answer[[]string]) {
+	res = append(os.Args[1:], ReadPipe()...)
+	for _, opt := range opts {
+		if ans = opt(res); ans != nil {
+			return
+		}
+	}
+	return
+}
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
@@ -77,8 +85,8 @@ func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 // QArgs returns the command-line arguments without the program name, and including any piped inputs.
 // Returned type is an alias of []string which includes various helper functions.
 // Helper functions will panic if they fail.
-func QArgs() (res []Arg) {
-	args := Args()
+func QArgs(opts ...util.Condition[[]string]) (res []Arg, ans *util.Answer[[]string]) {
+	args, ans := Args(opts...)
 	res = make([]Arg, len(args))
 	for i, arg := range args {
 		res[i] = Arg(arg)

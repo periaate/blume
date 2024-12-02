@@ -10,8 +10,8 @@ import (
 // Test Opt_HTTPS behavior
 func TestOpt_HTTPS(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		input    URL
+		expected URL
 	}{
 		{"https://example.com", "https://example.com"},
 		{"http://example.com", "https://example.com"},
@@ -30,8 +30,8 @@ func TestOpt_HTTPS(t *testing.T) {
 // Test Opt_HTTP behavior
 func TestOpt_HTTP(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		input    URL
+		expected URL
 	}{
 		{"http://example.com", "http://example.com"},
 		{"https://example.com", "http://example.com"},
@@ -50,8 +50,8 @@ func TestOpt_HTTP(t *testing.T) {
 // Test URL with default option
 func TestURL_Default(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		input    URL
+		expected URL
 	}{
 		{"http://example.com", "http://example.com"},
 		{"example.com", "http://example.com"},
@@ -60,7 +60,7 @@ func TestURL_Default(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := URL(tt.input)
+		result := NewURL(tt.input)
 		if result != tt.expected {
 			t.Errorf("URL(%q) = %q; want %q", tt.input, result, tt.expected)
 		}
@@ -69,22 +69,22 @@ func TestURL_Default(t *testing.T) {
 
 // Test URL with custom Transformer
 func TestURL_Custom(t *testing.T) {
-	uppercaseTransformer := func(s string) string {
-		return strings.ToUpper(s)
+	uppercaseTransformer := func(s URL) URL {
+		return URL(strings.ToUpper(string(s)))
 	}
 
 	tests := []struct {
-		input    string
-		options  []gen.Transformer[string]
-		expected string
+		input    URL
+		options  []gen.Transformer[URL]
+		expected URL
 	}{
-		{"example.com", []gen.Transformer[string]{uppercaseTransformer}, "EXAMPLE.COM"},
-		{"example.com", []gen.Transformer[string]{Opt_HTTP, uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
-		{"example.com", []gen.Transformer[string]{Opt_HTTPS}, "https://example.com"},
+		{"example.com", []gen.Transformer[URL]{uppercaseTransformer}, "EXAMPLE.COM"},
+		{"example.com", []gen.Transformer[URL]{Opt_HTTP, uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
+		{"example.com", []gen.Transformer[URL]{Opt_HTTPS}, "https://example.com"},
 	}
 
 	for _, tt := range tests {
-		result := URL(tt.input, tt.options...)
+		result := NewURL(tt.input, tt.options...)
 		if result != tt.expected {
 			t.Errorf("URL(%q, options...) = %q; want %q", tt.input, result, tt.expected)
 		}
