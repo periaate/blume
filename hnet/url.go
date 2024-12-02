@@ -1,11 +1,12 @@
 package hnet
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 
-	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/gen"
 	"github.com/periaate/blume/str"
 )
@@ -13,6 +14,38 @@ import (
 type Response struct {
 	*http.Response
 	NetErr
+}
+
+func (r Response) Assert(conds ...gen.Predicate[Response]) Response {
+	if r.NetErr != nil {
+		return r
+	}
+
+	for _, cond := range conds {
+		if !cond(r) {
+			r.NetErr = BadRequest.Def("failed assertions")
+			return r
+		}
+	}
+
+	return r
+}
+
+func Println(s string) { fmt.Println(s) }
+
+func (r Response) String(f func(string)) Response {
+	if r.NetErr != nil {
+		return r
+	}
+	r.UseBody(func(r io.Reader) bool {
+		bar, err := io.ReadAll(r)
+		if err != nil {
+			return false
+		}
+		f(string(bar))
+		return true
+	})
+	return r
 }
 
 func UseBody(f func(io.Reader) bool) gen.Transformer[Response] {
@@ -28,17 +61,53 @@ func UseBody(f func(io.Reader) bool) gen.Transformer[Response] {
 		}
 
 		if !f(r.Body) {
-			r.NetErr = Status(r.StatusCode).Def()
+			r.NetErr = Free(500, "Body assertion failed")
 		}
 		return r
 	}
 }
 
-func (r Response) UseBody(f func(io.Reader) bool) Response { return UseBody(f)(r) }
+func (r Response) UseBody(f func(io.Reader) bool) Response {
+	if r.NetErr != nil {
+		return r
+	}
+	return UseBody(f)(r)
+}
 
 type Request struct {
 	*http.Request
 	NetErr
+	Err error
+}
+
+func (r Request) FileAsBody(fp string) Request {
+	if r.NetErr != nil {
+		return r
+	}
+	f, err := os.Open(fp)
+	if err != nil {
+		r.NetErr = NotFound.Def(err.Error())
+	}
+	r.WithBody(f)
+	return r
+}
+
+func (r Request) WithHeaders(tuples ...[2]string) Request {
+	if r.NetErr != nil {
+		return r
+	}
+	for _, v := range tuples {
+		r.Header.Add(v[0], v[1])
+	}
+	return r
+}
+
+func (r Request) WithBody(rc io.ReadCloser) Request {
+	if r.NetErr != nil {
+		return r
+	}
+	r.Body = rc
+	return r
 }
 
 func (r Request) Call() Response {
@@ -56,7 +125,7 @@ func (r Request) Call() Response {
 type URL string
 
 func (u URL) ToURL() (*url.URL, error) {
-	return url.Parse(string(u))
+	return url.Parse(string(u.Format()))
 }
 
 func POST(r Request) Request {
@@ -96,6 +165,9 @@ func PATCH(r Request) Request {
 
 func WithHeaders(tuples ...[2]string) gen.Transformer[Request] {
 	return func(r Request) Request {
+		if r.Header == nil {
+			r.Header = http.Header{}
+		}
 		for _, tuple := range tuples {
 			r.Header.Set(tuple[0], tuple[1])
 		}
@@ -110,42 +182,51 @@ func WithBody(body io.ReadCloser) gen.Transformer[Request] {
 	}
 }
 
-func (u URL) ToRequest(opts ...gen.Transformer[Request]) (req Request, err error) {
-	req = Request{Request: &http.Request{}}
+func (u URL) ToRequest(opts ...gen.Transformer[Request]) (req Request) {
+	if len(u) == 0 {
+		req.NetErr = Free(400, "Invalid URL", "url", string(u))
+		return
+	}
+	req = Request{Request: &http.Request{
+		Header: http.Header{},
+	}}
 	url, err := u.ToURL()
 	if err != nil {
 		req.NetErr = Free(400, "Invalid URL", "url", string(u))
-		return req, err
+		req.Err = err
+		return
 	}
 	req.URL = url
 	req = gen.Pipe[Request](opts...)(req)
 	if req.Method == "" {
-		req.NetErr = Free(400, "Method not set", "err", req.NetErr.Error())
+		req.NetErr = Free(400, "Method not set")
 	}
 	return
 }
 
-func NewURL[S ~string](inp S, options ...gen.Transformer[URL]) URL {
-	options = gen.ArrayOrDefault(options, Opt_HTTP)
-	return gen.Pipe[URL](options...)(URL(inp))
+func (u URL) Format(options ...gen.Transformer[URL]) URL {
+	return gen.Pipe[URL](gen.ArrayOrDefault(options, AsProtocol(HTTP))...)(u)
 }
 
-func Opt_HTTP(s URL) URL {
-	if len(s) == 0 {
-		return "http://"
+type Protocol string
+
+const (
+	HTTP  Protocol = "http"
+	HTTPS Protocol = "https"
+	WS    Protocol = "ws"
+	WSS   Protocol = "wss"
+)
+
+func (u URL) AsProtocol(protocol Protocol) URL {
+	if len(u) == 0 {
+		return URL(protocol + "://")
 	}
-	if HasProtocol(s) {
-		return str.ReplaceRegex[URL](".*://", "http://")(s)
+	if HasProtocol(u) {
+		return str.ReplaceRegex[URL](".*://", string(protocol+"://"))(u)
 	}
-	return fsio.Join("http://", s)
+	return URL(protocol) + "://" + u
 }
 
-func Opt_HTTPS(s URL) URL {
-	if len(s) == 0 {
-		return "https://"
-	}
-	if HasProtocol(s) {
-		return str.ReplaceRegex[URL](".*://", "https://")(s)
-	}
-	return fsio.Join("https://", s)
+func AsProtocol(protocol Protocol) gen.Transformer[URL] {
+	return func(u URL) URL { return u.AsProtocol(protocol) }
 }

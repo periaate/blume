@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -138,8 +137,6 @@ func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok b
 		Expires: time.Now().Add(link.Duration),
 	})
 
-	fmt.Println("ABC")
 	m.Sessions.Set(sess.Cookie, sess, sess.T)
-	fmt.Println("DEF")
 	return
 }

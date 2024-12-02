@@ -2,6 +2,9 @@ package hnet
 
 type ContentType string
 
+func (c ContentType) String() string   { return string(c) }
+func (c ContentType) Tuple() [2]string { return Content_Type.Tuple(c.String()) }
+
 const (
 	Stream ContentType = "application/octet-stream"
 	Text   ContentType = "text/plain"

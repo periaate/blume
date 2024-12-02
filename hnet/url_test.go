@@ -1,71 +1,14 @@
 package hnet
 
 import (
+	"io"
+	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/periaate/blume/gen"
+	"github.com/stretchr/testify/assert"
 )
-
-// Test Opt_HTTPS behavior
-func TestOpt_HTTPS(t *testing.T) {
-	tests := []struct {
-		input    URL
-		expected URL
-	}{
-		{"https://example.com", "https://example.com"},
-		{"http://example.com", "https://example.com"},
-		{"example.com", "https://example.com"},
-		{"", "https://"},
-	}
-
-	for _, tt := range tests {
-		result := Opt_HTTPS(tt.input)
-		if result != tt.expected {
-			t.Errorf("Opt_HTTPS(%q) = %q; want %q", tt.input, result, tt.expected)
-		}
-	}
-}
-
-// Test Opt_HTTP behavior
-func TestOpt_HTTP(t *testing.T) {
-	tests := []struct {
-		input    URL
-		expected URL
-	}{
-		{"http://example.com", "http://example.com"},
-		{"https://example.com", "http://example.com"},
-		{"example.com", "http://example.com"},
-		{"", "http://"},
-	}
-
-	for _, tt := range tests {
-		result := Opt_HTTP(tt.input)
-		if result != tt.expected {
-			t.Errorf("Opt_HTTP(%q) = %q; want %q", tt.input, result, tt.expected)
-		}
-	}
-}
-
-// Test URL with default option
-func TestURL_Default(t *testing.T) {
-	tests := []struct {
-		input    URL
-		expected URL
-	}{
-		{"http://example.com", "http://example.com"},
-		{"example.com", "http://example.com"},
-		{"https://example.com", "http://example.com"},
-		{"", "http://"},
-	}
-
-	for _, tt := range tests {
-		result := NewURL(tt.input)
-		if result != tt.expected {
-			t.Errorf("URL(%q) = %q; want %q", tt.input, result, tt.expected)
-		}
-	}
-}
 
 // Test URL with custom Transformer
 func TestURL_Custom(t *testing.T) {
@@ -79,14 +22,152 @@ func TestURL_Custom(t *testing.T) {
 		expected URL
 	}{
 		{"example.com", []gen.Transformer[URL]{uppercaseTransformer}, "EXAMPLE.COM"},
-		{"example.com", []gen.Transformer[URL]{Opt_HTTP, uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
-		{"example.com", []gen.Transformer[URL]{Opt_HTTPS}, "https://example.com"},
+		{"example.com", []gen.Transformer[URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
+		{"example.com", []gen.Transformer[URL]{AsProtocol(HTTPS)}, "https://example.com"},
+		{"example.com", []gen.Transformer[URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
+		{"example.com", []gen.Transformer[URL]{AsProtocol(WSS)}, "wss://example.com"},
 	}
 
 	for _, tt := range tests {
-		result := NewURL(tt.input, tt.options...)
+		result := tt.input.Format(tt.options...)
 		if result != tt.expected {
 			t.Errorf("URL(%q, options...) = %q; want %q", tt.input, result, tt.expected)
 		}
 	}
+}
+
+func TestURL_ToRequest_ValidURL(t *testing.T) {
+	url := URL("http://example.com")
+	req := url.ToRequest(GET)
+	assert.NoError(t, req.Err)
+	assert.NotNil(t, req.Request)
+	assert.Equal(t, "http://example.com", req.URL.String())
+	assert.Equal(t, "GET", req.Method)
+}
+
+func TestURL_ToRequest_EmptyURL(t *testing.T) {
+	url := URL("")
+	req := url.ToRequest(GET)
+	assert.NotNil(t, req.NetErr)
+	assert.Nil(t, req.Request)
+	assert.NotNil(t, req.NetErr)
+	assert.Contains(t, req.NetErr.Error(), "Invalid URL")
+}
+
+func TestURL_ToRequest_MissingMethod(t *testing.T) {
+	url := URL("http://example.com")
+	req := url.ToRequest()
+	assert.NotNil(t, req.NetErr)
+	assert.NotNil(t, req.NetErr)
+	assert.Contains(t, req.NetErr.Error(), "Method not set")
+}
+
+func TestWithHeaders(t *testing.T) {
+	url := URL("http://example.com")
+	req := url.ToRequest(GET, WithHeaders([2]string{"Authorization", "Bearer token"}))
+	assert.NoError(t, req.Err)
+	assert.Equal(t, "Bearer token", req.Header.Get("Authorization"))
+}
+
+func TestWithBody(t *testing.T) {
+	bodyContent := "test body content"
+	body := io.NopCloser(strings.NewReader(bodyContent))
+
+	url := URL("http://example.com")
+	req := url.ToRequest(POST, WithBody(body))
+	assert.NoError(t, req.Err)
+	reqBody, err := io.ReadAll(req.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, bodyContent, string(reqBody))
+}
+
+func TestRequest_Call_Success(t *testing.T) {
+	server := httpTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("response body"))
+	})
+	defer server.Close()
+
+	url := URL(server.Addr)
+	req := url.ToRequest(GET)
+	assert.NoError(t, req.Err)
+
+	resp := req.Call()
+	assert.Nil(t, resp.NetErr)
+	assert.NotNil(t, resp.Response)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, _ := io.ReadAll(resp.Body)
+	assert.Equal(t, "response body", string(body))
+}
+
+func TestRequest_Call_Error(t *testing.T) {
+	url := URL("http://invalid-url")
+	req := url.ToRequest(GET)
+
+	resp := req.Call()
+	assert.NotNil(t, resp.NetErr)
+	assert.Contains(t, resp.NetErr.Error(), "dial tcp: lookup invalid-url")
+}
+
+func TestResponse_UseBody_Success(t *testing.T) {
+	server := httpTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("response body"))
+	})
+	defer server.Close()
+
+	url := URL(server.Addr)
+	req := url.ToRequest(GET)
+	resp := req.Call()
+
+	resp = resp.UseBody(func(reader io.Reader) bool {
+		body, _ := io.ReadAll(reader)
+		return string(body) == "response body"
+	})
+
+	assert.Nil(t, resp.NetErr)
+}
+
+func TestResponse_UseBody_Failure(t *testing.T) {
+	server := httpTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("unexpected body"))
+	})
+	defer server.Close()
+
+	url := URL(server.Addr)
+	req := url.ToRequest(GET)
+	resp := req.Call()
+
+	resp = resp.UseBody(func(reader io.Reader) bool {
+		body, _ := io.ReadAll(reader)
+		return string(body) == "expected body"
+	})
+
+	assert.NotNil(t, resp.NetErr)
+}
+
+func TestNewURL_WithHTTPSOption(t *testing.T) {
+	url := URL("example.com").AsProtocol(HTTPS)
+	assert.Equal(t, "https://example.com", string(url))
+}
+
+func TestNewURL_WithHTTPOption(t *testing.T) {
+	url := URL("example.com").AsProtocol(HTTP)
+	assert.Equal(t, "http://example.com", string(url))
+}
+
+// Helper function to create a test server.
+func httpTestServer(handler func(http.ResponseWriter, *http.Request)) *http.Server {
+	server := &http.Server{
+		Addr: "127.0.0.1:12799",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler(w, r)
+		}),
+	}
+	go func() {
+		_ = server.ListenAndServe()
+	}()
+	return server
 }

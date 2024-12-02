@@ -6,7 +6,6 @@ import (
 
 	"github.com/periaate/blume/clog"
 	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/hnet/headers"
 )
 
 type CORS struct {
@@ -23,10 +22,10 @@ func (c CORS) Handler(next http.Handler) http.Handler {
 	c.Credentials = gen.Or(c.Credentials, "true")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		headers.Origin.Set(w, c.Origin)
-		headers.Allow_Methods.Set(w, c.Methods)
-		headers.Allow_Headers.Set(w, c.Headers)
-		headers.Allow_Credentials.Set(w, c.Credentials)
+		Origin.Set(w, c.Origin)
+		Allow_Methods.Set(w, c.Methods)
+		Allow_Headers.Set(w, c.Headers)
+		Allow_Credentials.Set(w, c.Credentials)
 
 		next.ServeHTTP(w, r)
 	})

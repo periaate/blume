@@ -27,7 +27,7 @@ func Free(status int, msg string, pairs ...string) NetErr {
 	sb.WriteString(msg)
 	sb.WriteString(" ")
 	var i int
-	for i = 0; i < len(pairs); i += 2 {
+	for i = 0; i+1 < len(pairs); i += 2 {
 		sb.WriteString(pairs[i])
 		sb.WriteString(" [")
 		sb.WriteString(pairs[i+1])

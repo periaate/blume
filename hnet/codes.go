@@ -3,6 +3,8 @@ package hnet
 // Status represents an HTTP status code.
 type Status int
 
+func (s Status) Is(r Response) bool { return r.StatusCode == int(s) }
+
 const (
 	// Informational responses (100–199)
 	Continue           Status = 100 // The server has received the request headers and the client should proceed to send the request body.
