@@ -7,8 +7,10 @@ import (
 )
 
 var typeSrc = `import (
-	"github.com/periaate/blume/gen/T"
+	"strings"
+
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/gen/T"
 )`
 
 func Implement(packageName string, name string, base string, traits ...string) string {

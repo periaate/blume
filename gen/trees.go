@@ -22,7 +22,7 @@ func (t Tree[A]) Collect() []A {
 }
 
 func (t Tree[A]) Filter(preds ...T.Predicate[A]) []A {
-	return Filter[A](preds...)(t.Collect())
+	return Filter(preds...)(t.Collect())
 }
 
 func (t Tree[A]) TraverseDepth(depth int, fn func(A) T.Error[any]) T.Error[any] {

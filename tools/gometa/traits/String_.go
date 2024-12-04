@@ -61,7 +61,7 @@ func (s Reference) ToFloat32() T.Result[float32] { return gen.ToFloat32(string(s
 func (s Reference) ToFloat64() T.Result[float64] { return gen.ToFloat64(string(s)) }
 
 func (s Reference) Colorize(colorCode int) Reference {
-	return Reference(Colorize(colorCode, string(s)))
+	return Reference(gen.Colorize(colorCode, string(s)))
 }
 func (s Reference) ToUpper() Reference { return Reference(strings.ToUpper(string(s))) }
 func (s Reference) ToLower() Reference { return Reference(strings.ToLower(string(s))) }

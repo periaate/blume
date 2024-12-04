@@ -3,6 +3,8 @@ package hnet
 import (
 	"fmt"
 	"testing"
+
+	"github.com/periaate/blume/yap"
 )
 
 func TestHasProtocol(t *testing.T) {
@@ -41,6 +43,6 @@ func TestHasProtocol(t *testing.T) {
 		if result != tc.expected {
 			status = "FAIL"
 		}
-		fmt.Printf("%s: Input: %-30s Expected: %-5v Got: %-5v\n", status, fmt.Sprintf("%q", tc.input), tc.expected, result)
+		yap.Info(status, "input", fmt.Sprintf("%q", tc.input), "expected", tc.expected, "result", result)
 	}
 }

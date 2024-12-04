@@ -14,6 +14,38 @@ func Must[A any](a A, err error) A {
 	return a
 }
 
+func Assert(a any, msg string) {
+	switch v := a.(type) {
+	case bool:
+		if !v {
+			panic(msg)
+		}
+	case error:
+		if v != nil {
+			panic(msg)
+		}
+	case string:
+		if v == "" {
+			panic(msg)
+		}
+	case []any:
+		if len(v) == 0 {
+			panic(msg)
+		}
+	case map[any]any:
+		if len(v) == 0 {
+			panic(msg)
+		}
+	}
+}
+
+func ArrayOrDefault[A any](inp []A, def ...A) []A {
+	if len(inp) == 0 {
+		return def
+	}
+	return inp
+}
+
 // Middleware wraps a function with a middleware, calling it before the next function.
 func Middleware[A, B any](mw func(A)) T.Transformer[T.Monadic[A, B]] {
 	return func(next T.Monadic[A, B]) T.Monadic[A, B] {

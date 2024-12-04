@@ -1,4 +1,3 @@
-
 func (s {{.}}) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s {{.}}) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
 func (s {{.}}) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
@@ -51,7 +50,7 @@ func (s {{.}}) ToFloat32() T.Result[float32] { return gen.ToFloat32(string(s)) }
 func (s {{.}}) ToFloat64() T.Result[float64] { return gen.ToFloat64(string(s)) }
 
 func (s {{.}}) Colorize(colorCode int) {{.}} {
-	return {{.}}(Colorize(colorCode, string(s)))
+	return {{.}}(gen.Colorize(colorCode, string(s)))
 }
 func (s {{.}}) ToUpper() {{.}} { return {{.}}(strings.ToUpper(string(s))) }
 func (s {{.}}) ToLower() {{.}} { return {{.}}(strings.ToLower(string(s))) }

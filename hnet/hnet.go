@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/yap"
 )
 
 type CORS struct {
@@ -39,9 +40,9 @@ type LogHandler struct {
 func (h *LogHandler) WriteHeader(code int) {
 	h.ResponseWriter.WriteHeader(code)
 	if code >= 400 {
-		// clog.Error("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+		yap.Error("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
 	} else {
-		// clog.Info("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+		yap.Info("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
 	}
 }
 
