@@ -1,0 +1,32 @@
+{{assert .Base "string"}}
+
+var (
+	_ T.Str              = {{.TypeName}}("")
+	_ T.Or[string]       = {{.TypeName}}("")
+	_ T.Contains[string] = {{.TypeName}}("")
+)
+
+type {{.TypeName}} string
+
+func (s {{.TypeName}}) Contains(args ...string) bool        { return Contains(args...)(string(s)) }
+func (s {{.TypeName}}) HasPrefix(args ...string) bool       { return HasPrefix(args...)(string(s)) }
+func (s {{.TypeName}}) HasSuffix(args ...string) bool       { return HasSuffix(args...)(string(s)) }
+func (s {{.TypeName}}) ReplacePrefix(pats ...string) string { return ReplacePrefix(pats...)(string(s)) }
+func (s {{.TypeName}}) ReplaceSuffix(pats ...string) string { return ReplaceSuffix(pats...)(string(s)) }
+func (s {{.TypeName}}) Replace(pats ...string) string       { return Replace(pats...)(string(s)) }
+func (s {{.TypeName}}) ReplaceRegex(pat string, rep string) string {
+	return ReplaceRegex[string](pat, rep)(string(s))
+}
+func (s {{.TypeName}}) Shift(count int) string        { return Shift[string](count)(string(s)) }
+func (s {{.TypeName}}) Pop(count int) string          { return Pop[string](count)(string(s)) }
+func (s {{.TypeName}}) Split(pats ...string) []string { return SplitWithAll(string(s), false, pats...) }
+
+func (s {{.TypeName}}) Or(Default string) string {
+	if s == "" {
+		return Default
+	}
+	return string(s)
+}
+
+func (s {{.TypeName}}) Len() int       { return len(string(s)) }
+func (s {{.TypeName}}) String() string { return string(s) }

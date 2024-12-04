@@ -1,7 +1,6 @@
 package maps
 
 import (
-	"fmt"
 	"iter"
 	"sync"
 )
@@ -98,17 +97,12 @@ func (sm *Sync[K, V]) Get(k K) (res V, ok bool) {
 
 // Set adds or updates a value in the map for a given key.
 func (sm *Sync[K, V]) Set(k K, v V) (ok bool) {
-	fmt.Println("Set A")
 	if sm.Hooks.Set != nil {
-		fmt.Println("Set B")
 		ak, av, op := sm.Hooks.Set(k, v)
-		fmt.Println("Set C")
 		switch op {
 		case OP_SET:
-			fmt.Println("Set D")
 			k, v = ak, av
 		case OP_DEL:
-			fmt.Println("Set E")
 			ok = sm.Del(ak)
 			return
 		case OP_RET:
@@ -116,11 +110,8 @@ func (sm *Sync[K, V]) Set(k K, v V) (ok bool) {
 		}
 	}
 
-	fmt.Println("Set F")
 	sm.mut.Lock()
-	fmt.Println("Set G")
 	defer sm.mut.Unlock()
-	fmt.Println("Set H")
 	sm.Values[k] = v
 	return true
 }

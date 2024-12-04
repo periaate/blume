@@ -23,17 +23,18 @@ func main() {
 
 	go func() { log.Fatalln(http.ListenAndServe("127.0.0.1:12719", nil)) }()
 
-	nerr := URL("127.0.0.1:12719/upload").
+	response := URL("127.0.0.1:12719/upload").
 		ToRequest(POST).
 		FileAsBody("./main.go").
-		WithHeaders(Content_Type.Tuple(string(Text))).
+		WithHeaders(
+			Content_Type.Tuple(Text_Plain),
+		).
 		Call().
 		Assert(OK.Is).
-		String(Println).
-		NetErr
+		String(Println)
 
-	if nerr != nil {
-		log.Fatalln(nerr.Error())
+	if response.NetErr != nil {
+		log.Fatalln(response.Error())
 	}
 	fmt.Println("Success!")
 }

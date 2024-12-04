@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/periaate/blume/util"
+	"github.com/periaate/blume/gen/T"
 )
 
 type PathReader struct {
@@ -13,7 +13,7 @@ type PathReader struct {
 	Nerrors []NetErr
 }
 
-func (pr PathReader) Int(name string, conds ...util.Condition[int]) (res int) {
+func (pr PathReader) Int(name string, conds ...T.Condition[int]) (res int) {
 	val, err := strconv.Atoi(pr.r.PathValue(name))
 	if err != nil {
 		nerr := Free(http.StatusBadRequest,
@@ -32,8 +32,8 @@ func (pr PathReader) Int(name string, conds ...util.Condition[int]) (res int) {
 			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
-				"failed condition", ans.Name,
-				"because", ans.Reason,
+				"failed condition", ans.Data(),
+				"because", ans.Reason(),
 			)
 			pr.Nerrors = append(pr.Nerrors, nerr)
 			return
@@ -43,7 +43,7 @@ func (pr PathReader) Int(name string, conds ...util.Condition[int]) (res int) {
 	return
 }
 
-func (pr PathReader) String(name string, conds ...util.Condition[string]) (res string) {
+func (pr PathReader) String(name string, conds ...T.Condition[string]) (res string) {
 	res = pr.r.PathValue(name)
 	if res == "" {
 		nerr := Free(http.StatusBadRequest,
@@ -59,8 +59,8 @@ func (pr PathReader) String(name string, conds ...util.Condition[string]) (res s
 			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
-				"failed condition", ans.Name,
-				"because", ans.Reason,
+				"failed condition", ans.Data(),
+				"because", ans.Reason(),
 			)
 			pr.Nerrors = append(pr.Nerrors, nerr)
 			return
@@ -70,7 +70,7 @@ func (pr PathReader) String(name string, conds ...util.Condition[string]) (res s
 	return
 }
 
-func (pr PathReader) URL(name string, conds ...util.Condition[string]) (res URL) {
+func (pr PathReader) URL(name string, conds ...T.Condition[string]) (res URL) {
 	res = URL(pr.r.PathValue(name))
 	if res == "" {
 		nerr := Free(http.StatusBadRequest,
@@ -88,8 +88,8 @@ func (pr PathReader) URL(name string, conds ...util.Condition[string]) (res URL)
 			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
-				"failed condition", ans.Name,
-				"because", ans.Reason,
+				"failed condition", ans.Data(),
+				"because", ans.Reason(),
 			)
 			pr.Nerrors = append(pr.Nerrors, nerr)
 			return
@@ -99,15 +99,15 @@ func (pr PathReader) URL(name string, conds ...util.Condition[string]) (res URL)
 	return
 }
 
-func (pr PathReader) Duration(name string, conds ...util.Condition[time.Duration]) (res time.Duration) {
+func (pr PathReader) Duration(name string, conds ...T.Condition[time.Duration]) (res time.Duration) {
 	res = time.Duration(pr.Int(name))
 	for _, opt := range conds {
 		if ans := opt(res); ans != nil {
 			nerr := Free(http.StatusBadRequest,
 				"path item", name,
 				"in request", pr.r.RequestURI,
-				"failed condition", ans.Name,
-				"because", ans.Reason,
+				"failed condition", ans.Data(),
+				"because", ans.Reason(),
 			)
 			pr.Nerrors = append(pr.Nerrors, nerr)
 			return

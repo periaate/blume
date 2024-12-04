@@ -1,5 +1,7 @@
 package gen
 
+import "github.com/periaate/blume/gen/T"
+
 type Lennable interface {
 	~[]any | ~string | ~map[any]any | ~chan any | ~[]string
 }
@@ -13,8 +15,8 @@ func Must[A any](a A, err error) A {
 }
 
 // Middleware wraps a function with a middleware, calling it before the next function.
-func Middleware[A, B any](mw func(A)) Transformer[Monadic[A, B]] {
-	return func(next Monadic[A, B]) Monadic[A, B] {
+func Middleware[A, B any](mw func(A)) T.Transformer[T.Monadic[A, B]] {
+	return func(next T.Monadic[A, B]) T.Monadic[A, B] {
 		return func(a A) B {
 			mw(a)
 			return next(a)
@@ -25,10 +27,10 @@ func Middleware[A, B any](mw func(A)) Transformer[Monadic[A, B]] {
 // Ignore returns the first argument and ignores the second.
 func Ignore[A, B any](a A, _ B) A { return a }
 
-// Ignores transforms a function from F : A -> (B, C) to [Monadic] F : A -> B.
+// Ignores transforms a function from F : A -> (B, C) to [T.Monadic] F : A -> B.
 func Ignores[A, B, C any](fn func(A) (B, C)) func(A) B { return func(a A) B { return Ignore(fn(a)) } }
 
-// IgnoresNil transforms a function from F : () -> (B, C) to [Niladic] F : A -> B.
+// IgnoresNil transforms a function from F : () -> (B, C) to [T.Niladic] F : A -> B.
 func IgnoresNil[B, C any](fn func() (B, C)) func() B { return func() B { return Ignore(fn()) } }
 
 // func Repeat(dur time.Duration, fn func()) (stop func()) {

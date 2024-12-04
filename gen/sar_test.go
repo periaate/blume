@@ -1,4 +1,4 @@
-package str
+package gen
 
 //
 // import (
@@ -6,8 +6,6 @@ package str
 // 	"strconv"
 // 	"strings"
 // 	"testing"
-//
-// 	"github.com/periaate/blume/gen"
 // )
 //
 // func TestSplit(t *testing.T) {
@@ -39,7 +37,7 @@ package str
 // 	for _, testCase := range cases {
 // 		res := SplitWithAll(testCase, true, delims...)
 //
-// 		res = gen.Filter(gen.Isnt(" "))(res)
+// 		res = Filter(Isnt(" "))(res)
 //
 // 		ebd := EmbedDelims(res, [2]string{"(", ")"})
 //
@@ -49,7 +47,7 @@ package str
 // 	fmt.Printf("|||\n")
 // }
 //
-// func traverse(h gen.Tree[string], depth int) {
+// func traverse(h Tree[string], depth int) {
 // 	f := true
 // 	for _, v := range h.Nodes {
 // 		if len(v.Nodes) != 0 {
@@ -74,7 +72,7 @@ package str
 //
 // 	res := SplitWithAll(testCase, true, delims...)
 //
-// 	res = gen.Filter(gen.Isnt(" "))(res)
+// 	res = Filter(Isnt(" "))(res)
 //
 // 	ebd := EmbedDelims(res, [2]string{"(", ")"})
 //
@@ -84,7 +82,7 @@ package str
 // 	fmt.Println(nres)
 // }
 //
-// func eval(h gen.Tree[string]) string {
+// func eval(h Tree[string]) string {
 // 	sar := []string{}
 // 	for _, v := range h.Nodes {
 // 		if len(v.Nodes) != 0 {

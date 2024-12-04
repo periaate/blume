@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/periaate/blume/clog"
-	"github.com/periaate/blume/gen"
 	"github.com/periaate/blume/maps"
 )
 
-func NewManager(opts ...gen.Option[Manager]) *Manager {
+func NewManager(opts ...func(*Manager)) *Manager {
 	m := &Manager{
 		Links:    maps.NewExpiring[string, Link](),
 		Sessions: maps.NewExpiring[string, Session](),
@@ -134,6 +133,7 @@ func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok b
 	http.SetCookie(w, &http.Cookie{
 		Name:    "X-Session",
 		Value:   cookie,
+		Domain:  link.Host,
 		Expires: time.Now().Add(link.Duration),
 	})
 

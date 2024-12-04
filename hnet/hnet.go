@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/periaate/blume/clog"
 	"github.com/periaate/blume/gen"
 )
 
@@ -40,9 +39,9 @@ type LogHandler struct {
 func (h *LogHandler) WriteHeader(code int) {
 	h.ResponseWriter.WriteHeader(code)
 	if code >= 400 {
-		clog.Error("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+		// clog.Error("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
 	} else {
-		clog.Info("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
+		// clog.Info("request", "method", h.r.Method, "URL", h.r.RequestURI, "time", time.Since(h.start), "status", code)
 	}
 }
 

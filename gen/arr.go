@@ -1,5 +1,7 @@
 package gen
 
+import "github.com/periaate/blume/gen/T"
+
 // Product returns the cartesian product of two slices.
 func Product[A any](a []A, B []A) (res [][2]A) {
 	res = make([][2]A, 0, len(a)*len(B))
@@ -11,7 +13,7 @@ func Product[A any](a []A, B []A) (res [][2]A) {
 	return
 }
 
-func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
+func Partition[A any](fn T.Predicate[A]) T.Mapper[A, []A] {
 	return func(args []A) (res [][]A) {
 		res = make([][]A, 2)
 		for _, arg := range args {
@@ -27,7 +29,7 @@ func Partition[A any](fn Predicate[A]) Mapper[A, []A] {
 }
 
 // Split returns a predicate that splits the given slice based on the given function.
-func Split[A any](fn func(A) bool) Mapper[A, []A] {
+func Split[A any](fn func(A) bool) T.Mapper[A, []A] {
 	return func(args []A) (res [][]A) {
 		res = [][]A{}
 		temp := []A{}
@@ -61,7 +63,7 @@ func Join[A any](a ...[]A) (res []A) {
 }
 
 // Lim filters the args to be less than or equal to the given Max length.
-func Lim[A ~string | ~[]any](Max int) Mapper[A, A] {
+func Lim[A ~string | ~[]any](Max int) T.Mapper[A, A] {
 	return func(args []A) (res []A) {
 		for _, a := range args {
 			if len(a) <= Max {
@@ -89,7 +91,7 @@ func Reverse[A any](arr []A) (res []A) {
 }
 
 // Deduplicate returns a predicate that filters out duplicates based on the given function.
-func Deduplicate[A any, C comparable](fn func(A) C) Predicate[A] {
+func Deduplicate[A any, C comparable](fn func(A) C) T.Predicate[A] {
 	seen := map[C]struct{}{}
 	return func(a A) bool {
 		c := fn(a)
@@ -101,21 +103,18 @@ func Deduplicate[A any, C comparable](fn func(A) C) Predicate[A] {
 	}
 }
 
-func Shift[A any](a []A, count int) (res []A) {
-	if len(a) < count {
-		return
-	}
-
-	return a[count:]
-}
-
-func Pop[A any](a []A, count int) (res []A) {
-	if len(a) < count {
-		return
-	}
-
-	return a[:count]
-}
+// func Shift[A any](a []A, count int) (res []A) {
+// 	if len(a) < count {
+// 		return
+// 	}
+// 	return a[count:]
+// }
+// func Pop[A any](a []A, count int) (res []A) {
+// 	if len(a) < count {
+// 		return
+// 	}
+// 	return a[:count]
+// }
 
 func GetShift[A any](n int, a []A) (res A, ok bool) {
 	if len(a)-1 < n {

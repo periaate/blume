@@ -1,6 +1,5 @@
-package str
+package gen
 
-//
 // func IsDigit(str string) bool {
 // 	for _, r := range str {
 // 		switch r {

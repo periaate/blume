@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/str"
 )
 
 func Clean(path string) string {
@@ -16,16 +15,16 @@ func Clean(path string) string {
 	var spl string
 	var aft string
 	aft = path
-	split := str.SplitWithAll(path, false, "://")
+	split := gen.SplitWithAll(path, false, "://")
 	if len(split) >= 2 {
-		if str.Contains("/")(split[0]) {
+		if gen.Contains("/")(split[0]) {
 			return strings.Join(split, "://")
 		}
 
 		pre = split[0]
 		spl = "://"
 		aft = strings.Join(split[1:], "/")
-		if str.HasPrefix("/")(aft) {
+		if gen.HasPrefix("/")(aft) {
 			aft = aft[1:]
 		}
 	}
@@ -45,7 +44,7 @@ var Home = gen.IgnoresNil(os.UserHomeDir)
 
 // ReadDir reads the directory and returns a list of files.
 func ReadDir(f string) (res []string, err error) {
-	if str.HasPrefix("~")(f) {
+	if gen.HasPrefix("~")(f) {
 		f = strings.Replace(f, "~", Home(), 1)
 	}
 
@@ -155,10 +154,10 @@ func Join[S ~string](args ...S) S {
 	var isDir, isRel bool
 
 	if len(elems) >= 1 {
-		isDir = str.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
+		isDir = gen.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
 	}
 
-	isRel = str.HasPrefix(".", "./", `.\`)(elems[0]) && !str.HasPrefix("/", `\`, "..")(elems[0])
+	isRel = gen.HasPrefix(".", "./", `.\`)(elems[0]) && !gen.HasPrefix("/", `\`, "..")(elems[0])
 
 	res = Clean(strings.Join(elems, "/"))
 	if isDir {
@@ -166,11 +165,11 @@ func Join[S ~string](args ...S) S {
 	}
 
 	res = Clean(res)
-	if isRel || str.HasPrefix(".")(res) {
-		if !str.HasPrefix("./", `.\`, ".")(res) {
+	if isRel || gen.HasPrefix(".")(res) {
+		if !gen.HasPrefix("./", `.\`, ".")(res) {
 			res = "./" + res
-		} else if !str.HasPrefix("..")(res) {
-			res = str.ReplacePrefix(
+		} else if !gen.HasPrefix("..")(res) {
+			res = gen.ReplacePrefix(
 				"./", "./",
 				`.\`, "./",
 				`.`, "./",

@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/str"
+	. "github.com/periaate/blume/gen"
+	"github.com/periaate/blume/gen/T"
 )
 
 type Response struct {
@@ -16,14 +16,14 @@ type Response struct {
 	NetErr
 }
 
-func (r Response) Assert(conds ...gen.Predicate[Response]) Response {
+func (r Response) Assert(conds ...T.Predicate[any]) Response {
 	if r.NetErr != nil {
 		return r
 	}
 
 	for _, cond := range conds {
 		if !cond(r) {
-			r.NetErr = BadRequest.Def("failed assertions")
+			r.NetErr = Bad_Request.Def("failed assertions")
 			return r
 		}
 	}
@@ -48,7 +48,7 @@ func (r Response) String(f func(string)) Response {
 	return r
 }
 
-func UseBody(f func(io.Reader) bool) gen.Transformer[Response] {
+func UseBody(f func(io.Reader) bool) T.Transformer[Response] {
 	return func(r Response) Response {
 		defer r.Body.Close()
 		if r.NetErr != nil {
@@ -86,7 +86,7 @@ func (r Request) FileAsBody(fp string) Request {
 	}
 	f, err := os.Open(fp)
 	if err != nil {
-		r.NetErr = NotFound.Def(err.Error())
+		r.NetErr = Not_Found.Def(err.Error())
 	}
 	r.WithBody(f)
 	return r
@@ -163,7 +163,7 @@ func PATCH(r Request) Request {
 	return r
 }
 
-func WithHeaders(tuples ...[2]string) gen.Transformer[Request] {
+func WithHeaders(tuples ...[2]string) T.Transformer[Request] {
 	return func(r Request) Request {
 		if r.Header == nil {
 			r.Header = http.Header{}
@@ -175,14 +175,14 @@ func WithHeaders(tuples ...[2]string) gen.Transformer[Request] {
 	}
 }
 
-func WithBody(body io.ReadCloser) gen.Transformer[Request] {
+func WithBody(body io.ReadCloser) T.Transformer[Request] {
 	return func(r Request) Request {
 		r.Body = body
 		return r
 	}
 }
 
-func (u URL) ToRequest(opts ...gen.Transformer[Request]) (req Request) {
+func (u URL) ToRequest(opts ...T.Transformer[Request]) (req Request) {
 	if len(u) == 0 {
 		req.NetErr = Free(400, "Invalid URL", "url", string(u))
 		return
@@ -197,15 +197,15 @@ func (u URL) ToRequest(opts ...gen.Transformer[Request]) (req Request) {
 		return
 	}
 	req.URL = url
-	req = gen.Pipe[Request](opts...)(req)
+	req = Pipe[Request](opts...)(req)
 	if req.Method == "" {
 		req.NetErr = Free(400, "Method not set")
 	}
 	return
 }
 
-func (u URL) Format(options ...gen.Transformer[URL]) URL {
-	return gen.Pipe[URL](gen.ArrayOrDefault(options, AsProtocol(HTTP))...)(u)
+func (u URL) Format(options ...T.Transformer[URL]) URL {
+	return Pipe[URL](ArrayOrDefault(options, AsProtocol(HTTP))...)(u)
 }
 
 type Protocol string
@@ -222,11 +222,11 @@ func (u URL) AsProtocol(protocol Protocol) URL {
 		return URL(protocol + "://")
 	}
 	if HasProtocol(u) {
-		return str.ReplaceRegex[URL](".*://", string(protocol+"://"))(u)
+		return URL(u.ReplaceRegex(".*://", string(protocol+"://")))
 	}
 	return URL(protocol) + "://" + u
 }
 
-func AsProtocol(protocol Protocol) gen.Transformer[URL] {
+func AsProtocol(protocol Protocol) T.Transformer[URL] {
 	return func(u URL) URL { return u.AsProtocol(protocol) }
 }

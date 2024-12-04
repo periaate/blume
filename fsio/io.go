@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/util"
+	"github.com/periaate/blume/gen/T"
 )
 
 func B(bar []byte) *bytes.Buffer {
@@ -69,7 +69,7 @@ func HasOutPipe() bool {
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args(opts ...util.Condition[[]string]) (res []string, ans *util.Answer[[]string]) {
+func Args(opts ...T.Condition[[]string]) (res []string, ans T.Error[string]) {
 	res = append(os.Args[1:], ReadPipe()...)
 	for _, opt := range opts {
 		if ans = opt(res); ans != nil {
@@ -85,7 +85,7 @@ func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 // QArgs returns the command-line arguments without the program name, and including any piped inputs.
 // Returned type is an alias of []string which includes various helper functions.
 // Helper functions will panic if they fail.
-func QArgs(opts ...util.Condition[[]string]) (res []Arg, ans *util.Answer[[]string]) {
+func QArgs(opts ...T.Condition[[]string]) (res []Arg, ans T.Error[string]) {
 	args, ans := Args(opts...)
 	res = make([]Arg, len(args))
 	for i, arg := range args {
