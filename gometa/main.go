@@ -13,13 +13,14 @@ import (
 type Trait struct {
 	File    String
 	Package string
-	Traits  []string
+	Traits  string
 	Base    string
 	Name    string
 }
 
 func (t Trait) Impl() {
-	res := traits.Implement(t.Package, t.Name, t.Base, t.Traits...)
+	res := traits.Implement(t.Package, t.Name, t.Base, t.Traits)
+	fmt.Println(res)
 	filename := t.File.ReplaceSuffix(".go", fmt.Sprintf("_%s_impl.go", strings.ToLower(t.Name))).String()
 	err := fsio.WriteAll(filename, fsio.B([]byte(res)))
 	if err != nil {
@@ -29,8 +30,8 @@ func (t Trait) Impl() {
 
 func main() {
 	traits := []Trait{}
-
-	res := Filter(HasSuffix(".go"))(fsio.ReadDirRecursively("./"))
+	f := fsio.ReadDirRecursively("./")
+	res := Filter(HasSuffix(".go"))(f)
 	for _, file := range res {
 		str := string(Must(os.ReadFile(file)))
 		lines := String(str).Split("\n")
@@ -42,7 +43,7 @@ func main() {
 				continue
 			}
 			if line.HasPrefix("//blume:derive") {
-				derive = line.ReplacePrefix("//blume:derive ").String()
+				derive = line.ReplacePrefix("//blume:derive ", "").String()
 				continue
 			}
 			if derive != "" {
@@ -53,13 +54,15 @@ func main() {
 				if len(t) < 3 {
 					panic("Error: expected type declaration " + line)
 				}
-				traits = append(traits, Trait{
+				nt := Trait{
 					File:    String(file),
-					Package: Package,
-					Traits:  strings.Split(derive, " "),
-					Name:    t[1].String(),
-					Base:    t[2].String(),
-				})
+					Package: strings.TrimSpace(Package),
+					Traits:  strings.TrimSpace(strings.Split(derive, " ")[0]),
+					Name:    strings.TrimSpace(t[1].String()),
+					Base:    strings.TrimSpace(t[2].String()),
+				}
+				traits = append(traits, nt)
+				derive = ""
 			}
 		}
 	}

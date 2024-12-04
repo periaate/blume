@@ -4,21 +4,37 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+
+	"github.com/periaate/blume/gen"
 )
 
 func ReadDirRecursively(fp string) (res []string) {
 	dirs := []string{fp}
 
 	for {
+		fmt.Println("len(dirs):", len(dirs))
 		if len(dirs) == 0 {
 			break
 		}
+
 		dir := dirs[0]
 		dirs = dirs[1:]
+		f := gen.Is(".", ".git", ".idea", "node_modules", "./", "..", "")
 
-		files, _ := ReadDir(dir)
+		fmt.Println("reading dir:", dir)
+		entries := gen.Must(os.ReadDir(dir))
+		files := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			files = append(files, filepath.Join(dir, entry.Name()))
+		}
+
+		fmt.Println("files:", files)
 		for _, file := range files {
 			if IsDir(file) {
+				if f(file) {
+					continue
+				}
 				dirs = append(dirs, file)
 			}
 			res = append(res, file)

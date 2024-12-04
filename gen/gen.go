@@ -84,11 +84,9 @@ func Filter[A any](fns ...T.Predicate[A]) T.Mapper[A, A] {
 	return func(args []A) (res []A) {
 		res = make([]A, 0, len(args))
 		for _, arg := range args {
-			if !fn(arg) {
-				continue
+			if fn(arg) {
+				res = append(res, arg)
 			}
-			res = append(res, arg)
-			break
 		}
 		return res
 	}

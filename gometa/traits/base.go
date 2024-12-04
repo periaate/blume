@@ -6,14 +6,21 @@ import (
 	"strings"
 )
 
-var typeSrc = `"github.com/periaate/blume/T"`
+var typeSrc = `import (
+	"github.com/periaate/blume/gen/T"
+	"github.com/periaate/blume/gen"
+)`
 
-func Implement(packageName string, typeName string, baseType string, traits ...string) string {
-	res := fmt.Sprintf("package %s\n\nimport %s\n", packageName, typeSrc)
+func Implement(packageName string, name string, base string, traits ...string) string {
+	fmt.Println(packageName)
+	fmt.Println(name)
+	fmt.Println(base)
+	fmt.Println(traits[0])
+	res := fmt.Sprintf("package %s\n\n%s\n", packageName, typeSrc)
 	for _, trait := range traits {
 		switch trait {
 		case "String":
-			res = fmt.Sprintf("%s\n%s", res, String(typeName, baseType))
+			res = fmt.Sprintf("%s\n%s", res, String(name, base))
 		}
 	}
 

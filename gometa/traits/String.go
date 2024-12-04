@@ -3,6 +3,7 @@ package traits
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
 	"log"
 	"text/template"
 )
@@ -11,6 +12,10 @@ import (
 var StringTrait string
 
 func String(name, base string) string {
+	fmt.Println("String Impl")
+	fmt.Println(name)
+	fmt.Println(base)
+	fmt.Println(base == "string")
 	if base == "" || name == "" {
 		log.Fatalf("Error: name and base must be provided")
 	}
@@ -30,5 +35,10 @@ func String(name, base string) string {
 		log.Fatalf("Error executing trait template (%s): %v", name, err)
 	}
 
-	return b.String()
+	str := b.String()
+	if str == "" {
+		log.Fatalf("Error: empty trait template (%s)", name)
+	}
+
+	return str
 }
