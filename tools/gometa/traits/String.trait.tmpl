@@ -1,0 +1,66 @@
+
+func (s {{.}}) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
+func (s {{.}}) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
+func (s {{.}}) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
+func (s {{.}}) ReplacePrefix(pats ...string) {{.}} {
+	return {{.}}(gen.ReplacePrefix(pats...)(string(s)))
+}
+
+func (s {{.}}) ReplaceSuffix(pats ...string) {{.}} {
+	return {{.}}(gen.ReplaceSuffix(pats...)(string(s)))
+}
+
+func (s {{.}}) Replace(pats ...string) {{.}} {
+	return {{.}}(gen.Replace(pats...)(string(s)))
+}
+
+func (s {{.}}) ReplaceRegex(pat string, rep string) {{.}} {
+	return {{.}}(gen.ReplaceRegex[string](pat, rep)(string(s)))
+}
+func (s {{.}}) Shift(count int) {{.}} { return {{.}}(gen.Shift[string](count)(string(s))) }
+func (s {{.}}) Pop(count int) {{.}}   { return {{.}}(gen.Pop[string](count)(string(s))) }
+func (s {{.}}) Split(pats ...string) []{{.}} {
+	split := gen.SplitWithAll(string(s), false, pats...)
+	res := make([]{{.}}, len(split))
+	for i, v := range split {
+		res[i] = {{.}}(v)
+	}
+	return res
+}
+
+func (s {{.}}) Or(Default string) {{.}} {
+	if s == "" {
+		return {{.}}(Default)
+	}
+	return s
+}
+func (s {{.}}) Len() int          { return len(string(s)) }
+func (s {{.}}) {{.}}() string { return string(s) }
+
+func (s {{.}}) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
+func (s {{.}}) ToInt8() T.Result[int8]       { return gen.ToInt8(string(s)) }
+func (s {{.}}) ToInt16() T.Result[int16]     { return gen.ToInt16(string(s)) }
+func (s {{.}}) ToInt32() T.Result[int32]     { return gen.ToInt32(string(s)) }
+func (s {{.}}) ToInt64() T.Result[int64]     { return gen.ToInt64(string(s)) }
+func (s {{.}}) ToUint() T.Result[uint]       { return gen.ToUint(string(s)) }
+func (s {{.}}) ToUint8() T.Result[uint8]     { return gen.ToUint8(string(s)) }
+func (s {{.}}) ToUint16() T.Result[uint16]   { return gen.ToUint16(string(s)) }
+func (s {{.}}) ToUint32() T.Result[uint32]   { return gen.ToUint32(string(s)) }
+func (s {{.}}) ToUint64() T.Result[uint64]   { return gen.ToUint64(string(s)) }
+func (s {{.}}) ToFloat32() T.Result[float32] { return gen.ToFloat32(string(s)) }
+func (s {{.}}) ToFloat64() T.Result[float64] { return gen.ToFloat64(string(s)) }
+
+func (s {{.}}) Colorize(colorCode int) {{.}} {
+	return {{.}}(Colorize(colorCode, string(s)))
+}
+func (s {{.}}) ToUpper() {{.}} { return {{.}}(strings.ToUpper(string(s))) }
+func (s {{.}}) ToLower() {{.}} { return {{.}}(strings.ToLower(string(s))) }
+func (s {{.}}) Trim() {{.}}    { return {{.}}(strings.Trim(string(s), " ")) }
+func (s {{.}}) TrimPrefix(prefix string) {{.}} {
+	return {{.}}(strings.TrimPrefix(string(s), prefix))
+}
+
+func (s {{.}}) TrimSuffix(suffix string) {{.}} {
+	return {{.}}(strings.TrimSuffix(string(s), suffix))
+}
+func (s {{.}}) TrimSpace() {{.}} { return {{.}}(strings.TrimSpace(string(s))) }

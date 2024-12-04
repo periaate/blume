@@ -1,10 +1,9 @@
 package hnet
 
 import (
-	"github.com/periaate/blume/gen/T"
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/gen/T"
 )
-
 
 func (s URL) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s URL) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }

@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/periaate/blume/clog"
 	"github.com/periaate/blume/maps"
 )
 
@@ -87,7 +86,7 @@ func (m *Manager) NewLink(uses int, label string, host string, duration time.Dur
 	if uses <= 0 {
 		return
 	}
-	clog.Info("creating link", "label", label, "host", host, "duration", duration, "uses", uses)
+	// yap.Info("creating link", "label", label, "host", host, "duration", duration, "uses", uses)
 	key = RandKey(32)
 	ok = m.Links.Set(key, Link{
 		Label:    label,
@@ -107,17 +106,17 @@ func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok b
 	defer m.mut.Unlock()
 	link, ok := m.Links.Get(key)
 	if !ok {
-		clog.Error("link not found", "key", key)
+		// yap.Error("link not found", "key", key)
 		return
 	}
 
 	link.Uses--
 	if link.Uses <= 0 {
-		clog.Info("link expired", "key", key)
+		// yap.Info("link expired", "key", key)
 		m.Links.Del(key)
 	} else {
 		if !m.Links.Set(key, link, link.T) {
-			clog.Error("error updating link", "key", key)
+			// yap.Error("error updating link", "key", key)
 			m.Links.Del(key)
 		}
 	}

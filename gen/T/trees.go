@@ -1,5 +1,23 @@
 package T
 
+type Err[A any] struct {
+	err    error
+	reason string
+	data   A
+}
+
+func (e Err[A]) Error() error {
+	return e.err
+}
+
+func (e Err[A]) Reason() string {
+	return e.reason
+}
+
+func (e Err[A]) Data() A {
+	return e.data
+}
+
 type Error[A any] interface {
 	Error() error
 	Reason() string

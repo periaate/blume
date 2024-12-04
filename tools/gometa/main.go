@@ -7,7 +7,7 @@ import (
 
 	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/gen"
-	"github.com/periaate/blume/gometa/traits"
+	"github.com/periaate/blume/tools/gometa/traits"
 )
 
 type Trait struct {
@@ -71,31 +71,3 @@ func main() {
 		t.Impl()
 	}
 }
-
-// fmt.Println(strings.Join(os.Args, " "))
-// 	if len(os.Args) < 6 || strings.ToLower(os.Args[4]) != "as" || strings.ToLower(os.Args[6]) != "derive" {
-// 		log.Fatalf("Usage: //go:generate gometa <RelPath> <PackageName> <TypeName> as <BaseType> derive <TraitName1> <TraitName2> ...")
-// 	}
-//
-// 	RelPath := os.Args[1]
-// 	PackageName := os.Args[2]
-// 	TypeName := os.Args[3]
-// 	BaseType := os.Args[5]
-// 	traitNames := os.Args[7:]
-//
-// 	fmt.Println(PackageName, TypeName, BaseType, traitNames)
-//
-// 	outputName := filepath.Join(RelPath, fmt.Sprintf("%s_impl.go", strings.ToLower(TypeName)))
-//
-// 	res := traits.Implement(PackageName, TypeName, BaseType, traitNames...)
-// 	if res == "" {
-// 		log.Fatalf("Error: no implementation generated")
-// 	}
-//
-// 	err := fsio.WriteAll(outputName, fsio.B([]byte(res)))
-// 	if err != nil {
-// 		log.Fatalf("Error writing implementation to file: %v", err)
-// 	}
-//
-// 	fmt.Printf("Generated implementation(s) for %s in %s\n", TypeName, outputName)
-// }

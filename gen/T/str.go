@@ -22,4 +22,23 @@ type Str[S ~string] interface {
 	Pop(count int) S
 	Split(pats ...string) []S
 	String() string
+	ToInt() Result[int]
+	ToInt8() Result[int8]
+	ToInt16() Result[int16]
+	ToInt32() Result[int32]
+	ToInt64() Result[int64]
+	ToUint() Result[uint]
+	ToUint8() Result[uint8]
+	ToUint16() Result[uint16]
+	ToUint32() Result[uint32]
+	ToUint64() Result[uint64]
+	ToFloat32() Result[float32]
+	ToFloat64() Result[float64]
+	Colorize(colorCode int) S
+	ToUpper() S
+	ToLower() S
+	Trim() S
+	TrimPrefix(prefix string) S
+	TrimSuffix(suffix string) S
+	TrimSpace() S
 }
