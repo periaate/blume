@@ -6,6 +6,28 @@ import (
 	"os"
 )
 
+func ReadDirRecursively(fp string) (res []string) {
+	dirs := []string{fp}
+
+	for {
+		if len(dirs) == 0 {
+			break
+		}
+		dir := dirs[0]
+		dirs = dirs[1:]
+
+		files, _ := ReadDir(dir)
+		for _, file := range files {
+			if IsDir(file) {
+				dirs = append(dirs, file)
+			}
+			res = append(res, file)
+		}
+	}
+
+	return
+}
+
 // WriteAll writes the contents of the reader to the file, overwriting existing files.
 func WriteAll(f string, r io.Reader) (err error) {
 	file, err := os.Create(f)

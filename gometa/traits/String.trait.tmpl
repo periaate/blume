@@ -1,0 +1,36 @@
+var (
+	_ T.SAr[{{.}}]      = SArray[{{.}}]{}
+	_ T.Str[{{.}}]      = {{.}}("")
+	_ T.Contains[string] = {{.}}("")
+)
+
+type {{.}} string
+
+func (s {{.}}) Contains(args ...string) bool  { return Contains(args...)(string(s)) }
+func (s {{.}}) HasPrefix(args ...string) bool { return HasPrefix(args...)(string(s)) }
+func (s {{.}}) HasSuffix(args ...string) bool { return HasSuffix(args...)(string(s)) }
+func (s {{.}}) ReplacePrefix(pats ...string) {{.}} {
+	return {{.}}(ReplacePrefix(pats...)(string(s)))
+}
+
+func (s {{.}}) ReplaceSuffix(pats ...string) {{.}} {
+	return {{.}}(ReplaceSuffix(pats...)(string(s)))
+}
+func (s {{.}}) Replace(pats ...string) {{.}} { return {{.}}(Replace(pats...)(string(s))) }
+func (s {{.}}) ReplaceRegex(pat string, rep string) {{.}} {
+	return {{.}}(ReplaceRegex[string](pat, rep)(string(s)))
+}
+func (s {{.}}) Shift(count int) {{.}} { return {{.}}(Shift[string](count)(string(s))) }
+func (s {{.}}) Pop(count int) {{.}}   { return {{.}}(Pop[string](count)(string(s))) }
+func (s {{.}}) Split(pats ...string) T.SAr[{{.}}] {
+	return SArray[{{.}}]{}.From(SplitWithAll(string(s), false, pats...))
+}
+
+func (s {{.}}) Or(Default string) {{.}} {
+	if s == "" {
+		return {{.}}(Default)
+	}
+	return s
+}
+func (s {{.}}) Len() int       { return len(string(s)) }
+func (s {{.}}) string() string { return string(s) }
