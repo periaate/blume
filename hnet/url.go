@@ -122,6 +122,7 @@ func (r Request) Call() Response {
 	return Response{Response: resp}
 }
 
+//blume:derive String
 type URL string
 
 func (u URL) ToURL() (*url.URL, error) {
@@ -208,6 +209,7 @@ func (u URL) Format(options ...T.Transformer[URL]) URL {
 	return Pipe[URL](ArrayOrDefault(options, AsProtocol(HTTP))...)(u)
 }
 
+//blume:derive String
 type Protocol string
 
 const (
