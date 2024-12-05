@@ -1,7 +1,5 @@
 package T
 
-import "iter"
-
 type (
 	// Niladic is a function that takes no arguments and returns a single value.
 	Niladic[A any] func() A
@@ -91,46 +89,12 @@ type Resultable[A any] interface {
 }
 
 type (
-	Or[A any]       interface{ Or(Default A) A }
+	Orrable[A any]  interface{ Or(Default A) A }
 	Contains[A any] interface{ Contains(args ...A) bool }
 )
 
 type Filters[A any] interface {
 	Filter(args ...Predicate[A]) []A
-}
-
-type Maps[A, B any] interface {
-	Map(args ...Monadic[A, B]) []B
-}
-type Reduce[A any, B any] interface {
-	Reduce(args ...Dyadic[B, A, B]) B
-}
-
-type Predicates[A any] interface {
-	Any(args ...Predicate[A]) bool
-	All(args ...Predicate[A]) bool
-	None(args ...Predicate[A]) bool
-}
-
-type Getter[A any] interface {
-	First(args ...Predicate[A]) A
-	Last(args ...Predicate[A]) A
-	Nth(n int, args ...Predicate[A]) A
-}
-
-type Asserts[A any] interface {
-	Assert(args ...Predicate[A]) A
-}
-
-// Array is a type constraint that combines the Filter, Predicates, Getter, and Assert interfaces.
-// Array does not implement Map or Reduce due to Go's type system limitations.
-type Array[A any] interface {
-	Filters[A]
-	Predicates[A]
-	Getter[A]
-	Asserts[A]
-	Values() iter.Seq[A]
-	Iter() iter.Seq2[int, A]
 }
 
 type Stringable interface{ String() string }

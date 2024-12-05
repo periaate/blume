@@ -64,29 +64,3 @@ func Ignores[A, B, C any](fn func(A) (B, C)) func(A) B { return func(a A) B { re
 
 // IgnoresNil transforms a function from F : () -> (B, C) to [T.Niladic] F : A -> B.
 func IgnoresNil[B, C any](fn func() (B, C)) func() B { return func() B { return Ignore(fn()) } }
-
-// func Repeat(dur time.Duration, fn func()) (stop func()) {
-// 	stopch := make(chan struct{})
-// 	var stopped bool
-// 	go func() {
-// 		tck := time.NewTicker(dur)
-// 		defer tck.Stop()
-// 		defer close(stopch)
-// 		defer func() { stopped = true }()
-// 		for {
-// 			select {
-// 			case <-stopch:
-// 				return
-// 			case <-tck.C:
-// 				go fn()
-// 			}
-// 		}
-// 	}()
-//
-// 	return func() {
-// 		if stopped {
-// 			return
-// 		}
-// 		stopch <- struct{}{}
-// 	}
-// }

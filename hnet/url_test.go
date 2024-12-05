@@ -82,7 +82,7 @@ func TestWithBody(t *testing.T) {
 	assert.Equal(t, bodyContent, string(reqBody))
 }
 
-//
+// these tests work, but take too long due to lack of integration with mock testing in the hnet package.
 // var (
 // 	fn     func(w http.ResponseWriter, r *http.Request)
 // 	server *http.Server

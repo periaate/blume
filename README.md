@@ -29,3 +29,11 @@
 
 `typ`: gometa generated types.
 - `String`: gometa generated implementation of `T.Str`.
+
+## TODO
+- [ ] normalize all error types to `T.Error`.
+- [ ] normalize all `(.*, error)` to `Result[.*]`.
+
+
+## License
+`blume` is available under the MPL-2.0 license.
