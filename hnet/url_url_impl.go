@@ -7,6 +7,12 @@ import (
 	"github.com/periaate/blume/gen/T"
 )
 
+var (
+	_ T.SAr[URL]     = gen.SArray[URL]{}
+	_ T.Str[URL]     = URL("")
+	_ T.Contains[string] = URL("")
+)
+
 func (s URL) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s URL) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
 func (s URL) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
@@ -42,8 +48,8 @@ func (s URL) Or(Default string) URL {
 	}
 	return s
 }
-func (s URL) Len() int          { return len(string(s)) }
-func (s URL) URL() string { return string(s) }
+func (s URL) Len() int       { return len(string(s)) }
+func (s URL) String() string { return string(s) }
 
 func (s URL) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
 func (s URL) ToInt8() T.Result[int8]       { return gen.ToInt8(string(s)) }
@@ -72,3 +78,25 @@ func (s URL) TrimSuffix(suffix string) URL {
 	return URL(strings.TrimSuffix(string(s), suffix))
 }
 func (s URL) TrimSpace() URL { return URL(strings.TrimSpace(string(s))) }
+
+func (s URL) Green() URL      { return URL(gen.Colorize(gen.Green, string(s))) }
+func (s URL) LightGreen() URL { return URL(gen.Colorize(gen.LightGreen, string(s))) }
+func (s URL) Yellow() URL     { return URL(gen.Colorize(gen.Yellow, string(s))) }
+func (s URL) LightYellow() URL {
+	return URL(gen.Colorize(gen.LightYellow, string(s)))
+}
+func (s URL) Red() URL       { return URL(gen.Colorize(gen.Red, string(s))) }
+func (s URL) LightRed() URL  { return URL(gen.Colorize(gen.LightRed, string(s))) }
+func (s URL) Blue() URL      { return URL(gen.Colorize(gen.Blue, string(s))) }
+func (s URL) LightBlue() URL { return URL(gen.Colorize(gen.LightBlue, string(s))) }
+func (s URL) Cyan() URL      { return URL(gen.Colorize(gen.Cyan, string(s))) }
+func (s URL) LightCyan() URL { return URL(gen.Colorize(gen.LightCyan, string(s))) }
+func (s URL) Magenta() URL   { return URL(gen.Colorize(gen.Magenta, string(s))) }
+func (s URL) LightMagenta() URL {
+	return URL(gen.Colorize(gen.LightMagenta, string(s)))
+}
+func (s URL) White() URL     { return URL(gen.Colorize(gen.White, string(s))) }
+func (s URL) Black() URL     { return URL(gen.Colorize(gen.Black, string(s))) }
+func (s URL) Gray() URL      { return URL(gen.Colorize(gen.DarkGray, string(s))) }
+func (s URL) LightGray() URL { return URL(gen.Colorize(gen.LightGray, string(s))) }
+func (s URL) Dim() URL       { return URL(gen.Colorize(2, string(s))) }

@@ -11,7 +11,7 @@ import (
 //go:embed String.trait.tmpl
 var StringTrait string
 
-func s(name, base string) string {
+func String(name, base string) string {
 	fmt.Println("String Impl")
 	fmt.Println(name)
 	fmt.Println(base)

@@ -11,6 +11,7 @@ import (
 	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/gen"
 	"github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/typ"
 )
 
 var (

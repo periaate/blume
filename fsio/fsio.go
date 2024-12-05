@@ -154,7 +154,8 @@ func Join[S ~string](args ...S) S {
 	var isDir, isRel bool
 
 	if len(elems) >= 1 {
-		isDir = gen.HasSuffix("/", `\`)(gen.Ignore(gen.GetPop(elems)))
+		_, v, _ := gen.Pops(elems)
+		isDir = gen.HasSuffix("/", `\`)(v)
 	}
 
 	isRel = gen.HasPrefix(".", "./", `.\`)(elems[0]) && !gen.HasPrefix("/", `\`, "..")(elems[0])

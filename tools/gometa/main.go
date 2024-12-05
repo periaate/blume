@@ -8,6 +8,7 @@ import (
 	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/gen"
 	"github.com/periaate/blume/tools/gometa/traits"
+	. "github.com/periaate/blume/typ"
 )
 
 type Trait struct {

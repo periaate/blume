@@ -7,6 +7,12 @@ import (
 	"github.com/periaate/blume/gen/T"
 )
 
+var (
+	_ T.SAr[Protocol]     = gen.SArray[Protocol]{}
+	_ T.Str[Protocol]     = Protocol("")
+	_ T.Contains[string] = Protocol("")
+)
+
 func (s Protocol) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s Protocol) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
 func (s Protocol) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
@@ -42,8 +48,8 @@ func (s Protocol) Or(Default string) Protocol {
 	}
 	return s
 }
-func (s Protocol) Len() int          { return len(string(s)) }
-func (s Protocol) Protocol() string { return string(s) }
+func (s Protocol) Len() int       { return len(string(s)) }
+func (s Protocol) String() string { return string(s) }
 
 func (s Protocol) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
 func (s Protocol) ToInt8() T.Result[int8]       { return gen.ToInt8(string(s)) }
@@ -72,3 +78,25 @@ func (s Protocol) TrimSuffix(suffix string) Protocol {
 	return Protocol(strings.TrimSuffix(string(s), suffix))
 }
 func (s Protocol) TrimSpace() Protocol { return Protocol(strings.TrimSpace(string(s))) }
+
+func (s Protocol) Green() Protocol      { return Protocol(gen.Colorize(gen.Green, string(s))) }
+func (s Protocol) LightGreen() Protocol { return Protocol(gen.Colorize(gen.LightGreen, string(s))) }
+func (s Protocol) Yellow() Protocol     { return Protocol(gen.Colorize(gen.Yellow, string(s))) }
+func (s Protocol) LightYellow() Protocol {
+	return Protocol(gen.Colorize(gen.LightYellow, string(s)))
+}
+func (s Protocol) Red() Protocol       { return Protocol(gen.Colorize(gen.Red, string(s))) }
+func (s Protocol) LightRed() Protocol  { return Protocol(gen.Colorize(gen.LightRed, string(s))) }
+func (s Protocol) Blue() Protocol      { return Protocol(gen.Colorize(gen.Blue, string(s))) }
+func (s Protocol) LightBlue() Protocol { return Protocol(gen.Colorize(gen.LightBlue, string(s))) }
+func (s Protocol) Cyan() Protocol      { return Protocol(gen.Colorize(gen.Cyan, string(s))) }
+func (s Protocol) LightCyan() Protocol { return Protocol(gen.Colorize(gen.LightCyan, string(s))) }
+func (s Protocol) Magenta() Protocol   { return Protocol(gen.Colorize(gen.Magenta, string(s))) }
+func (s Protocol) LightMagenta() Protocol {
+	return Protocol(gen.Colorize(gen.LightMagenta, string(s)))
+}
+func (s Protocol) White() Protocol     { return Protocol(gen.Colorize(gen.White, string(s))) }
+func (s Protocol) Black() Protocol     { return Protocol(gen.Colorize(gen.Black, string(s))) }
+func (s Protocol) Gray() Protocol      { return Protocol(gen.Colorize(gen.DarkGray, string(s))) }
+func (s Protocol) LightGray() Protocol { return Protocol(gen.Colorize(gen.LightGray, string(s))) }
+func (s Protocol) Dim() Protocol       { return Protocol(gen.Colorize(2, string(s))) }

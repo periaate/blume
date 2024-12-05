@@ -5,17 +5,22 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/typ"
 )
 
-func B(bar []byte) *bytes.Buffer {
-	if bar == nil {
+func B(args ...any) *bytes.Buffer {
+	_, arg, _ := gen.Shifts(args)
+	switch v := arg.(type) {
+	case string:
+		return bytes.NewBufferString(v)
+	case []byte:
+		return bytes.NewBuffer(v)
+	default:
 		return bytes.NewBuffer([]byte{})
 	}
-	return bytes.NewBuffer(bar)
 }
 
 // UsePipe reads from stdin and calls the given function for each line.
@@ -69,65 +74,26 @@ func HasOutPipe() bool {
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args(opts ...T.Condition[[]string]) (res []string, ans T.Error[string]) {
-	res = append(os.Args[1:], ReadPipe()...)
+func Args(opts ...Condition[[]string]) (res Result[[]string]) {
+	args := append(os.Args[1:], ReadPipe()...)
 	for _, opt := range opts {
-		if ans = opt(res); ans != nil {
-			return
+		err := opt(args)
+		if err != nil {
+			return Results(args, err)
 		}
 	}
-	return
+	return Results(args, nil)
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 
-// QArgs returns the command-line arguments without the program name, and including any piped inputs.
-// Returned type is an alias of []string which includes various helper functions.
-// Helper functions will panic if they fail.
-func QArgs(opts ...T.Condition[[]string]) (res []Arg, ans T.Error[string]) {
-	args, ans := Args(opts...)
-	res = make([]Arg, len(args))
-	for i, arg := range args {
-		res[i] = Arg(arg)
-	}
+func QArgs(opts ...Condition[[]string]) (res Result[[]String]) {
+	Args(opts...).Match(
+		func(args []string) { res = Results(gen.Sar[String](args), nil) },
+		func(err Error[any]) { res = Results[[]String](nil, err) },
+	)
 	return
-}
-
-type Arg string
-
-func (a Arg) String() string { return string(a) }
-func (a Arg) Bytes() []byte  { return []byte(a) }
-func (a Arg) Int() int       { return gen.Must(strconv.Atoi(string(a))) }
-
-// func WaitForKill() {
-// 	sigChan := make(chan os.Signal, 1)
-// 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-// 	<-sigChan
-// }
-//
-// func Prune(atLeast ...int) {
-// 	if len(atLeast) == 0 {
-// 		atLeast = append(atLeast, 1)
-// 	}
-// 	atl := atLeast[0] - 1
-// 	os.Args = os.Args[1:]
-// 	if len(os.Args) < atl {
-// 		log.Fatalln("not enough arguments")
-// 	}
-// }
-
-// GetArg attemts to get the index given as argument from os.Args. Returns empty string if OOB.
-func GetArg(i int) (res string) {
-	if len(os.Args) == 0 {
-		return
-	}
-	args := os.Args[1:]
-	if len(args) < i || len(args) == 0 {
-		return
-	}
-
-	return args[i]
 }
 
 func Pipes() (input, output chan string) {

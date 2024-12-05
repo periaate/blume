@@ -103,29 +103,16 @@ func Deduplicate[A any, C comparable](fn func(A) C) T.Predicate[A] {
 	}
 }
 
-// func Shift[A any](a []A, count int) (res []A) {
-// 	if len(a) < count {
-// 		return
-// 	}
-// 	return a[count:]
-// }
-// func Pop[A any](a []A, count int) (res []A) {
-// 	if len(a) < count {
-// 		return
-// 	}
-// 	return a[:count]
-// }
-
-func GetShift[A any](n int, a []A) (res A, ok bool) {
-	if len(a)-1 < n {
-		return
-	}
-	return a[n], true
-}
-
-func GetPop[A any](a []A) (res A, ok bool) {
+func Shifts[A any](a []A) (res []A, popped A, ok bool) {
 	if len(a) == 0 {
 		return
 	}
-	return a[len(a)-1], true
+	return a[1:], a[0], true
+}
+
+func Pops[A any](a []A) (res []A, popped A, ok bool) {
+	if len(a) == 0 {
+		return
+	}
+	return a[:len(a)-1], a[len(a)-1], true
 }

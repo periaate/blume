@@ -8,6 +8,14 @@ import (
 	"github.com/periaate/blume/gen/T"
 )
 
+func Sar[S ~string](args []string) (res []S) {
+	res = make([]S, 0, len(args))
+	for _, arg := range args {
+		res = append(res, S(arg))
+	}
+	return
+}
+
 type SArray[S ~string] struct {
 	value []S
 }
