@@ -3,6 +3,7 @@ package yap
 import (
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -67,6 +68,7 @@ func Time() string { return kinoFormat(time.Now()) }
 type Level int
 
 const (
+	L_Fatal Level = math.MinInt32
 	L_Error Level = -1
 	L_Info  Level = 0
 	L_Debug Level = 1
@@ -97,6 +99,8 @@ func (l Level) String() string {
 		return String("I").Colorize(Cyan).String()
 	case L_Debug:
 		return String("D").Colorize(LightYellow).String()
+	case L_Fatal:
+		return String("F").Colorize(Red).String()
 	default:
 		return String("-").String()
 	}
@@ -164,4 +168,14 @@ func Debug(msg string, args ...any) {
 	_, file, line, ok := runtime.Caller(1)
 	Assert(ok, "Failed to get caller")
 	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
+}
+
+func Fatal(msg string, args ...any) {
+	if l < L_Fatal {
+		return
+	}
+	_, file, line, _ := runtime.Caller(1)
+	// Assert(ok, "Failed to get caller") // This is a fatal error.
+	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
+	os.Exit(1)
 }

@@ -6,20 +6,29 @@ type Err[A any] struct {
 	data   A
 }
 
-func (e Err[A]) Error() error {
-	return e.err
+type err string
+
+func (e err) Error() string { return string(e) }
+
+func Errs[A any](er any, reason string, data A) Err[A] {
+	switch v := er.(type) {
+	case error:
+		return Err[A]{err: v, reason: reason, data: data}
+	case string:
+		return Err[A]{err: err(v), reason: reason, data: data}
+	default:
+		panic("invalid error type")
+	}
 }
 
-func (e Err[A]) Reason() string {
-	return e.reason
-}
-
-func (e Err[A]) Data() A {
-	return e.data
-}
+func (e Err[A]) Err() error     { return e.err }
+func (e Err[A]) Reason() string { return e.reason }
+func (e Err[A]) Data() A        { return e.data }
+func (e Err[A]) Error() string  { return "error: " + e.err.Error() + "; beacuse: " + e.reason }
 
 type Error[A any] interface {
-	Error() error
+	Error() string
+	Err() error
 	Reason() string
 	Data() A
 }

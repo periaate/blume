@@ -3,9 +3,14 @@ package hnet
 import (
 	"net/http"
 	"strings"
+
+	"github.com/periaate/blume/gen/T"
 )
 
+var _ T.Error[int] = Error{}
+
 type NetErr interface {
+	T.Error[int]
 	error
 	Status() int
 	Respond(w http.ResponseWriter)
@@ -16,8 +21,11 @@ type Error struct {
 	Msg        string
 }
 
-func (c Error) Error() string { return c.Msg }
-func (c Error) Status() int   { return c.HTTPStatus }
+func (c Error) Data() int      { return c.HTTPStatus }
+func (c Error) Err() error     { return c }
+func (c Error) Reason() string { return c.Msg }
+func (c Error) Error() string  { return c.Msg }
+func (c Error) Status() int    { return c.HTTPStatus }
 func (c Error) Respond(w http.ResponseWriter) {
 	http.Error(w, c.Msg, c.HTTPStatus)
 }

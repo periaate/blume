@@ -1,7 +1,6 @@
 package gen_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -9,25 +8,6 @@ import (
 	"github.com/periaate/blume/gen/T"
 	"github.com/stretchr/testify/assert"
 )
-
-// MyError is a custom error type implementing T.Error[any]
-type MyError[A any] struct {
-	err    error
-	reason string
-	data   A
-}
-
-func (e MyError[A]) Error() error {
-	return e.err
-}
-
-func (e MyError[A]) Reason() string {
-	return e.reason
-}
-
-func (e MyError[A]) Data() A {
-	return e.data
-}
 
 func TestTreeTraverseDepth(t *testing.T) {
 	tree := gen.Tree[string]{
@@ -151,7 +131,7 @@ func TestTreeTraverseDepthWithError(t *testing.T) {
 	err := tree.TraverseDepth(10, func(value string) T.Error[any] {
 		visited = append(visited, value)
 		if value == "D" {
-			return MyError[any]{err: errors.New("found D"), reason: "found D", data: nil}
+			return T.Errs[any]("found D", "found D", nil)
 		}
 		return nil
 	})
@@ -185,7 +165,7 @@ func TestTreeTraverseBreadthWithError(t *testing.T) {
 	err := tree.TraverseBreadth(10, func(value string) T.Error[any] {
 		visited = append(visited, value)
 		if value == "C" {
-			return MyError[any]{err: errors.New("found C"), reason: "found C", data: nil}
+			return T.Errs[any]("found C", "found C", nil)
 		}
 		return nil
 	})
