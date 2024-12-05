@@ -13,6 +13,24 @@ import (
 	"github.com/periaate/blume/gen/T"
 )
 
+var (
+	includeY = false
+	includeM = false
+	includeD = false
+	includeh = true
+	includem = true
+	includes = true
+)
+
+func IncludeTimes(Y, M, D, h, m, s bool) {
+	includeY = Y
+	includeM = M
+	includeD = D
+	includeh = h
+	includem = m
+	includes = s
+}
+
 const webSafeBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 
 func Encode(n int) string { return string(webSafeBase64[n%64]) }
@@ -22,13 +40,24 @@ func Encode(n int) string { return string(webSafeBase64[n%64]) }
 func kinoFormat(tim time.Time) (res string) {
 	year, month, day := tim.Date()
 	hour, min, sec := tim.Clock()
-	Y := Encode(year - 1970)
-	M := Encode(int(month) - 1)
-	D := Encode(day - 1)
-	h := Encode(hour)
-	m := Encode(min)
-	s := Encode(sec)
-	res = fmt.Sprintf("%s%s%s%s%s%s", Y, M, D, h, m, s)
+	if includeY {
+		res += Encode(year - 1970)
+	}
+	if includeM {
+		res += Encode(int(month) - 1)
+	}
+	if includeD {
+		res += Encode(day - 1)
+	}
+	if includeh {
+		res += Encode(hour)
+	}
+	if includem {
+		res += Encode(min)
+	}
+	if includes {
+		res += Encode(sec)
+	}
 	return
 }
 
@@ -76,7 +105,7 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 	res := PairReducer[any]()(args)
 	strs := Map[[]any, string](
 		func(a []any) string {
-			a1 := String(fmt.Sprintf("<%s>", a[0])).ToUpper().Colorize(LightYellow).String()
+			a1 := String(fmt.Sprintf("%s", a[0])).ToUpper().Colorize(LightYellow).String()
 			a = a[1:]
 			res := Map[any, string](func(a any) string {
 				switch v := a.(type) {
@@ -90,7 +119,7 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 					return String(fmt.Sprint(a)).Colorize(LightGreen).String()
 				}
 			})(a)
-			return fmt.Sprintf("%s:%s;", a1, strings.Join(res, ", "))
+			return fmt.Sprintf("%s:<%s>;", a1, strings.Join(res, ", "))
 		},
 	)(res)
 

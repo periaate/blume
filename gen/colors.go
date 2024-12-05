@@ -1,5 +1,7 @@
 package gen
 
+import "strconv"
+
 const (
 	reset = "\033[0m"
 
@@ -20,3 +22,11 @@ const (
 	LightCyan    = 96
 	White        = 97
 )
+
+func Colorize(colorCode int, s string) string {
+	return "\033[" + strconv.Itoa(colorCode) + "m" + s + "\033[0m"
+}
+
+func Dim(s string) string {
+	return Colorize(2, s)
+}

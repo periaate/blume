@@ -41,4 +41,22 @@ type Str[S ~string] interface {
 	TrimPrefix(prefix string) S
 	TrimSuffix(suffix string) S
 	TrimSpace() S
+
+	Green() S
+	Yellow() S
+	Red() S
+	Blue() S
+	LightGreen() S
+	LightYellow() S
+	LightRed() S
+	LightBlue() S
+	Cyan() S
+	LightCyan() S
+	Magenta() S
+	LightMagenta() S
+	Gray() S
+	LightGray() S
+	White() S
+	Black() S
+	Dim() S
 }

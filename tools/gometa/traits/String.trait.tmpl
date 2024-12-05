@@ -1,3 +1,9 @@
+var (
+	_ T.SAr[{{.}}]     = gen.SArray[{{.}}]{}
+	_ T.Str[{{.}}]     = {{.}}("")
+	_ T.Contains[string] = {{.}}("")
+)
+
 func (s {{.}}) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s {{.}}) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
 func (s {{.}}) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
@@ -33,8 +39,8 @@ func (s {{.}}) Or(Default string) {{.}} {
 	}
 	return s
 }
-func (s {{.}}) Len() int          { return len(string(s)) }
-func (s {{.}}) {{.}}() string { return string(s) }
+func (s {{.}}) Len() int       { return len(string(s)) }
+func (s {{.}}) String() string { return string(s) }
 
 func (s {{.}}) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
 func (s {{.}}) ToInt8() T.Result[int8]       { return gen.ToInt8(string(s)) }
@@ -63,3 +69,25 @@ func (s {{.}}) TrimSuffix(suffix string) {{.}} {
 	return {{.}}(strings.TrimSuffix(string(s), suffix))
 }
 func (s {{.}}) TrimSpace() {{.}} { return {{.}}(strings.TrimSpace(string(s))) }
+
+func (s {{.}}) Green() {{.}}      { return {{.}}(gen.Colorize(gen.Green, string(s))) }
+func (s {{.}}) LightGreen() {{.}} { return {{.}}(gen.Colorize(gen.LightGreen, string(s))) }
+func (s {{.}}) Yellow() {{.}}     { return {{.}}(gen.Colorize(gen.Yellow, string(s))) }
+func (s {{.}}) LightYellow() {{.}} {
+	return {{.}}(gen.Colorize(gen.LightYellow, string(s)))
+}
+func (s {{.}}) Red() {{.}}       { return {{.}}(gen.Colorize(gen.Red, string(s))) }
+func (s {{.}}) LightRed() {{.}}  { return {{.}}(gen.Colorize(gen.LightRed, string(s))) }
+func (s {{.}}) Blue() {{.}}      { return {{.}}(gen.Colorize(gen.Blue, string(s))) }
+func (s {{.}}) LightBlue() {{.}} { return {{.}}(gen.Colorize(gen.LightBlue, string(s))) }
+func (s {{.}}) Cyan() {{.}}      { return {{.}}(gen.Colorize(gen.Cyan, string(s))) }
+func (s {{.}}) LightCyan() {{.}} { return {{.}}(gen.Colorize(gen.LightCyan, string(s))) }
+func (s {{.}}) Magenta() {{.}}   { return {{.}}(gen.Colorize(gen.Magenta, string(s))) }
+func (s {{.}}) LightMagenta() {{.}} {
+	return {{.}}(gen.Colorize(gen.LightMagenta, string(s)))
+}
+func (s {{.}}) White() {{.}}     { return {{.}}(gen.Colorize(gen.White, string(s))) }
+func (s {{.}}) Black() {{.}}     { return {{.}}(gen.Colorize(gen.Black, string(s))) }
+func (s {{.}}) Gray() {{.}}      { return {{.}}(gen.Colorize(gen.DarkGray, string(s))) }
+func (s {{.}}) LightGray() {{.}} { return {{.}}(gen.Colorize(gen.LightGray, string(s))) }
+func (s {{.}}) Dim() {{.}}       { return {{.}}(gen.Colorize(2, string(s))) }

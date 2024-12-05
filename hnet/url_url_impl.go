@@ -42,7 +42,7 @@ func (s URL) Or(Default string) URL {
 	}
 	return s
 }
-func (s URL) Len() int    { return len(string(s)) }
+func (s URL) Len() int          { return len(string(s)) }
 func (s URL) URL() string { return string(s) }
 
 func (s URL) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
