@@ -6,16 +6,16 @@ type Err[A any] struct {
 	data   A
 }
 
-type err string
+type errt string
 
-func (e err) Error() string { return string(e) }
+func (e errt) Error() string { return string(e) }
 
 func Errs[A any](er any, reason string, data A) Err[A] {
 	switch v := er.(type) {
 	case error:
 		return Err[A]{err: v, reason: reason, data: data}
 	case string:
-		return Err[A]{err: err(v), reason: reason, data: data}
+		return Err[A]{err: errt(v), reason: reason, data: data}
 	default:
 		panic("invalid error type")
 	}
@@ -34,7 +34,9 @@ type Error[A any] interface {
 }
 
 type TreeLike[A any] interface {
+	// Recursive
 	Collect[A]
+	// Recursive
 	Filters[A]
 
 	// TraverseDepth traverses the tree in depth-first order, calling the function on each node.

@@ -9,10 +9,46 @@ import (
 	"strings"
 	"time"
 
-	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/gen"
 	"github.com/periaate/blume/gen/T"
+	"github.com/periaate/blume/typ"
 	. "github.com/periaate/blume/typ"
+)
+
+type Yapfig struct {
+	Years   bool
+	Months  bool
+	Days    bool
+	Hours   bool
+	Minutes bool
+	Seconds bool
+
+	ShowFile  bool
+	ShowLevel bool
+	ShowTime  bool
+
+	Level Level
+}
+
+func Configure(yapfig Yapfig) {
+	includeY = yapfig.Years
+	includeM = yapfig.Months
+	includeD = yapfig.Days
+	includeh = yapfig.Hours
+	includem = yapfig.Minutes
+	includes = yapfig.Seconds
+
+	showFile = yapfig.ShowFile
+	showLevel = yapfig.ShowLevel
+	showTime = yapfig.ShowTime
+
+	l = yapfig.Level
+}
+
+var (
+	showFile  = true
+	showLevel = true
+	showTime  = true
 )
 
 var (
@@ -78,11 +114,18 @@ const (
 func PairReducer[A any]() T.Reducer[A, [][]A] {
 	return func(arr []A) [][]A {
 		pairs := [][]A{}
-		for i := 0; i < len(arr); i += 2 {
-			if i+1 < len(arr) {
-				pairs = append(pairs, []A{arr[i], arr[i+1]})
+		var i int
+		for i = 0; i < len(arr); i += 2 {
+			cur := []A{}
+			if i+1 <= len(arr) {
+				cur = append(cur, arr[i])
 			}
+			if i+2 <= len(arr) {
+				cur = append(cur, arr[i+1])
+			}
+			pairs = append(pairs, cur)
 		}
+
 		return pairs
 	}
 }
@@ -110,7 +153,11 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 	res := PairReducer[any]()(args)
 	strs := Map[[]any, string](
 		func(a []any) string {
-			a1 := String(fmt.Sprintf("%s", a[0])).ToUpper().Colorize(LightYellow).String()
+			a1 := String(fmt.Sprint(a[0]))
+			if len(a) == 1 {
+				return a1.Colorize(LightYellow).String() + ";"
+			}
+			a1 = a1.ToUpper().Colorize(LightYellow)
 			a = a[1:]
 			res := Map[any, string](func(a any) string {
 				switch v := a.(type) {
@@ -128,19 +175,55 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 		},
 	)(res)
 
+	pr := ""
+
+	if showLevel {
+		pr += level.String() + " "
+	}
+
+	if showFile {
+		pr += String(src).Dim().String() + "\t"
+	}
+
+	if showTime {
+		pr += String(Time()).Colorize(Cyan).Dim().String() + " "
+	}
+
 	fmt.Fprintf(
 		out,
-		Or(format, "%s %s %s [%s] %s\n"),
-		level.String(),
-		src,
-		String(Time()).Colorize(Yellow).String(),
+		"%s%s %s\n",
+		pr,
 		String(msg),
 		strings.Join(strs, " "),
 	)
 }
 
 func caller(file string, line int) string {
-	return fmt.Sprintf("%s:%d", fsio.Name(file), line)
+	n := typ.String(file).Split("/", "\\").GetPop().Ignore()
+	return fmt.Sprintf("%s:%d", n, line)
+}
+
+func ErrFatal(v any, msg string, args ...any) {
+	if v == nil {
+		return
+	}
+
+	var errMsg string
+	switch v := v.(type) {
+	case error:
+		errMsg = v.Error()
+	case string:
+		errMsg = v
+	case T.Error[any]:
+		errMsg = v.Error()
+	default:
+		errMsg = fmt.Sprint(v)
+	}
+
+	_, file, line, _ := runtime.Caller(1)
+	args = append([]any{"err", errMsg}, args...)
+	Log(os.Stdout, "", caller(file, line), L_Error, msg, args...)
+	os.Exit(1)
 }
 
 func Info(msg string, args ...any) {

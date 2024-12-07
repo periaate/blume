@@ -38,9 +38,9 @@ func main() {
 		lines := String(str).Split("\n")
 		var Package string
 		var derive string
-		for _, line := range lines {
+		for _, line := range lines.Array() {
 			if line.HasPrefix("package") {
-				Package = line.Split(" ")[1].String()
+				Package = line.Split(" ").Array()[1].String()
 				continue
 			}
 			if line.HasPrefix("//blume:derive") {
@@ -48,7 +48,7 @@ func main() {
 				continue
 			}
 			if derive != "" {
-				t := line.Split(" ")
+				t := line.Split(" ").Array()
 				if t[0] != "type" {
 					panic("Error: expected type declaration " + line)
 				}

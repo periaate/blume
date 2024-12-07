@@ -1,0 +1,1 @@
+{{ .Module }} is a programming language, embedded into Go in the form of a standard library. It wraps around Go's existing standard libraries, or implements them from scratch, with internally consistent semantics.

@@ -8,9 +8,12 @@ import (
 	"strings"
 
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/gen/T"
+	"github.com/periaate/blume/lazy"
 )
 
-func Clean(path string) string {
+func Clean[S ~string](inp S) S {
+	path := string(inp)
 	var pre string
 	var spl string
 	var aft string
@@ -18,7 +21,7 @@ func Clean(path string) string {
 	split := gen.SplitWithAll(path, false, "://")
 	if len(split) >= 2 {
 		if gen.Contains("/")(split[0]) {
-			return strings.Join(split, "://")
+			return S(strings.Join(split, "://"))
 		}
 
 		pre = split[0]
@@ -35,12 +38,41 @@ func Clean(path string) string {
 	path = regexp.ReplaceAllString(path, "/")
 
 	path = pre + spl + path
-	return path
+	return S(path)
 }
 
 func ToSlash(path string) string { return strings.ReplaceAll(path, "\\", "/") }
 
-var Home = gen.IgnoresNil(os.UserHomeDir)
+var Home = lazy.Niladic(gen.IgnoresNil(os.UserHomeDir))
+
+// ReadDir reads the directory and returns a list of files.
+func ReadsDir[S ~string](fp S) T.Result[gen.Array[FilePath]] {
+	f := string(fp)
+	var r gen.Array[FilePath]
+	res := []FilePath{}
+	f = gen.ReplacePrefix("~", Home())(f)
+
+	if !IsDir(f) {
+		return T.Results(r, fmt.Errorf("%s is not a directory", f))
+	}
+
+	entries, err := os.ReadDir(f)
+	if err != nil {
+		return T.Results(r, err)
+	}
+
+	res = make([]FilePath, 0, len(entries))
+
+	for _, entry := range entries {
+		fp := entry.Name()
+		if entry.IsDir() {
+			fp += "/"
+		}
+		res = append(res, FilePath(Join(f, fp)))
+	}
+
+	return T.Results(gen.ToArray(res), nil)
+}
 
 // ReadDir reads the directory and returns a list of files.
 func ReadDir(f string) (res []string, err error) {
@@ -79,9 +111,14 @@ func Name(f string) string {
 	return Clean(r)
 }
 
-func Dir(f string) string  { return fp.Dir(f) }
-func Base(f string) string { return fp.Base(f) }
-func Ext(f string) string  { return fp.Ext(f) }
+func Abs[S ~string](f S) T.Result[S] {
+	path, err := fp.Abs(string(f))
+	return T.Results(S(path), err)
+}
+
+func Dir[S ~string](f S) S  { return S(fp.Dir(string(f))) }
+func Base[S ~string](f S) S { return S(fp.Base(string(f))) }
+func Ext(f string) string   { return fp.Ext(f) }
 
 // Walk walks the directory and returns a list of files that pass the predicate.
 func Walk(fn func(string) bool) func(string) (res []string, err error) {
@@ -105,8 +142,8 @@ func Walk(fn func(string) bool) func(string) (res []string, err error) {
 }
 
 // IsDir checks if input is a directory.
-func IsDir(f string) bool {
-	info, err := os.Stat(f)
+func IsDir[S ~string](f S) bool {
+	info, err := os.Stat(string(f))
 	if err != nil {
 		return false
 	}

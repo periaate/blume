@@ -88,10 +88,10 @@ func Args(opts ...Condition[[]string]) (res Result[[]string]) {
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 
-func QArgs(opts ...Condition[[]string]) (res Result[[]String]) {
+func QArgs(opts ...Condition[[]string]) (res Result[gen.Array[String]]) {
 	Args(opts...).Match(
-		func(args []string) { res = Results(gen.Sar[String](args), nil) },
-		func(err Error[any]) { res = Results[[]String](nil, err) },
+		func(args []string) { res = Results(gen.ToArray(gen.Sar[String](args)), nil) },
+		func(err Error[any]) { res = Results(gen.Array[String]{}, err) },
 	)
 	return
 }

@@ -7,7 +7,29 @@ import (
 	"path/filepath"
 
 	"github.com/periaate/blume/gen"
+	"github.com/periaate/blume/gen/T"
 )
+
+func Copy[DST, SRC ~string](dst DST, src SRC, force bool) T.Result[any] {
+	f, err := os.Open(string(src))
+	if err != nil {
+		return T.Results[any](nil, err)
+	}
+	defer f.Close()
+
+	switch force {
+	case true:
+		err = WriteAll(string(dst), f)
+	case false:
+		err = WriteNew(string(dst), f)
+	}
+
+	return T.Results[any](nil, err)
+}
+
+func Read[S ~string](fp S) T.Result[[]byte] {
+	return T.Results(os.ReadFile(string(fp)))
+}
 
 func ReadDirRecursively(fp string) (res []string) {
 	dirs := []string{fp}

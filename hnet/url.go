@@ -50,7 +50,7 @@ func PATCH(r Request) Request {
 	return r
 }
 
-func (u URL) ToRequest(opts ...T.Transformer[Request]) (req Request) {
+func (u URL) ToRequest(opts ...T.Monadic[Request, Request]) (req Request) {
 	if len(u) == 0 {
 		req.NetErr = Free(400, "Invalid URL", "url", string(u))
 		return
@@ -72,7 +72,7 @@ func (u URL) ToRequest(opts ...T.Transformer[Request]) (req Request) {
 	return
 }
 
-func (u URL) Format(options ...T.Transformer[URL]) URL {
+func (u URL) Format(options ...T.Monadic[URL, URL]) URL {
 	return Pipe[URL](ArrayOrDefault(options, AsProtocol(HTTP))...)(u)
 }
 
@@ -96,6 +96,6 @@ func (u URL) AsProtocol(protocol Protocol) URL {
 	return URL(protocol) + "://" + u
 }
 
-func AsProtocol(protocol Protocol) T.Transformer[URL] {
+func AsProtocol(protocol Protocol) T.Monadic[URL, URL] {
 	return func(u URL) URL { return u.AsProtocol(protocol) }
 }

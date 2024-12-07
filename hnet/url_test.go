@@ -19,14 +19,14 @@ func TestURL_Custom(t *testing.T) {
 
 	tests := []struct {
 		input    URL
-		options  []T.Transformer[URL]
+		options  []T.Monadic[URL, URL]
 		expected URL
 	}{
-		{"example.com", []T.Transformer[URL]{uppercaseTransformer}, "EXAMPLE.COM"},
-		{"example.com", []T.Transformer[URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
-		{"example.com", []T.Transformer[URL]{AsProtocol(HTTPS)}, "https://example.com"},
-		{"example.com", []T.Transformer[URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
-		{"example.com", []T.Transformer[URL]{AsProtocol(WSS)}, "wss://example.com"},
+		{"example.com", []T.Monadic[URL, URL]{uppercaseTransformer}, "EXAMPLE.COM"},
+		{"example.com", []T.Monadic[URL, URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
+		{"example.com", []T.Monadic[URL, URL]{AsProtocol(HTTPS)}, "https://example.com"},
+		{"example.com", []T.Monadic[URL, URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
+		{"example.com", []T.Monadic[URL, URL]{AsProtocol(WSS)}, "wss://example.com"},
 	}
 
 	for _, tt := range tests {

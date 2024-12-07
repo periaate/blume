@@ -13,6 +13,7 @@ var (
 	_ T.Contains[string] = URL("")
 )
 
+func (s URL) Is(args ...string) bool  { return gen.Is(args...)(string(s)) }
 func (s URL) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s URL) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
 func (s URL) HasSuffix(args ...string) bool { return gen.HasSuffix(args...)(string(s)) }
@@ -31,15 +32,18 @@ func (s URL) Replace(pats ...string) URL {
 func (s URL) ReplaceRegex(pat string, rep string) URL {
 	return URL(gen.ReplaceRegex[string](pat, rep)(string(s)))
 }
-func (s URL) Shift(count int) URL { return URL(gen.Shift[string](count)(string(s))) }
-func (s URL) Pop(count int) URL   { return URL(gen.Pop[string](count)(string(s))) }
-func (s URL) Split(pats ...string) []URL {
+
+func (s URL) Shift(count int) URL {
+	return URL(gen.Shift[string](count)(string(s)))
+}
+func (s URL) Pop(count int) URL { return URL(gen.Pop[string](count)(string(s))) }
+func (s URL) Split(pats ...string) gen.Array[URL] {
 	split := gen.SplitWithAll(string(s), false, pats...)
 	res := make([]URL, len(split))
 	for i, v := range split {
 		res[i] = URL(v)
 	}
-	return res
+	return gen.ToArray(res)
 }
 
 func (s URL) Or(Default string) URL {
@@ -79,24 +83,28 @@ func (s URL) TrimSuffix(suffix string) URL {
 }
 func (s URL) TrimSpace() URL { return URL(strings.TrimSpace(string(s))) }
 
-func (s URL) Green() URL      { return URL(gen.Colorize(gen.Green, string(s))) }
-func (s URL) LightGreen() URL { return URL(gen.Colorize(gen.LightGreen, string(s))) }
-func (s URL) Yellow() URL     { return URL(gen.Colorize(gen.Yellow, string(s))) }
+func (s URL) Green() URL { return URL(gen.Colorize(gen.Green, string(s))) }
+func (s URL) LightGreen() URL {
+	return URL(gen.Colorize(gen.LightGreen, string(s)))
+}
+func (s URL) Yellow() URL { return URL(gen.Colorize(gen.Yellow, string(s))) }
 func (s URL) LightYellow() URL {
 	return URL(gen.Colorize(gen.LightYellow, string(s)))
 }
-func (s URL) Red() URL       { return URL(gen.Colorize(gen.Red, string(s))) }
-func (s URL) LightRed() URL  { return URL(gen.Colorize(gen.LightRed, string(s))) }
-func (s URL) Blue() URL      { return URL(gen.Colorize(gen.Blue, string(s))) }
-func (s URL) LightBlue() URL { return URL(gen.Colorize(gen.LightBlue, string(s))) }
-func (s URL) Cyan() URL      { return URL(gen.Colorize(gen.Cyan, string(s))) }
-func (s URL) LightCyan() URL { return URL(gen.Colorize(gen.LightCyan, string(s))) }
-func (s URL) Magenta() URL   { return URL(gen.Colorize(gen.Magenta, string(s))) }
+func (s URL) Red() URL       { return gen.Colorize(gen.Red, s) }
+func (s URL) LightRed() URL  { return gen.Colorize(gen.LightRed, s) }
+func (s URL) Blue() URL      { return gen.Colorize(gen.Blue, s) }
+func (s URL) LightBlue() URL { return gen.Colorize(gen.LightBlue, s) }
+func (s URL) Cyan() URL      { return gen.Colorize(gen.Cyan, s) }
+func (s URL) LightCyan() URL { return gen.Colorize(gen.LightCyan, s) }
+func (s URL) Magenta() URL   { return gen.Colorize(gen.Magenta, s) }
 func (s URL) LightMagenta() URL {
-	return URL(gen.Colorize(gen.LightMagenta, string(s)))
+	return gen.Colorize(gen.LightMagenta, s)
 }
-func (s URL) White() URL     { return URL(gen.Colorize(gen.White, string(s))) }
-func (s URL) Black() URL     { return URL(gen.Colorize(gen.Black, string(s))) }
-func (s URL) Gray() URL      { return URL(gen.Colorize(gen.DarkGray, string(s))) }
-func (s URL) LightGray() URL { return URL(gen.Colorize(gen.LightGray, string(s))) }
-func (s URL) Dim() URL       { return URL(gen.Colorize(2, string(s))) }
+func (s URL) White() URL     { return gen.Colorize(gen.White, s) }
+func (s URL) Black() URL     { return gen.Colorize(gen.Black, s) }
+func (s URL) Gray() URL      { return gen.Colorize(gen.DarkGray, s) }
+func (s URL) LightGray() URL { return gen.Colorize(gen.LightGray, s) }
+
+func (s URL) Dim() URL  { return gen.Colorize(2, s) }
+func (s URL) Bold() URL { return gen.Bold(s) }

@@ -56,7 +56,7 @@ func (r Request) Call() Response {
 	return Response{Response: resp}
 }
 
-func WithHeaders(tuples ...[2]string) T.Transformer[Request] {
+func WithHeaders(tuples ...[2]string) T.Monadic[Request, Request] {
 	return func(r Request) Request {
 		if r.Header == nil {
 			r.Header = http.Header{}
@@ -68,7 +68,7 @@ func WithHeaders(tuples ...[2]string) T.Transformer[Request] {
 	}
 }
 
-func WithBody(body io.ReadCloser) T.Transformer[Request] {
+func WithBody(body io.ReadCloser) T.Monadic[Request, Request] {
 	return func(r Request) Request {
 		r.Body = body
 		return r

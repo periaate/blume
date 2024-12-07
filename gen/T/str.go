@@ -20,7 +20,6 @@ type Str[S ~string] interface {
 	ReplaceRegex(pat string, rep string) S
 	Shift(count int) S
 	Pop(count int) S
-	Split(pats ...string) []S
 	String() string
 	ToInt() Result[int]
 	ToInt8() Result[int8]

@@ -1,7 +1,9 @@
 // Package gen implements generic types and functional forms which make use of them.
 package gen
 
-import "github.com/periaate/blume/gen/T"
+import (
+	"github.com/periaate/blume/gen/T"
+)
 
 func Or[C comparable](a, b C) (res C) {
 	if a == res {
@@ -67,14 +69,16 @@ func Any[A any](fns ...T.Predicate[A]) T.Reducer[A, bool] {
 }
 
 // First returns the first value which passes the [T.Predicate].
-func First[A any](fn T.Predicate[A]) T.Reducer[A, A] {
-	return func(args []A) (res A) {
+func First[A any](fns ...T.Predicate[A]) T.Reducer[A, T.Result[A]] {
+	fn := PredOr[A](fns...)
+	return func(args []A) T.Result[A] {
+		var zero A
 		for _, arg := range args {
 			if fn(arg) {
-				return arg
+				return T.Results(arg, nil)
 			}
 		}
-		return res
+		return T.Results(zero, "[First] found no matching values")
 	}
 }
 
@@ -127,8 +131,13 @@ func Is[C comparable](A ...C) T.Predicate[C] {
 	return T.Map[C, bool]{M: in}.Contains
 }
 
+func StrIs[A, B ~string](vals ...A) T.Predicate[B] {
+	is := Is(vals...)
+	return func(b B) bool { return is(A(b)) }
+}
+
 // Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipe[A any](fns ...T.Transformer[A]) T.Transformer[A] {
+func Pipe[A any](fns ...T.Monadic[A, A]) T.Monadic[A, A] {
 	return func(a A) A {
 		for _, fn := range fns {
 			a = fn(a)

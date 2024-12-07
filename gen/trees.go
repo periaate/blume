@@ -13,6 +13,27 @@ type Tree[A any] struct {
 	Value A
 }
 
+func (t *Tree[A]) Append(arr ...A) {
+	nodes := make([]Tree[A], len(arr))
+	for i, v := range arr {
+		nodes[i] = Tree[A]{Value: v}
+	}
+	t.Nodes = append(t.Nodes, nodes...)
+}
+
+func (t Tree[A]) Leaves() Array[A] {
+	if len(t.Nodes) == 0 {
+		return Array[A]{[]A{t.Value}}
+	}
+
+	var res []A
+	for _, node := range t.Nodes {
+		res = append(res, node.Leaves().Array()...)
+	}
+
+	return ToArray(res)
+}
+
 func (t Tree[A]) Collect() []A {
 	var res []A
 	for _, node := range t.Nodes {
