@@ -8,7 +8,6 @@ import (
 
 	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/gen"
-	types "github.com/periaate/blume/typ"
 )
 
 
@@ -80,10 +79,10 @@ func Args(opts ...gen.Condition[[]string]) Option[Array[string]] {
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 
-func QArgs(opts ...gen.Condition[[]string])  Option[Array[types.String]] {
+func QArgs(opts ...gen.Condition[[]string])  Option[Array[gen.String]] {
 	args, err := Args(opts...).Values()
-	if err != nil { return None[Array[types.String]](err) }
-	return Some[Array[types.String]](ToArray(MapStoS[string, types.String](args.Values()...)))
+	if err != nil { return None[Array[gen.String]](err) }
+	return Some[Array[gen.String]](ToArray(MapStoS[string, gen.String](args.Values()...)))
 }
 
 func StoS[A, B ~string](a A) B { return B(a) } 

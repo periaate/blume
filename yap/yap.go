@@ -12,8 +12,6 @@ import (
 	"github.com/periaate/blume/core"
 	"github.com/periaate/blume/gen"
 	. "github.com/periaate/blume/gen"
-	"github.com/periaate/blume/typ"
-	. "github.com/periaate/blume/typ"
 )
 
 type Yapfig struct {
@@ -166,7 +164,7 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 }
 
 func caller(file string, line int) string {
-	split := typ.String(file).Split("/", "\\").Values()
+	split := gen.String(file).Split("/", "\\").Values()
 	n := split[len(split)-1]
 	return fmt.Sprintf("%s:%d", n, line)
 }

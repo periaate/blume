@@ -1,52 +1,11 @@
 package gen
 
 import (
-	"iter"
 	"strconv"
 	"strings"
 
 	. "github.com/periaate/blume/core"
 )
-
-var _ = Zero[any]
-
-func Sar[S ~string](args []string) (res []S) {
-	res = make([]S, 0, len(args))
-	for _, arg := range args {
-		res = append(res, S(arg))
-	}
-	return
-}
-
-type SArray[S ~string] struct { value []S }
-
-func (s SArray[S]) Values() []S { return s.value }
-
-func (s SArray[S]) Iter() iter.Seq[S] {
-	return func(yield func(S) bool) {
-		for _, v := range s.value {
-			if !yield(v) { break }
-		}
-	}
-}
-
-// func (s SArray[S]) From(arr []string) SAr[S] {
-// 	res := make([]S, len(arr))
-// 	for i, v := range arr {
-// 		res[i] = S(v)
-// 	}
-// 	return SArray[S]{value: res}
-// }
-
-func (s SArray[S]) Array() []string {
-	res := make([]string, len(s.value))
-	for i, v := range s.value {
-		res[i] = string(v)
-	}
-	return res
-}
-
-func (s SArray[S]) Join(sep string) S { return S(strings.Join(s.Array(), sep)) }
 
 func ToInt(s string) Option[int] {
 	i, err := strconv.Atoi(s)
@@ -115,6 +74,34 @@ func ToLower(s string) string { return strings.ToLower(s) }
 
 func Trim(s string) string { return strings.Trim(s, " ") }
 func TrimPrefix(prefix string, s string) string { return strings.TrimPrefix(s, prefix) }
-
 func TrimSuffix(suffix string, s string) string { return strings.TrimSuffix(s, suffix) }
 func TrimSpace(s string) string { return strings.TrimSpace(s) }
+
+
+const (
+	reset = "\033[0m"
+
+	Black        = 30
+	Red          = 31
+	Green        = 32
+	Yellow       = 33
+	Blue         = 34
+	Magenta      = 35
+	Cyan         = 36
+	LightGray    = 37
+	DarkGray     = 90
+	LightRed     = 91
+	LightGreen   = 92
+	LightYellow  = 93
+	LightBlue    = 94
+	LightMagenta = 95
+	LightCyan    = 96
+	White        = 97
+)
+
+func Colorize[S ~string](colorCode int, s S) S {
+	return "\033[" + S(strconv.Itoa(colorCode)) + "m" + s + "\033[0m"
+}
+
+func Dim[S ~string](s S) S { return Colorize(2, s) }
+func Bold[S ~string](s S) S { return "\033[1m" + s + "\033[0m" }
