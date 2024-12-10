@@ -1,8 +1,6 @@
 package gen
 
 import (
-	"fmt"
-
 	. "github.com/periaate/blume/core"
 )
 
@@ -11,7 +9,7 @@ type Condition[A any] func(A) Error[string]
 func AtLeast[N Numeric](n N) Condition[N] {
 	return func(i N) (er Error[string]) {
 		if i < n {
-			er = Errorf[string]("at least "+fmt.Sprint(n), "input "+fmt.Sprint(i)+" is less than "+fmt.Sprint(n), "")
+			er = Errorf[string]("condition [AtLeast] failed because input [%v] is less than [%v]", i, n)
 		}
 		return nil
 	}
@@ -20,7 +18,7 @@ func AtLeast[N Numeric](n N) Condition[N] {
 func AtMost[N Numeric](n N) Condition[N] {
 	return func(i N) (er Error[string]) {
 		if i > n {
-			er = Errorf[string]("at most "+fmt.Sprint(n), "input "+fmt.Sprint(i)+" is greater than "+fmt.Sprint(n), "")
+			er = Errorf[string]("condition [AtMost] failed because input [%v] is greater than [%v]", i, n)
 		}
 		return nil
 	}
@@ -29,9 +27,9 @@ func AtMost[N Numeric](n N) Condition[N] {
 func Between[N Numeric](min, max N) Condition[N] {
 	return func(i N) (er Error[string]) {
 		if i < min {
-			er = Errorf[string]("between "+fmt.Sprint(min)+" and "+fmt.Sprint(max), "input "+fmt.Sprint(i)+" is less than "+fmt.Sprint(min), "")
+			er = Errorf[string]("condition [Between] failed because input [%v] is less than [%v]", i, min)
 		} else if i > max {
-			er = Errorf[string]("between "+fmt.Sprint(min)+" and "+fmt.Sprint(max), "input "+fmt.Sprint(i)+" is greater than "+fmt.Sprint(max), "")
+			er = Errorf[string]("condition [Between] failed because input [%v] is greater than [%v]", i, max)
 		}
 		return nil
 	}
@@ -40,7 +38,7 @@ func Between[N Numeric](min, max N) Condition[N] {
 func Exactly[N Numeric](n N) Condition[N] {
 	return func(i N) (er Error[string]) {
 		if i != n {
-			er = Errorf[string]("exactly "+fmt.Sprint(n), "input "+fmt.Sprint(i)+" is not equal to "+fmt.Sprint(n), "")
+			er = Errorf[string]("condition [Exactly] failed because input [%v] is not equal to [%v]", i, n)
 		}
 		return nil
 	}
@@ -48,7 +46,7 @@ func Exactly[N Numeric](n N) Condition[N] {
 
 func NotZero[K comparable](k K) Error[string] {
 	var zero K
-	if k == zero { return Errorf[string]("not zero", "input is zero", "") }
+	if k == zero { return Errorf[string]("condition [NotZero] failed because input [%v] is zero", k) }
 	return nil
 }
 

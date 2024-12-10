@@ -16,7 +16,7 @@ func Results[V, E any](value V, err any) (res Res[V, E]) {
 	return res
 }
 
-func OK[V, E any](v V) Result[V, E] { return Res[V, E]{Value: v} }
+func Ok[V, E any](v V) Result[V, E] { return Res[V, E]{Value: v} }
 func Errors[V, E any](s string, err error, e E) Result[V, E] {
 	return Results[V, E](Zero[V](), Err[E]{Str: s, Err: err, Val: e})
 }

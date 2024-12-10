@@ -98,7 +98,7 @@ func TestTreeTraverseDepthWithError(t *testing.T) {
 
 	err := tree.TraverseDepth(10, func(value string) Error[any] {
 		visited = append(visited, value)
-		if value == "D" { return Errs[any]("found D", "found D", nil) }
+		if value == "D" { return StrError("found D") }
 		return nil
 	})
 
@@ -130,7 +130,7 @@ func TestTreeTraverseBreadthWithError(t *testing.T) {
 
 	err := tree.TraverseBreadth(10, func(value string) Error[any] {
 		visited = append(visited, value)
-		if value == "C" { return Err[any]("found C", nil) }
+		if value == "C" { return StrError("found C") }
 		return nil
 	})
 

@@ -9,15 +9,18 @@ type Err[A any] struct {
 func (e Err[A]) Reason() string             { return e.Str }
 func (e Err[A]) Value() A                   { return e.Val }
 func (e Err[A]) Values() (A, string, error) { return e.Val, e.Str, e.Err }
-func (e Err[A]) Error() string              {
+func (e Err[A]) Error() string {
 	if e.Err == nil { return e.Str }
-	if e.Str == ""  { return e.Err.Error() }
+	if e.Str == "" { return e.Err.Error() }
 	return "error: " + e.Err.Error() + "; beacuse: " + e.Str
 }
 
 type StrError string
 
-func (e StrError) Error() string { return string(e) }
+func (e StrError) Error() string                { return string(e) }
+func (e StrError) Reason() string               { return string(e) }
+func (e StrError) Value() any                   { return nil }
+func (e StrError) Values() (any, string, error) { return nil, string(e), e }
 
 var _ Result[any, any] = Res[any, any]{}
 

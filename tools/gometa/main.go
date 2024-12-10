@@ -1,15 +1,18 @@
-package main
+package gometa
 
 import (
 	"fmt"
 	"os"
 	"strings"
 
+	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/gen"
 	"github.com/periaate/blume/tools/gometa/traits"
 	. "github.com/periaate/blume/typ"
 )
+
+var _ = Zero[any]
 
 type Trait struct {
 	File    String
@@ -24,9 +27,7 @@ func (t Trait) Impl() {
 	fmt.Println(res)
 	filename := t.File.ReplaceSuffix(".go", fmt.Sprintf("_%s_impl.go", strings.ToLower(t.Name))).String()
 	err := fsio.WriteAll(filename, fsio.B([]byte(res)))
-	if err != nil {
-		panic(err)
-	}
+	if err != nil { panic(err) }
 }
 
 func main() {
@@ -38,9 +39,9 @@ func main() {
 		lines := String(str).Split("\n")
 		var Package string
 		var derive string
-		for _, line := range lines.Array() {
+		for _, line := range lines.Values() {
 			if line.HasPrefix("package") {
-				Package = line.Split(" ").Array()[1].String()
+				Package = line.Split(" ").Values()[1].String()
 				continue
 			}
 			if line.HasPrefix("//blume:derive") {
@@ -48,13 +49,9 @@ func main() {
 				continue
 			}
 			if derive != "" {
-				t := line.Split(" ").Array()
-				if t[0] != "type" {
-					panic("Error: expected type declaration " + line)
-				}
-				if len(t) < 3 {
-					panic("Error: expected type declaration " + line)
-				}
+				t := line.Split(" ").Values()
+				if t[0] != "type" { panic("Error: expected type declaration " + line) }
+				if len(t) < 3 { panic("Error: expected type declaration " + line) }
 				nt := Trait{
 					File:    String(file),
 					Package: strings.TrimSpace(Package),

@@ -26,15 +26,6 @@ func Def(status int) NetError {
 	return Status(status).Def()
 }
 
-func (s Status) Is(val any) bool {
-	switch v := val.(type) {
-	case Status: return s == v
-	case int: return int(s) == v
-	case http.Response: return s == Status(v.StatusCode)
-	case Response: return s == Status(v.StatusCode)
-	default: return false
-	}
-}
 func (s Status) Err(msg string, pairs ...string) NetError { return Free(int(s), msg, pairs...) }
 func (s Status) Def(pairs ...string) NetError             { return Free(int(s), s.Explanation(), pairs...) }
 
