@@ -4,33 +4,21 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/core"
 )
 
-var _ T.Error[int] = Error{}
+var _ Error[int] = Nerr{}
 
-type NetErr interface {
-	T.Error[int]
-	error
-	Status() int
-	Respond(w http.ResponseWriter)
+type NetError interface {
+	Error[int]
+	Respond(http.ResponseWriter)
 }
 
-type Error struct {
-	HTTPStatus int
-	Msg        string
-}
+type Nerr struct { Err[int] }
 
-func (c Error) Data() int      { return c.HTTPStatus }
-func (c Error) Err() error     { return c }
-func (c Error) Reason() string { return c.Msg }
-func (c Error) Error() string  { return c.Msg }
-func (c Error) Status() int    { return c.HTTPStatus }
-func (c Error) Respond(w http.ResponseWriter) {
-	http.Error(w, c.Msg, c.HTTPStatus)
-}
+func (c Nerr) Respond(w http.ResponseWriter) { http.Error(w, c.Error(), c.Val) }
 
-func Free(status int, msg string, pairs ...string) NetErr {
+func Free(status int, msg string, pairs ...string) NetError {
 	sb := strings.Builder{}
 	sb.WriteString(msg)
 	sb.WriteString(" ")
@@ -42,12 +30,35 @@ func Free(status int, msg string, pairs ...string) NetErr {
 		sb.WriteString("] ")
 	}
 
-	if i < len(pairs) {
+	if i < len(pairs) { sb.WriteString(pairs[i]) }
+
+	return Nerr{
+		Err[int]{
+			Val: status,
+			Str: sb.String(),
+		},
+	}
+}
+
+func FreeWrap(err error, status int, msg string, pairs ...string) NetError {
+	sb := strings.Builder{}
+	sb.WriteString(msg)
+	sb.WriteString(" ")
+	var i int
+	for i = 0; i+1 < len(pairs); i += 2 {
 		sb.WriteString(pairs[i])
+		sb.WriteString(" [")
+		sb.WriteString(pairs[i+1])
+		sb.WriteString("] ")
 	}
 
-	return Error{
-		HTTPStatus: status,
-		Msg:        sb.String(),
+	if i < len(pairs) { sb.WriteString(pairs[i]) }
+
+	return Nerr{
+		Err[int]{
+			Val: status,
+			Str: sb.String(),
+			Err: err,
+		},
 	}
 }

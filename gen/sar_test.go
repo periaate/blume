@@ -5,7 +5,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	. "github.com/periaate/blume/core"
+	"github.com/periaate/blume/types"
 )
+
 
 func TestSplitWithAll(t *testing.T) {
 	tst := `(foo (bar baz abc))`
@@ -14,9 +18,7 @@ func TestSplitWithAll(t *testing.T) {
 	for i, r := range res {
 		fmt.Println(i+1, r)
 	}
-	if len(res) != 11 {
-		t.Fatalf("expected 6, got %d", len(res))
-	}
+	if len(res) != 11 { t.Fatalf("expected 6, got %d", len(res)) }
 }
 
 func TestEmbed(t *testing.T) {
@@ -44,7 +46,7 @@ func TestEmbed(t *testing.T) {
 	fmt.Printf("|||\n")
 }
 
-func traverse(h Tree[string], depth int) {
+func traverse(h types.Tree[string], depth int) {
 	f := true
 	for _, v := range h.Nodes {
 		if len(v.Nodes) != 0 {
@@ -79,7 +81,7 @@ func TestEval(t *testing.T) {
 	fmt.Println(nres)
 }
 
-func eval(h Tree[string]) string {
+func eval(h types.Tree[string]) string {
 	sar := []string{}
 	for _, v := range h.Nodes {
 		if len(v.Nodes) != 0 {
@@ -103,9 +105,7 @@ func eval(h Tree[string]) string {
 	r := sar[0]
 	fmt.Println("trying to find op", r, h)
 	op, ok := opmap[r]
-	if !ok {
-		panic("this isn't supposed to happen")
-	}
+	if !ok { panic("this isn't supposed to happen") }
 
 	res := vals[0]
 	for _, v := range vals[1:] {

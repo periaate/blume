@@ -10,7 +10,6 @@ var typeSrc = `import (
 	"strings"
 
 	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/gen/T"
 )`
 
 func Implement(packageName string, name string, base string, traits ...string) string {
@@ -21,8 +20,7 @@ func Implement(packageName string, name string, base string, traits ...string) s
 	res := fmt.Sprintf("package %s\n\n%s\n", packageName, typeSrc)
 	for _, trait := range traits {
 		switch trait {
-		case "String":
-			res = fmt.Sprintf("%s\n%s", res, String(name, base))
+		case "String": res = fmt.Sprintf("%s\n%s", res, String(name, base))
 		}
 	}
 
@@ -33,10 +31,8 @@ func Implement(packageName string, name string, base string, traits ...string) s
 func CanonicalizeNewlines(input string) string {
 	var newline string
 	switch runtime.GOOS {
-	case "windows":
-		newline = "\r\n"
-	default:
-		newline = "\n"
+	case "windows": newline = "\r\n"
+	default: newline = "\n"
 	}
 
 	// Replace both `\r\n` and `\n` with the appropriate newline for the OS

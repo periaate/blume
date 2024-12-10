@@ -1,21 +1,22 @@
 package lazy
 
-import "github.com/periaate/blume/gen/T"
+import (
+	"github.com/periaate/blume/core"
+)
 
-func Niladic[A any](fn T.Niladic[A]) T.Niladic[A] {
+
+func Niladic[A any](fn core.Niladic[A]) core.Niladic[A] {
 	var isLoaded bool
 	var value A
 	return func() A {
-		if isLoaded {
-			return value
-		}
+		if isLoaded { return value }
 		value = fn()
 		isLoaded = true
 		return value
 	}
 }
 
-func Monadic[A comparable, B any](fn T.Monadic[A, B]) T.Monadic[A, B] {
+func Monadic[A comparable, B any](fn core.Monadic[A, B]) core.Monadic[A, B] {
 	cache := map[A]B{}
 	return func(input A) (res B) {
 		res, ok := cache[input]

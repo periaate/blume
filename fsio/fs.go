@@ -1,19 +1,16 @@
 package fsio
 
 import (
-	"github.com/periaate/blume/gen"
-	"github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/yap"
 )
 
-// Find performs a BFS directory search starting from "root",
-// returning the first file that satisfies one of the provided predicates.
-func Find[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[FilePath] {
+func FindFirst[A, S ~string](root A, preds ...Predicate[S]) Option[FilePath] {
 	type queueItem struct {
 		path FilePath
 	}
 
-	pred := gen.PredAnd(preds...)
+	pred := PredAnd(preds...)
 
 	queue := []queueItem{{path: FilePath(root)}}
 	visited := make(map[string]bool)
@@ -24,35 +21,29 @@ func Find[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[FilePath] {
 		queue = queue[1:]
 
 		dirRes := ReadsDir(item.path)
-		if dirRes.IsErr() {
-			continue
-		}
+		if dirRes.IsErr() { continue }
 
 		entries := dirRes.Unwrap()
-		for _, e := range entries.Array() {
+		for _, e := range entries.Values() {
 			eStr := e.String()
 			if !visited[eStr] {
 				visited[eStr] = true
-				if e.HasSuffix("/") {
-					queue = append(queue, queueItem{path: e})
-				}
-				if pred(S(e)) {
-					return T.Results(e, nil)
-				}
+				if e.HasSuffix("/") { queue = append(queue, queueItem{path: e}) }
+				if pred(S(e)) { return Some(e) }
 			}
 		}
 	}
 
-	return T.Results(FilePath(""), "no matches found")
+	return None[FilePath]()
 }
 
-func Filter[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[gen.Array[FilePath]] {
+func Find[A, S ~string](root A, preds ...Predicate[S]) Option[Array[FilePath]] {
 	type queueItem struct {
 		path FilePath
 	}
-	pred := gen.PredAnd(preds...)
+	pred := PredAnd(preds...)
 
-	res := gen.Array[FilePath]{}
+	res := Arr[FilePath]{}
 
 	queue := []queueItem{{path: FilePath(root)}}
 	visited := make(map[string]bool)
@@ -63,12 +54,10 @@ func Filter[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[gen.Array[Fi
 		queue = queue[1:]
 
 		dirRes := ReadsDir(item.path)
-		if dirRes.IsErr() {
-			continue
-		}
+		if dirRes.IsErr() { continue }
 
 		entries := dirRes.Unwrap()
-		for _, e := range entries.Array() {
+		for _, e := range entries.Values() {
 			eStr := e.String()
 			if !visited[eStr] {
 				visited[eStr] = true
@@ -78,9 +67,7 @@ func Filter[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[gen.Array[Fi
 					break
 				}
 				if b {
-					if e.HasSuffix("/") {
-						queue = append(queue, queueItem{path: e})
-					}
+					if e.HasSuffix("/") { queue = append(queue, queueItem{path: e}) }
 
 					res = res.Append(e)
 				}
@@ -88,28 +75,20 @@ func Filter[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[gen.Array[Fi
 		}
 	}
 
-	if res.Len() == 0 {
-		return T.Results(res, "no matches found")
-	}
-	return T.Results(res, nil)
+	if res.Len() == 0 { None[Array[FilePath]]() }
+	return Some[Array[FilePath]](res)
 }
 
-func Ascend[A, S ~string](root A, preds ...T.Predicate[S]) T.Result[FilePath] {
+func Ascend[A, S ~string](root A, preds ...Predicate[S]) Option[FilePath] {
 	fp := FilePath(root)
-	pred := gen.PredAnd(preds...)
+	pred := PredAnd(preds...)
 	for {
-		if fp == fp.Dir() {
-			return T.Results(FilePath(""), "couldn't ind a  match while ascending")
-		}
+		if fp == fp.Dir() { return None[FilePath]() }
 		last := fp
 		res, err := ReadsDir(fp).Values()
-		if err != nil {
-			return T.Results(FilePath(""), err)
-		}
+		if err != nil { return None[FilePath](err) } 
 		rfp, err := res.First(func(f FilePath) bool { return pred(S(f)) }).Values()
-		if err == nil {
-			return T.Results(rfp, nil)
-		}
+		if err == nil { return Some(rfp) }
 		fp = fp.Dir()
 		yap.Debug("ascending", "from", last, "to", fp)
 	}

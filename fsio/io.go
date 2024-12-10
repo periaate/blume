@@ -6,20 +6,18 @@ import (
 	"fmt"
 	"os"
 
+	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/gen"
-	. "github.com/periaate/blume/gen/T"
-	. "github.com/periaate/blume/typ"
+	types "github.com/periaate/blume/typ"
 )
+
 
 func B(args ...any) *bytes.Buffer {
 	_, arg, _ := gen.Shifts(args)
 	switch v := arg.(type) {
-	case string:
-		return bytes.NewBufferString(v)
-	case []byte:
-		return bytes.NewBuffer(v)
-	default:
-		return bytes.NewBuffer([]byte{})
+	case string: return bytes.NewBufferString(v)
+	case []byte: return bytes.NewBuffer(v)
+	default: return bytes.NewBuffer([]byte{})
 	}
 }
 
@@ -58,43 +56,38 @@ func ReadRawPipe() (res []byte) {
 // HasPipe evaluates whether stdin is being piped in to.
 func HasPipe() bool {
 	a, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
+	if err != nil { return false }
 	return (a.Mode() & os.ModeCharDevice) == 0
 }
 
 // HasPipe evaluates whether stdin is being piped in to.
 func HasOutPipe() bool {
 	a, err := os.Stdout.Stat()
-	if err != nil {
-		return false
-	}
+	if err != nil { return false }
 	return (a.Mode() & os.ModeCharDevice) == 0
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args(opts ...Condition[[]string]) (res Result[[]string]) {
+func Args(opts ...gen.Condition[[]string]) Option[Array[string]] {
 	args := append(os.Args[1:], ReadPipe()...)
 	for _, opt := range opts {
 		err := opt(args)
-		if err != nil {
-			return Results(args, err)
-		}
+		if err != nil { return None[Array[string]](err) }
 	}
-	return Results(args, nil)
+	return Some(ToArray(args))
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
 
-func QArgs(opts ...Condition[[]string]) (res Result[gen.Array[String]]) {
-	Args(opts...).Match(
-		func(args []string) { res = Results(gen.ToArray(gen.Sar[String](args)), nil) },
-		func(err Error[any]) { res = Results(gen.Array[String]{}, err) },
-	)
-	return
+func QArgs(opts ...gen.Condition[[]string])  Option[Array[types.String]] {
+	args, err := Args(opts...).Values()
+	if err != nil { return None[Array[types.String]](err) }
+	return Some[Array[types.String]](ToArray(MapStoS[string, types.String](args.Values()...)))
 }
+
+func StoS[A, B ~string](a A) B { return B(a) } 
+func MapStoS[A, B ~string](a ...A) []B { return Map[A, B](StoS)(a) }
 
 func Pipes() (input, output chan string) {
 	input = make(chan string)

@@ -26,9 +26,7 @@ func TestClamp(t *testing.T) {
 
 	for _, c := range cases {
 		got := Clamp(c.min, c.max)(c.inp)
-		if got != c.exp {
-			t.Errorf("SmartClamp(%d, %d) == %d, want %d", c.inp, c.max, got, c.exp)
-		}
+		if got != c.exp { t.Errorf("SmartClamp(%d, %d) == %d, want %d", c.inp, c.max, got, c.exp) }
 	}
 }
 
@@ -44,8 +42,6 @@ func TestAbs(t *testing.T) {
 
 	for _, c := range cases {
 		got := Abs(c.inp)
-		if got != c.exp {
-			t.Errorf("Abs(%d) == %d, want %d", c.inp, got, c.exp)
-		}
+		if got != c.exp { t.Errorf("Abs(%d) == %d, want %d", c.inp, got, c.exp) }
 	}
 }

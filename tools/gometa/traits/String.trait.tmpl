@@ -1,9 +1,3 @@
-var (
-	_ T.SAr[{{.}}]     = gen.SArray[{{.}}]{}
-	_ T.Str[{{.}}]     = {{.}}("")
-	_ T.Contains[string] = {{.}}("")
-)
-
 func (s {{.}}) Is(args ...string) bool  { return gen.Is(args...)(string(s)) }
 func (s {{.}}) Contains(args ...string) bool  { return gen.Contains(args...)(string(s)) }
 func (s {{.}}) HasPrefix(args ...string) bool { return gen.HasPrefix(args...)(string(s)) }
@@ -24,10 +18,6 @@ func (s {{.}}) ReplaceRegex(pat string, rep string) {{.}} {
 	return {{.}}(gen.ReplaceRegex[string](pat, rep)(string(s)))
 }
 
-func (s {{.}}) Shift(count int) {{.}} {
-	return {{.}}(gen.Shift[string](count)(string(s)))
-}
-func (s {{.}}) Pop(count int) {{.}} { return {{.}}(gen.Pop[string](count)(string(s))) }
 func (s {{.}}) Split(pats ...string) gen.Array[{{.}}] {
 	split := gen.SplitWithAll(string(s), false, pats...)
 	res := make([]{{.}}, len(split))
@@ -45,57 +35,3 @@ func (s {{.}}) Or(Default string) {{.}} {
 }
 func (s {{.}}) Len() int       { return len(string(s)) }
 func (s {{.}}) String() string { return string(s) }
-
-func (s {{.}}) ToInt() T.Result[int]         { return gen.ToInt(string(s)) }
-func (s {{.}}) ToInt8() T.Result[int8]       { return gen.ToInt8(string(s)) }
-func (s {{.}}) ToInt16() T.Result[int16]     { return gen.ToInt16(string(s)) }
-func (s {{.}}) ToInt32() T.Result[int32]     { return gen.ToInt32(string(s)) }
-func (s {{.}}) ToInt64() T.Result[int64]     { return gen.ToInt64(string(s)) }
-func (s {{.}}) ToUint() T.Result[uint]       { return gen.ToUint(string(s)) }
-func (s {{.}}) ToUint8() T.Result[uint8]     { return gen.ToUint8(string(s)) }
-func (s {{.}}) ToUint16() T.Result[uint16]   { return gen.ToUint16(string(s)) }
-func (s {{.}}) ToUint32() T.Result[uint32]   { return gen.ToUint32(string(s)) }
-func (s {{.}}) ToUint64() T.Result[uint64]   { return gen.ToUint64(string(s)) }
-func (s {{.}}) ToFloat32() T.Result[float32] { return gen.ToFloat32(string(s)) }
-func (s {{.}}) ToFloat64() T.Result[float64] { return gen.ToFloat64(string(s)) }
-
-func (s {{.}}) Colorize(colorCode int) {{.}} {
-	return {{.}}(gen.Colorize(colorCode, string(s)))
-}
-func (s {{.}}) ToUpper() {{.}} { return {{.}}(strings.ToUpper(string(s))) }
-func (s {{.}}) ToLower() {{.}} { return {{.}}(strings.ToLower(string(s))) }
-func (s {{.}}) Trim() {{.}}    { return {{.}}(strings.Trim(string(s), " ")) }
-func (s {{.}}) TrimPrefix(prefix string) {{.}} {
-	return {{.}}(strings.TrimPrefix(string(s), prefix))
-}
-
-func (s {{.}}) TrimSuffix(suffix string) {{.}} {
-	return {{.}}(strings.TrimSuffix(string(s), suffix))
-}
-func (s {{.}}) TrimSpace() {{.}} { return {{.}}(strings.TrimSpace(string(s))) }
-
-func (s {{.}}) Green() {{.}} { return {{.}}(gen.Colorize(gen.Green, string(s))) }
-func (s {{.}}) LightGreen() {{.}} {
-	return {{.}}(gen.Colorize(gen.LightGreen, string(s)))
-}
-func (s {{.}}) Yellow() {{.}} { return {{.}}(gen.Colorize(gen.Yellow, string(s))) }
-func (s {{.}}) LightYellow() {{.}} {
-	return {{.}}(gen.Colorize(gen.LightYellow, string(s)))
-}
-func (s {{.}}) Red() {{.}}       { return gen.Colorize(gen.Red, s) }
-func (s {{.}}) LightRed() {{.}}  { return gen.Colorize(gen.LightRed, s) }
-func (s {{.}}) Blue() {{.}}      { return gen.Colorize(gen.Blue, s) }
-func (s {{.}}) LightBlue() {{.}} { return gen.Colorize(gen.LightBlue, s) }
-func (s {{.}}) Cyan() {{.}}      { return gen.Colorize(gen.Cyan, s) }
-func (s {{.}}) LightCyan() {{.}} { return gen.Colorize(gen.LightCyan, s) }
-func (s {{.}}) Magenta() {{.}}   { return gen.Colorize(gen.Magenta, s) }
-func (s {{.}}) LightMagenta() {{.}} {
-	return gen.Colorize(gen.LightMagenta, s)
-}
-func (s {{.}}) White() {{.}}     { return gen.Colorize(gen.White, s) }
-func (s {{.}}) Black() {{.}}     { return gen.Colorize(gen.Black, s) }
-func (s {{.}}) Gray() {{.}}      { return gen.Colorize(gen.DarkGray, s) }
-func (s {{.}}) LightGray() {{.}} { return gen.Colorize(gen.LightGray, s) }
-
-func (s {{.}}) Dim() {{.}}  { return gen.Colorize(2, s) }
-func (s {{.}}) Bold() {{.}} { return gen.Bold(s) }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/periaate/blume/gen/T"
+	. "github.com/periaate/blume/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,20 +13,18 @@ import (
 
 // Test URL with custom Transformer
 func TestURL_Custom(t *testing.T) {
-	uppercaseTransformer := func(s URL) URL {
-		return URL(strings.ToUpper(string(s)))
-	}
+	uppercaseTransformer := func(s URL) URL { return URL(strings.ToUpper(string(s))) }
 
 	tests := []struct {
 		input    URL
-		options  []T.Monadic[URL, URL]
+		options  []Monadic[URL, URL]
 		expected URL
 	}{
-		{"example.com", []T.Monadic[URL, URL]{uppercaseTransformer}, "EXAMPLE.COM"},
-		{"example.com", []T.Monadic[URL, URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
-		{"example.com", []T.Monadic[URL, URL]{AsProtocol(HTTPS)}, "https://example.com"},
-		{"example.com", []T.Monadic[URL, URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
-		{"example.com", []T.Monadic[URL, URL]{AsProtocol(WSS)}, "wss://example.com"},
+		{"example.com", []Monadic[URL, URL]{uppercaseTransformer}, "EXAMPLE.COM"},
+		{"example.com", []Monadic[URL, URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
+		{"example.com", []Monadic[URL, URL]{AsProtocol(HTTPS)}, "https://example.com"},
+		{"example.com", []Monadic[URL, URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
+		{"example.com", []Monadic[URL, URL]{AsProtocol(WSS)}, "wss://example.com"},
 	}
 
 	for _, tt := range tests {
@@ -40,7 +38,7 @@ func TestURL_Custom(t *testing.T) {
 func TestURL_ToRequest_ValidURL(t *testing.T) {
 	url := URL("http://example.com")
 	req := url.ToRequest(GET)
-	assert.NoError(t, req.Err)
+	assert.Nil(t, req.NetError)
 	assert.NotNil(t, req.Request)
 	assert.Equal(t, "http://example.com", req.URL.String())
 	assert.Equal(t, "GET", req.Method)
@@ -49,24 +47,24 @@ func TestURL_ToRequest_ValidURL(t *testing.T) {
 func TestURL_ToRequest_EmptyURL(t *testing.T) {
 	url := URL("")
 	req := url.ToRequest(GET)
-	assert.NotNil(t, req.NetErr)
+	assert.NotNil(t, req.NetError)
 	assert.Nil(t, req.Request)
-	assert.NotNil(t, req.NetErr)
-	assert.Contains(t, req.NetErr.Error(), "Invalid URL")
+	assert.NotNil(t, req.NetError)
+	assert.Contains(t, req.NetError.Error(), "Invalid URL")
 }
 
 func TestURL_ToRequest_MissingMethod(t *testing.T) {
 	url := URL("http://example.com")
 	req := url.ToRequest()
-	assert.NotNil(t, req.NetErr)
-	assert.NotNil(t, req.NetErr)
-	assert.Contains(t, req.NetErr.Error(), "Method not set")
+	assert.NotNil(t, req.NetError)
+	assert.NotNil(t, req.NetError)
+	assert.Contains(t, req.NetError.Error(), "Method not set")
 }
 
 func TestWithHeaders(t *testing.T) {
 	url := URL("http://example.com")
 	req := url.ToRequest(GET, WithHeaders([2]string{"Authorization", "Bearer token"}))
-	assert.NoError(t, req.Err)
+	assert.Nil(t, req.NetError)
 	assert.Equal(t, "Bearer token", req.Header.Get("Authorization"))
 }
 
@@ -76,7 +74,7 @@ func TestWithBody(t *testing.T) {
 
 	url := URL("http://example.com")
 	req := url.ToRequest(POST, WithBody(body))
-	assert.NoError(t, req.Err)
+	assert.Nil(t, req.NetError)
 	reqBody, err := io.ReadAll(req.Body)
 	assert.NoError(t, err)
 	assert.Equal(t, bodyContent, string(reqBody))
@@ -111,7 +109,7 @@ func TestWithBody(t *testing.T) {
 // 	assert.NoError(t, req.Err)
 //
 // 	resp := req.Call()
-// 	assert.Nil(t, resp.NetErr)
+// 	assert.Nil(t, resp.NetError)
 // 	assert.NotNil(t, resp.Response)
 // 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 //
@@ -124,8 +122,8 @@ func TestWithBody(t *testing.T) {
 // 	req := url.ToRequest(GET)
 //
 // 	resp := req.Call()
-// 	assert.NotNil(t, resp.NetErr)
-// 	assert.Contains(t, resp.NetErr.Error(), "dial tcp: lookup invalid-url")
+// 	assert.NotNil(t, resp.NetError)
+// 	assert.Contains(t, resp.NetError.Error(), "dial tcp: lookup invalid-url")
 // }
 //
 // func TestResponse_UseBody_Success(t *testing.T) {
@@ -143,7 +141,7 @@ func TestWithBody(t *testing.T) {
 // 		return string(body) == "response body"
 // 	})
 //
-// 	assert.Nil(t, resp.NetErr)
+// 	assert.Nil(t, resp.NetError)
 // }
 //
 // func TestResponse_UseBody_Failure(t *testing.T) {
@@ -161,7 +159,7 @@ func TestWithBody(t *testing.T) {
 // 		return string(body) == "expected body"
 // 	})
 //
-// 	assert.NotNil(t, resp.NetErr)
+// 	assert.NotNil(t, resp.NetError)
 // }
 //
 // func TestNewURL_WithHTTPSOption(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/periaate/blume/gen"
+	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/yap"
 )
 
@@ -16,10 +16,10 @@ type CORS struct {
 }
 
 func (c CORS) Handler(next http.Handler) http.Handler {
-	c.Origin = gen.Or(c.Origin, "*")
-	c.Methods = gen.Or(c.Methods, "GET, POST, PUT, DELETE, OPTIONS")
-	c.Headers = gen.Or(c.Headers, "Content-Type, Authorization")
-	c.Credentials = gen.Or(c.Credentials, "true")
+	c.Origin = Or(c.Origin, "*")
+	c.Methods = Or(c.Methods, "GET, POST, PUT, DELETE, OPTIONS")
+	c.Headers = Or(c.Headers, "Content-Type, Authorization")
+	c.Credentials = Or(c.Credentials, "true")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Origin.Set(w, c.Origin)
