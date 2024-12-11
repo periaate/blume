@@ -97,22 +97,6 @@ const (
 	L_Debug Level = 1
 )
 
-// PairReducer constructs a reducer to generate pairs from the array
-func PairReducer[A any]() core.Reducer[A, [][]A] {
-	return func(arr []A) [][]A {
-		pairs := [][]A{}
-		var i int
-		for i = 0; i < len(arr); i += 2 {
-			cur := []A{}
-			if i+1 <= len(arr) { cur = append(cur, arr[i]) }
-			if i+2 <= len(arr) { cur = append(cur, arr[i+1]) }
-			pairs = append(pairs, cur)
-		}
-
-		return pairs
-	}
-}
-
 var l = L_Info
 
 func SetLevel(level Level) { l = level }
@@ -128,7 +112,7 @@ func (l Level) String() string {
 }
 
 func Log(out io.Writer, format string, src string, level Level, msg string, args ...any) {
-	res := PairReducer[any]()(args)
+	res := Pair(args)
 	strs := core.Map[[]any, string](
 		func(a []any) string {
 			a1 := String(fmt.Sprint(a[0]))
@@ -146,7 +130,7 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 			})(a)
 			return fmt.Sprintf("%s:<%s>;", a1, strings.Join(res, ", "))
 		},
-	)(res)
+	)(res.Values())
 
 	pr := ""
 

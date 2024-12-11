@@ -88,7 +88,7 @@ func QArgs(opts ...gen.Condition[[]string])  Option[Array[gen.String]] {
 func StoS[A, B ~string](a A) B { return B(a) } 
 func MapStoS[A, B ~string](a ...A) []B { return Map[A, B](StoS)(a) }
 
-func Pipes() (input, output chan string) {
+func GetPipes() (input, output chan string) {
 	input = make(chan string)
 	output = make(chan string)
 	go func() {

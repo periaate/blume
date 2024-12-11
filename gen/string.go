@@ -7,6 +7,8 @@ import (
 	. "github.com/periaate/blume/core"
 )
 
+func Whitespaces() []string { return []string{"\r\n", "\n\r"," ", "\t", "\n", "\r"} }
+
 func ToInt(s string) Option[int] {
 	i, err := strconv.Atoi(s)
 	if err != nil { return None[int]() }
@@ -75,8 +77,24 @@ func ToLower(s string) string { return strings.ToLower(s) }
 func Trim(s string) string { return strings.Trim(s, " ") }
 func TrimPrefix(prefix string, s string) string { return strings.TrimPrefix(s, prefix) }
 func TrimSuffix(suffix string, s string) string { return strings.TrimSuffix(s, suffix) }
-func TrimSpace(s string) string { return strings.TrimSpace(s) }
+func TrimSpace[S ~string](s S) S { return S(strings.TrimSpace(string(s))) }
 
+func TrimPrefixes[S, A ~string](pats ...A) Monadic[S, S] {
+	return func(inp S) S {
+		for _, pat := range pats {
+			if HasPrefix(pat)(A(inp)) { return S(strings.TrimPrefix(string(inp), string(pat))) }
+		}
+		return inp
+	}
+}
+func TrimSuffixes[A, S ~string](pats ...A) Monadic[S, S] {
+	return func(inp S) S {
+		for _, pat := range pats {
+			if HasSuffix(pat)(A(inp)) { return S(strings.TrimSuffix(string(inp), string(pat))) }
+		}
+		return inp
+	}
+}
 
 const (
 	reset = "\033[0m"

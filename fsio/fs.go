@@ -5,7 +5,7 @@ import (
 	"github.com/periaate/blume/yap"
 )
 
-func FindFirst[A, S ~string](root A, preds ...Predicate[S]) Option[FilePath] {
+func FindFirst[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath] {
 	type queueItem struct {
 		path FilePath
 	}
@@ -37,13 +37,13 @@ func FindFirst[A, S ~string](root A, preds ...Predicate[S]) Option[FilePath] {
 	return None[FilePath]()
 }
 
-func Find[A, S ~string](root A, preds ...Predicate[S]) Option[Array[FilePath]] {
+func Find[A, S ~string](root A, preds ...Monadic[S, bool]) Option[Array[FilePath]] {
 	type queueItem struct {
 		path FilePath
 	}
 	pred := PredAnd(preds...)
 
-	res := Arr[FilePath]{}
+	res := Array[FilePath]{}
 
 	queue := []queueItem{{path: FilePath(root)}}
 	visited := make(map[string]bool)
@@ -79,7 +79,7 @@ func Find[A, S ~string](root A, preds ...Predicate[S]) Option[Array[FilePath]] {
 	return Some[Array[FilePath]](res)
 }
 
-func Ascend[A, S ~string](root A, preds ...Predicate[S]) Option[FilePath] {
+func Ascend[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath] {
 	fp := FilePath(root)
 	pred := PredAnd(preds...)
 	for {

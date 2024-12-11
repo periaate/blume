@@ -49,7 +49,3 @@ func NotZero[K comparable](k K) Error[string] {
 	if k == zero { return Errorf[string]("condition [NotZero] failed because input [%v] is zero", k) }
 	return nil
 }
-
-func Len[A any](cond Condition[int]) Condition[[]A] {
-	return func(ar []A) Error[string] { return cond(len(ar)) }
-}

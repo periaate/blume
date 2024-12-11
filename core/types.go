@@ -7,12 +7,13 @@ type (
 	Monadic[A, B any] func(A) B
 	// Dyadic is a function that takes two arguments and returns a single value.
 	Dyadic[A, B, C any] func(A, B) C
-	// Predicate is a function that takes a single argument and returns a boolean.
-	Predicate[A any] Monadic[A, bool]
-	// Mapper is a function that takes variadic arguments and returns a slice.
-	Mapper[A, B any] Monadic[[]A, []B]
-	// Reducer is a function that takes variadic arguments and returns a single value.
-	Reducer[A, B any] Monadic[[]A, B]
+//
+// 	// Predicate is a function that takes a single argument and returns a boolean.
+// 	Predicate[A any] Monadic[A, bool]
+// 	// Mapper is a function that takes variadic arguments and returns a slice.
+// 	Mapper[A, B any] Monadic[[]A, []B]
+// 	// Reducer is a function that takes variadic arguments and returns a single value.
+// 	Reducer[A, B any] Monadic[[]A, B]
 )
 
 type (
@@ -23,7 +24,8 @@ type (
 	Float interface         { ~float32 | ~float64 }
 	Signed interface        { ~int | ~int8 | ~int16 | ~int32 | ~int64 }
 	Unsigned interface      { ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr }
-	Lennable interface      { ~[]any | ~string | ~map[any]any | ~chan any | ~[]string }
+	Lennable[A any] interface      { ~[]any | ~string | ~map[any]any | ~chan any | ~[]string | []A }
+	// ALennable[A any] interface      { ~[]any | ~string | ~map[any]any | ~chan any | ~[]string }
 )
 
 type Error[A any] interface {
@@ -50,18 +52,19 @@ type Result[V, E any] interface {
 	Values() (V, Error[E])
 }
 
-type Array[A any] interface {
-	Map(fns ...Monadic[A, A]) Array[A]
-	Filter(fns ...Predicate[A]) Array[A]
-	First(fns ...Predicate[A]) Option[A]
-	Reduce(fn Dyadic[A, A, A], init A) A
-	Len() int
-	Values() []A
-	// Slice(from, to int) Option[Array[A]] // Slice returns a new array from the given range.
-	// Cut(from, to int) bool // Cut removes the elements from the array in place.
-	// Shift() Option[A] // Shift removes the first element from the array.
-	// Pop() Option[A] // Pop removes the last element from the array.
-}
+// type Array[A any] interface {
+// 	Map(fns ...Monadic[A, A]) Array[A]
+// 	Filter(fns ...Monadic[A, bool]) Array[A]
+// 	First(fns ...Monadic[A, bool]) Option[A]
+// 	Reduce(fn Dyadic[A, A, A], init A) A
+// 	Partition(fn Dyadic[int, A, bool]) [][]A
+// 	Len() int
+// 	Values() []A
+// 	// Slice(from, to int) Option[Array[A]] // Slice returns a new array from the given range.
+// 	// Cut(from, to int) bool // Cut removes the elements from the array in place.
+// 	// Shift() Option[A] // Shift removes the first element from the array.
+// 	// Pop() Option[A] // Pop removes the last element from the array.
+// }
 
 type Str[S ~string] interface {
 	Contains(args ...string) bool

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	. "github.com/periaate/blume/core"
+	"github.com/periaate/blume/gen"
 )
 
 var _ = Zero[any]
@@ -26,8 +27,13 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) Error[any] {
 	return Err[any]{Err: err}
 }
 
-func Read[S ~string](fp S) Result[[]byte, Nothing] {
-	return Results[[]byte, Nothing](os.ReadFile(string(fp)))
+type Raw []byte
+
+func (r Raw) ToString() gen.String { return gen.String(r) }
+
+func Read[S ~string](fp S) Result[Raw, Nothing] {
+	r, err := os.ReadFile(string(fp))
+	return Either(Raw(r), err)
 }
 
 func ReadDirRecursively(fp string) (res []string) {

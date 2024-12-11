@@ -8,7 +8,7 @@ import (
 )
 
 // Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains[S ~string](args ...S) Predicate[S] {
+func Contains[S ~string](args ...S) Monadic[S, bool] {
 	return func(str S) bool {
 		for _, s := range args {
 			if strings.Contains(string(str), string(s)) { return true }
@@ -18,7 +18,7 @@ func Contains[S ~string](args ...S) Predicate[S] {
 }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix[S ~string](args ...S) Predicate[S] {
+func HasPrefix[S ~string](args ...S) Monadic[S, bool] {
 	return func(str S) bool {
 		l := Lim[S](len(str))(args)
 		for _, arg := range l {
@@ -29,7 +29,7 @@ func HasPrefix[S ~string](args ...S) Predicate[S] {
 }
 
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix[S ~string](args ...S) Predicate[S] {
+func HasSuffix[S ~string](args ...S) Monadic[S, bool] {
 	return func(str S) bool {
 		l := Lim[S](len(str))(args)
 		for _, arg := range l {

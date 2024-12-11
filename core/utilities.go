@@ -1,6 +1,6 @@
 package core
 
-func PredAnd[A any](preds ...Predicate[A]) Predicate[A] {
+func PredAnd[A any](preds ...Monadic[A, bool]) Monadic[A, bool] {
 	return func(a A) bool {
 		for _, pred := range preds {
 			if !pred(a) { return false }
@@ -9,7 +9,7 @@ func PredAnd[A any](preds ...Predicate[A]) Predicate[A] {
 	}
 }
 
-func PredOr[A any](preds ...Predicate[A]) Predicate[A] {
+func PredOr[A any](preds ...Monadic[A, bool]) Monadic[A, bool] {
 	return func(a A) bool {
 		for _, pred := range preds {
 			if pred(a) { return true }

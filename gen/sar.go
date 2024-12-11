@@ -3,8 +3,11 @@ package gen
 import (
 	"sort"
 
+	. "github.com/periaate/blume/core"
 	"github.com/periaate/blume/types"
 )
+
+var _ = Zero[any]
 
 func SplitWithAll(str string, keep bool, match ...string) (res []string) {
 	if len(match) == 0 || len(str) == 0 { return []string{str} }
@@ -55,13 +58,13 @@ func embeds(car []types.Tree[string], delims [][2]string) (types.Tree[string], i
 			case delim[0]:
 				r, k := embeds(car[i+1:], delims)
 				i += k
-				res.Nodes = append(res.Nodes, r)
+				 res.Array = ToArray(append(res.Array.Values(), r)) 
 				matched = true
+				break
 			case delim[1]: return res, i + 1
 			}
-			if matched { break }
 		}
-		if !matched { res.Nodes = append(res.Nodes, v) }
+		if !matched { res.Array = ToArray(append(res.Array.Values(), v)) }
 	}
 
 	return res, 0

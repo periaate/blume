@@ -1,8 +1,4 @@
-package gen
-
-import (
-	. "github.com/periaate/blume/core"
-)
+package core
 
 func Abs[N Numeric](n N) (zero N) {
 	if n < zero { return -n }

@@ -48,8 +48,8 @@ func TestEmbed(t *testing.T) {
 
 func traverse(h types.Tree[string], depth int) {
 	f := true
-	for _, v := range h.Nodes {
-		if len(v.Nodes) != 0 {
+	for _, v := range h.Array.Values() {
+		if len(v.Array.Values()) != 0 {
 			f = true
 			traverse(v, depth+4)
 			continue
@@ -75,16 +75,16 @@ func TestEval(t *testing.T) {
 
 	ebd := EmbedDelims(res, [2]string{"(", ")"})
 
-	traverse(ebd.Nodes[0], 0)
+	traverse(ebd.Array.Values()[0], 0)
 
-	nres := eval(ebd.Nodes[0])
+	nres := eval(ebd.Array.Values()[0])
 	fmt.Println(nres)
 }
 
 func eval(h types.Tree[string]) string {
 	sar := []string{}
-	for _, v := range h.Nodes {
-		if len(v.Nodes) != 0 {
+	for _, v := range h.Array.Values() {
+		if len(v.Array.Values()) != 0 {
 			found := eval(v)
 			sar = append(sar, found)
 			fmt.Println("found from eval", found)
@@ -94,7 +94,7 @@ func eval(h types.Tree[string]) string {
 	}
 
 	vals := []int{}
-	fmt.Println("0th", h.Nodes[0])
+	fmt.Println("0th", h.Array.Values()[0])
 
 	for _, v := range sar[1:] {
 		fmt.Println(v)
