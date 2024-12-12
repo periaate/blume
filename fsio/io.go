@@ -2,32 +2,114 @@ package fsio
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"io"
 	"os"
 
-	. "github.com/periaate/blume/core"
-	"github.com/periaate/blume/gen"
+	. "github.com/periaate/blume"
 )
 
+// Constants for common file permissions
+const (
+	// User permissions
+	UserRead      = 0o400 // Owner read permission
+	UserWrite     = 0o200 // Owner write permission
+	UserExecute   = 0o100 // Owner execute permission
+	UserReadWrite = UserRead | UserWrite
 
-func B(args ...any) *bytes.Buffer {
-	_, arg, _ := gen.Shifts(args)
-	switch v := arg.(type) {
-	case string: return bytes.NewBufferString(v)
-	case []byte: return bytes.NewBuffer(v)
-	default: return bytes.NewBuffer([]byte{})
+	// Group permissions
+	GroupRead      = 0o040 // Group read permission
+	GroupWrite     = 0o020 // Group write permission
+	GroupExecute   = 0o010 // Group execute permission
+	GroupReadWrite = GroupRead | GroupWrite
+
+	// Other permissions
+	OtherRead      = 0o004 // Others read permission
+	OtherWrite     = 0o002 // Others write permission
+	OtherExecute   = 0o001 // Others execute permission
+	OtherReadWrite = OtherRead | OtherWrite
+
+	// Combined permissions
+	AllRead      = UserRead | GroupRead | OtherRead          // Read permission for all
+	AllWrite     = UserWrite | GroupWrite | OtherWrite       // Write permission for all
+	AllExecute   = UserExecute | GroupExecute | OtherExecute // Execute permission for all
+	AllReadWrite = AllRead | AllWrite
+
+	// Common file modes
+	ReadOnly      = UserRead | GroupRead | OtherRead
+	ReadWrite     = UserReadWrite | GroupRead | OtherRead
+	ReadWriteExec = ReadWrite | UserExecute | GroupExecute | OtherExecute
+
+	// Directory modes
+	DirReadOnly      = ReadOnly | os.ModeDir
+	DirReadWrite     = ReadWrite | os.ModeDir
+	DirReadWriteExec = ReadWriteExec | os.ModeDir
+)
+
+func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
+	f, err := os.Open(string(src))
+	if err != nil {
+		return fmt.Errorf("failed to copy from [%s] to [%s] with error: [%s]", src, dst, err)
 	}
+	defer f.Close()
+
+	switch force {
+	case true: err = WriteAll(string(dst), f)
+	case false: err = WriteNew(string(dst), f)
+	}
+	return err
 }
 
-// UsePipe reads from stdin and calls the given function for each line.
-func UsePipe(fn func(string)) {
-	if HasPipe() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			fn(scanner.Text())
-		}
-	}
+func Read[S ~string](fp S) Result[[]byte] { return AsRes(os.ReadFile(string(fp))) }
+
+// WriteAll writes the contents of the reader to the file, overwriting existing files.
+func WriteAll(f string, r io.Reader) (err error) {
+	file, err := os.Create(f)
+	if err != nil { return err }
+	defer file.Close()
+
+	_, err = io.Copy(file, r)
+	return err
+}
+
+// WriteNew writes the contents of the reader to a new file, will not overwrite existing files.
+func WriteNew(f string, r io.Reader) (err error) {
+	if Exists(f) { return fmt.Errorf("file %s already exists", f) }
+	file, err := os.OpenFile(f, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil { return err }
+	defer file.Close()
+
+	_, err = io.Copy(file, r)
+	return err
+}
+
+// AppendTo appends the contents of the reader to the file.
+func AppendTo(f string, r io.Reader) (err error) {
+	// Open the file in append mode, create if not exists
+	file, err := os.OpenFile(f, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+	if err != nil { return err }
+	defer file.Close()
+
+	_, err = io.Copy(file, r)
+	return err
+}
+
+func Open(f string) (rc io.ReadCloser, err error) {
+	file, err := os.Open(f)
+	if err != nil { return }
+	rc = file
+	return
+}
+
+func Remove(f string) (err error) { return os.Remove(f) }
+
+func ReadTo(f string, r io.Reader) (n int64, err error) {
+	file, err := os.Create(f)
+	if err != nil { return }
+	defer file.Close()
+
+	n, err = io.Copy(file, r)
+	return
 }
 
 // ReadPipe reads from stdin and returns a slice of lines.
@@ -36,17 +118,6 @@ func ReadPipe() (res []string) {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			res = append(res, scanner.Text())
-		}
-	}
-	return
-}
-
-// ReadRawPipe reads from stdin and returns a slice of bytes.
-func ReadRawPipe() (res []byte) {
-	if HasPipe() {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			res = append(res, scanner.Bytes()...)
 		}
 	}
 	return
@@ -67,50 +138,11 @@ func HasOutPipe() bool {
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args(opts ...gen.Condition[[]string]) Option[Array[string]] {
+func Args[A, S ~string](opts ...FnA[[]string, bool]) Option[Array[S]] {
 	args := append(os.Args[1:], ReadPipe()...)
-	for _, opt := range opts {
-		err := opt(args)
-		if err != nil { return None[Array[string]](err) }
-	}
-	return Some(ToArray(args))
+	if !PredAnd(opts...)(args) { return None[Array[S]]() }
+	return Some(ToArray(Map[string, S](StoS)(args)))
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
-
-func QArgs(opts ...gen.Condition[[]string])  Option[Array[gen.String]] {
-	args, err := Args(opts...).Values()
-	if err != nil { return None[Array[gen.String]](err) }
-	return Some[Array[gen.String]](ToArray(MapStoS[string, gen.String](args.Values()...)))
-}
-
-func StoS[A, B ~string](a A) B { return B(a) } 
-func MapStoS[A, B ~string](a ...A) []B { return Map[A, B](StoS)(a) }
-
-func GetPipes() (input, output chan string) {
-	input = make(chan string)
-	output = make(chan string)
-	go func() {
-		args := os.Args[1:]
-		for _, arg := range args {
-			input <- arg
-		}
-
-		if HasPipe() {
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				input <- scanner.Text()
-			}
-		}
-	}()
-
-	go func() {
-		for {
-			a := <-output
-			fmt.Println(a)
-		}
-	}()
-
-	return
-}

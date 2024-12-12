@@ -9,9 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/periaate/blume/core"
-	"github.com/periaate/blume/gen"
-	. "github.com/periaate/blume/gen"
+	. "github.com/periaate/blume"
 )
 
 type Yapfig struct {
@@ -103,23 +101,23 @@ func SetLevel(level Level) { l = level }
 
 func (l Level) String() string {
 	switch l {
-	case L_Error: return gen.Colorize(LightRed,"E")
-	case L_Info: return gen.Colorize(Cyan,"I")
-	case L_Debug: return gen.Colorize(LightYellow,"D")
-	case L_Fatal: return gen.Colorize(Red,"F")
+	case L_Error: return Colorize(LightRed,"E")
+	case L_Info: return Colorize(Cyan,"I")
+	case L_Debug: return Colorize(LightYellow,"D")
+	case L_Fatal: return Colorize(Red,"F")
 	default: return "-"
 	}
 }
 
 func Log(out io.Writer, format string, src string, level Level, msg string, args ...any) {
 	res := Pair(args)
-	strs := core.Map[[]any, string](
+	strs := Map[[]any, string](
 		func(a []any) string {
 			a1 := String(fmt.Sprint(a[0]))
 			if len(a) == 1 { return a1.Colorize(LightYellow).String() + ";" }
 			a1 = a1.ToUpper().Colorize(LightYellow)
 			a = a[1:]
-			res := core.Map[any, string](func(a any) string {
+			res := Map[any, string](func(a any) string {
 				switch v := a.(type) {
 				case string: return String(fmt.Sprintf("%q", v)).Colorize(Yellow).String()
 				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
@@ -148,7 +146,7 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 }
 
 func caller(file string, line int) string {
-	split := gen.String(file).Split("/", "\\").Values()
+	split := String(file).Split("/", "\\").Values()
 	n := split[len(split)-1]
 	return fmt.Sprintf("%s:%d", n, line)
 }
@@ -160,7 +158,6 @@ func ErrFatal(v any, msg string, args ...any) {
 	switch v := v.(type) {
 	case error: errMsg = v.Error()
 	case string: errMsg = v
-	case core.Error[any]: errMsg = v.Error()
 	default: errMsg = fmt.Sprint(v)
 	}
 
@@ -173,28 +170,27 @@ func ErrFatal(v any, msg string, args ...any) {
 func Info(msg string, args ...any) {
 	if l < L_Info { return }
 	_, file, line, ok := runtime.Caller(1)
-	core.Assert(ok, "Failed to get caller")
+	if !ok { panic("Failed to get caller") }
 	Log(os.Stdout, "", caller(file, line), L_Info, msg, args...)
 }
 
 func Error(msg string, args ...any) {
 	if l < L_Error { return }
 	_, file, line, ok := runtime.Caller(1)
-	core.Assert(ok, "Failed to get caller")
+	if !ok { panic("Failed to get caller") }
 	Log(os.Stdout, "", caller(file, line), L_Error, msg, args...)
 }
 
 func Debug(msg string, args ...any) {
 	if l < L_Debug { return }
 	_, file, line, ok := runtime.Caller(1)
-	core.Assert(ok, "Failed to get caller")
+	if !ok { panic("Failed to get caller") }
 	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
 }
 
 func Fatal(msg string, args ...any) {
 	if l < L_Fatal { return }
 	_, file, line, _ := runtime.Caller(1)
-	// Assert(ok, "Failed to get caller") // This is a fatal error.
 	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
 	os.Exit(1)
 }

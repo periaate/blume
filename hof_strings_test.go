@@ -1,6 +1,7 @@
-package gen
+package blume
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -100,4 +101,14 @@ func TestRep(t *testing.T) {
 			t.Errorf("Rep(%q, %q)(%q) = %q; want %q", tt.pattern, tt.repl, tt.input, result, tt.expected)
 		}
 	}
+}
+
+func TestSplitWithAll(t *testing.T) {
+	tst := `(foo (bar baz abc))`
+	delims := []string{"(", ")", " "}
+	res := Split(tst, true, delims...)
+	for i, r := range res {
+		fmt.Println(i+1, r)
+	}
+	if len(res) != 11 { t.Fatalf("expected 6, got %d", len(res)) }
 }

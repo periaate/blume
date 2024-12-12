@@ -74,7 +74,11 @@ func TestJoin(t *testing.T) {
 	for _, tc := range TestCases {
 		t.Run(strings.Join(tc.Elems, "/"), func(t *testing.T) {
 			res := Join(tc.Elems...)
-			if res != tc.Expected {
+			if len(tc.Expected) == 0 {
+				if res.Ok() { t.Fail() }
+				return
+			}
+			if res.Unwrap() != tc.Expected {
 				yap.Error("unexpcted result", "res", res, "expected", tc.Expected)
 				t.Fail()
 			}

@@ -1,34 +1,183 @@
 package hnet
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
-	. "github.com/periaate/blume/core"
+	. "github.com/periaate/blume"
 	"github.com/periaate/blume/yap"
 )
 
-type CORS struct {
-	Origin      string
-	Methods     string
-	Headers     string
-	Credentials string
+type URL string
+
+func (u URL) ToURL(options ...FnA[URL, URL]) Result[*url.URL] { return AsRes(url.Parse(string(u.Format(options...)))) }
+
+func (u URL) Format(options ...FnA[URL, URL]) URL {
+	if len(options) == 0 { options = append(options, AsProtocol(HTTP)) }
+	return Pipe[URL](options...)(u)
 }
 
-func (c CORS) Handler(next http.Handler) http.Handler {
-	c.Origin = Or(c.Origin, "*")
-	c.Methods = Or(c.Methods, "GET, POST, PUT, DELETE, OPTIONS")
-	c.Headers = Or(c.Headers, "Content-Type, Authorization")
-	c.Credentials = Or(c.Credentials, "true")
+type Protocol string
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Origin.Set(w, c.Origin)
-		Allow_Methods.Set(w, c.Methods)
-		Allow_Headers.Set(w, c.Headers)
-		Allow_Credentials.Set(w, c.Credentials)
+const (
+	HTTP  Protocol = "http"
+	HTTPS Protocol = "https"
+	WS    Protocol = "ws"
+	WSS   Protocol = "wss"
+)
 
-		next.ServeHTTP(w, r)
-	})
+func (u URL) AsProtocol(protocol Protocol) URL {
+	if len(u) == 0 { return URL(protocol + "://") }
+	if HasPrefix(HTTP, HTTPS, WS, WSS)(Protocol(u)) { return URL(ReplaceRegex[URL](".*://", string(protocol+"://"))(u)) }
+	return URL(protocol) + "://" + u
+}
+
+func AsProtocol(protocol Protocol) FnA[URL, URL] { return func(u URL) URL { return u.AsProtocol(protocol) } }
+
+// Short hands for http headers.
+const (
+	Allow_Credentials = Access_Control_Allow_Credentials
+	Allow_Headers     = Access_Control_Allow_Headers
+	Allow_Methods     = Access_Control_Allow_Methods
+	Allow_Origin      = Access_Control_Allow_Origin
+	Expose_Headers    = Access_Control_Expose_Headers
+	Max_Age           = Access_Control_Max_Age
+)
+
+type ContentType string
+
+func (c ContentType) String() string   { return string(c) }
+func (c ContentType) Tuple() [2]string { return Content_Type.Tuple(c.String()) }
+
+const (
+	Application_Stream ContentType = "application/octet-stream"
+	Application_JSON   ContentType = "application/json"
+	Text_Plain         ContentType = "text/plain"
+	Text_HTML          ContentType = "text/html"
+	Text_CSS           ContentType = "text/css"
+	Text_JS            ContentType = "text/javascript"
+	Audio_MP3          ContentType = "audio/mp3"
+	Audio_OGG          ContentType = "audio/ogg"
+	Image_JPEG         ContentType = "image/jpeg"
+	Image_PNG          ContentType = "image/png"
+	Image_GIF          ContentType = "image/gif"
+	Video_MP4          ContentType = "video/mp4"
+	Video_WEBM         ContentType = "video/webm"
+	Video_MKV          ContentType = "video/mkv"
+)
+
+type Header string
+
+func (h Header) String() string                        { return string(h) }
+func (h Header) Set(w http.ResponseWriter, val string) { w.Header().Set(string(h), val) }
+func (h Header) Tuple(val any) [2]string {
+	switch v := val.(type) {
+	case string: return [2]string{string(h), v}
+	case fmt.Stringer: return [2]string{string(h), v.String()}
+	default: return [2]string{string(h), fmt.Sprint(val)}
+	}
+}
+
+func NewError(code Status, message string) NetError { return NetError{Code: code, Message: message} }
+
+type NetError struct {
+	Code    Status
+	Message string
+}
+
+func (e NetError) Error() string { return fmt.Sprintf("%d: %s", e.Code, e.Message) }
+
+
+// Status represents an HTTP status code.
+type Status int
+
+func (s Status) ToError(message string) NetError { return NewError(s, message) }
+func (s Status) ToErrorf(format string, args ...any) NetError { return NewError(s, fmt.Sprintf(format, args...)) }
+func (s Status) Error() string { return s.Explanation() }
+
+func (s Status) Explanation() string {
+	switch s {
+	case Continue: return "Continue: The client should continue with its request."
+	case Switching_Protocols: return "Switching Protocols: Server is switching protocols as requested."
+	case Processing: return "Processing: Request received, no response available yet."
+	case Early_Hints: return "Early Hints: Preload resources while server prepares the response."
+	case OK: return "OK: The request was successful."
+	case Created: return "Created: A new resource was successfully created."
+	case Accepted: return "Accepted: Request received but not yet acted upon."
+	case Non_Authoritative_Information:
+		return "Non-Authoritative Information: Metadata from a third-party copy."
+	case No_Content: return "No Content: No content to send for this request."
+	case Reset_Content: return "Reset Content: Reset the document that made this request."
+	case Partial_Content: return "Partial Content: Partial data response to a range request."
+	case Multi_Status: return "Multi-Status: Information about multiple resources."
+	case Already_Reported: return "Already Reported: Binding members already enumerated."
+	case IM_Used: return "IM Used: Instance manipulations applied to current instance."
+	case Multiple_Choices:
+		return "Multiple Choices: Multiple possible responses. User or client must choose."
+	case Moved_Permanently: return "Moved Permanently: Resource permanently moved to a new URL."
+	case Found: return "Found: Resource temporarily moved to a new URL."
+	case See_Other: return "See Other: Redirect to another URI using a GET request."
+	case Not_Modified: return "Not Modified: Cached response is still valid."
+	case Use_Proxy: return "Use Proxy: Deprecated; resource must be accessed through a proxy."
+	case Unused: return "Unused: Reserved for future use."
+	case Temporary_Redirect:
+		return "Temporary Redirect: Temporarily redirect to a new URI, same method."
+	case Permanent_Redirect:
+		return "Permanent Redirect: Permanently redirect to a new URI, same method."
+	case Bad_Request: return "Bad Request: The server cannot process the request."
+	case Unauthorized: return "Unauthorized: Authentication is required."
+	case Payment_Required: return "Payment Required: Reserved for future use."
+	case Forbidden: return "Forbidden: The client does not have access rights."
+	case Not_Found: return "Not Found: The requested resource could not be found."
+	case Method_Not_Allowed: return "Method Not Allowed: Request method not supported."
+	case Not_Acceptable: return "Not Acceptable: No content meets the criteria."
+	case Proxy_Authentication_Required:
+		return "Proxy Authentication Required: Authenticate with the proxy."
+	case Request_Timeout: return "Request Timeout: Server timed out waiting for the request."
+	case Conflict: return "Conflict: The request conflicts with server state."
+	case Gone: return "Gone: The requested content is permanently unavailable."
+	case Length_Required: return "Length Required: Content-Length header is missing."
+	case Precondition_Failed: return "Precondition Failed: Preconditions in headers not met."
+	case Content_Too_Large: return "Content Too Large: Request body exceeds server limits."
+	case URI_Too_Long: return "URI Too Long: The URI is too long for the server to process."
+	case Unsupported_Media_Type:
+		return "Unsupported Media Type: The server cannot process the media format."
+	case Range_Not_Satisfiable: return "Range Not Satisfiable: The requested range is invalid."
+	case Expectation_Failed: return "Expectation Failed: The expectation cannot be met."
+	case Im_a_teapot: return "I'm a teapot: The server refuses to brew coffee with a teapot."
+	case Misdirected_Request:
+		return "Misdirected Request: The request was directed to the wrong server."
+	case Unprocessable_Content:
+		return "Unprocessable Content: Request was well-formed but contains semantic errors."
+	case Locked: return "Locked: The resource is locked."
+	case Failed_Dependency: return "Failed Dependency: Request failed due to a prior failed request."
+	case Too_Early:
+		return "Too Early: Server is unwilling to process a request that might be replayed."
+	case Upgrade_Required: return "Upgrade Required: Upgrade to a different protocol is required."
+	case Precondition_Required:
+		return "Precondition Required: Request must be conditional to prevent conflicts."
+	case Too_Many_Requests: return "Too Many Requests: Rate limit exceeded."
+	case Request_Header_Fields_Too_Large:
+		return "Request Header Fields Too Large: Headers are too large to process."
+	case Unavailable_For_Legal_Reasons:
+		return "Unavailable For Legal Reasons: Resource cannot be provided for legal reasons."
+	case Internal_Server_Error: return "Internal Server Error: Generic server error."
+	case Not_Implemented: return "Not Implemented: The request method is not supported."
+	case Bad_Gateway: return "Bad Gateway: Invalid response from an upstream server."
+	case Service_Unavailable: return "Service Unavailable: Server cannot handle the request."
+	case Gateway_Timeout: return "Gateway Timeout: No response from an upstream server."
+	case HTTP_Version_Not_Supported:
+		return "HTTP Version Not Supported: HTTP version not supported by the server."
+	case Variant_Also_Negotiates: return "Variant Also Negotiates: Internal configuration error."
+	case Insufficient_Storage: return "Insufficient Storage: Server unable to store representation."
+	case Loop_Detected: return "Loop Detected: Infinite loop detected while processing request."
+	case Not_Extended: return "Not Extended: HTTP Extension not supported."
+	case Network_Authentication_Required:
+		return "Network Authentication Required: Authentication needed to access network."
+	default: panic(fmt.Sprintf("Unknown status code: %d", s))
+	}
 }
 
 type LogHandler struct {
@@ -46,7 +195,7 @@ func (h *LogHandler) WriteHeader(code int) {
 	}
 }
 
-func Log(next http.Handler) http.Handler {
+func LogRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(&LogHandler{w, r, start}, r)

@@ -1,18 +1,17 @@
 package fsio
 
 import (
-	. "github.com/periaate/blume/core"
-	"github.com/periaate/blume/yap"
+	. "github.com/periaate/blume"
 )
 
-func FindFirst[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath] {
+func FindFirst[A, S ~string](root A, preds ...FnA[S, bool]) Option[String] {
 	type queueItem struct {
-		path FilePath
+		path String
 	}
 
 	pred := PredAnd(preds...)
 
-	queue := []queueItem{{path: FilePath(root)}}
+	queue := []queueItem{{path: String(root)}}
 	visited := make(map[string]bool)
 	visited[string(root)] = true
 
@@ -20,8 +19,8 @@ func FindFirst[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath]
 		item := queue[0]
 		queue = queue[1:]
 
-		dirRes := ReadsDir(item.path)
-		if dirRes.IsErr() { continue }
+		dirRes := ReadDir(item.path)
+		if !dirRes.Ok() { continue }
 
 		entries := dirRes.Unwrap()
 		for _, e := range entries.Values() {
@@ -34,18 +33,18 @@ func FindFirst[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath]
 		}
 	}
 
-	return None[FilePath]()
+	return None[String]()
 }
 
-func Find[A, S ~string](root A, preds ...Monadic[S, bool]) Option[Array[FilePath]] {
+func Find[A, S ~string](root A, preds ...FnA[S, bool]) Option[Array[String]] {
 	type queueItem struct {
-		path FilePath
+		path String
 	}
 	pred := PredAnd(preds...)
 
-	res := Array[FilePath]{}
+	res := Array[String]{}
 
-	queue := []queueItem{{path: FilePath(root)}}
+	queue := []queueItem{{path: String(root)}}
 	visited := make(map[string]bool)
 	visited[string(root)] = true
 
@@ -53,8 +52,8 @@ func Find[A, S ~string](root A, preds ...Monadic[S, bool]) Option[Array[FilePath
 		item := queue[0]
 		queue = queue[1:]
 
-		dirRes := ReadsDir(item.path)
-		if dirRes.IsErr() { continue }
+		dirRes := ReadDir(item.path)
+		if !dirRes.Ok() { continue }
 
 		entries := dirRes.Unwrap()
 		for _, e := range entries.Values() {
@@ -75,21 +74,19 @@ func Find[A, S ~string](root A, preds ...Monadic[S, bool]) Option[Array[FilePath
 		}
 	}
 
-	if res.Len() == 0 { None[Array[FilePath]]() }
-	return Some[Array[FilePath]](res)
+	if res.Len() == 0 { None[Array[String]]() }
+	return Some[Array[String]](res)
 }
 
-func Ascend[A, S ~string](root A, preds ...Monadic[S, bool]) Option[FilePath] {
-	fp := FilePath(root)
+func Ascend[A, S ~string](root A, preds ...FnA[S, bool]) Option[S] {
+	fp := String(root)
 	pred := PredAnd(preds...)
 	for {
-		if fp == fp.Dir() { return None[FilePath]() }
-		last := fp
-		res, err := ReadsDir(fp).Values()
-		if err != nil { return None[FilePath](err) } 
-		rfp, err := res.First(func(f FilePath) bool { return pred(S(f)) }).Values()
-		if err == nil { return Some(rfp) }
-		fp = fp.Dir()
-		yap.Debug("ascending", "from", last, "to", fp)
+		if fp == Dir(fp) { return None[S]() }
+		tn := ReadDir(S(fp))
+		if !tn.Ok() { return None[S]() }
+		opt := tn.Unwrap().First(pred)
+		if opt.Ok() { return Some(opt.Unwrap()) }
+		fp = Dir(fp)
 	}
 }

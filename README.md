@@ -1,49 +1,110 @@
 # blume
+An experimental, pragmatic approach to declarative programming in Go.
 
-#### `gen`
-Generic, general functions, types, and more.
-- Generic, constructed functions, `Filter`, `Map`, etc.
-- String functions and utilities.
-- Array functions and utilities.
-- Map types and wrappers, `Sync`, `Expiring`, etc.
-#### `gen/T`
-Interfaces, types, basic implementations, etc. These implementations are trivial, and serve as the "cores" for more complex implementations.
-- `Error[any]`: A rich error interface.
-- `Result[any]`: A result type, similar to one found in rust.
-- `Str[~string]`: A string type, defining numerous methods which make working with strings easier.
-- `Tree[any]`: A tree type, providing basic tree functionality.
-- `Err[any]`: Implementation of `Error`.
-- Various functions for creation of `T` types.
-#### `hnet`
-Utilities for working with http.
-- `Header`: All valid HTTP headers as constants.
-- `Status`: All valid HTTP status codes as constants.
-- `URL`: Utilities for working with, validating, manipulating, and using URLs.
-- `Request` and `Response`: composable workflows with HTTP requests. (URL -> Request -> Response).
-#### `hnet/auth`
-Stateful, userless, session based auth system.
-#### `fsio`
-File system related utilities and wrappers.
-- Functions for working with IO, e.g., `Args`, `ReadPipe`, `HasPipe`, etc.
-- Functions for working with file systems, e.g., `IsDir`, `EnsureDir`, etc.
-#### `yap`
-a simple and configurable logging library, focusing on human readability and ease of use.
+## Usage
+Installation
+```
+go get github.com/periaate/blume
+```
 
-#### `tools`
-Tools used or developed for `blume`.
-#### `tools/mdn`
-Generates the `Header` and `Status` enums for `hent` from the MDN Web Docs.
-#### `tools/gometa`
-Macro/code generation program, which supports Go. Used specfically for working around Go's type system limitations by "deriving" "traits" for types, as seen in rust.
+- blume is based on the idea of "construction". A form of function composition which effectively reverses the order in which you would traditionally give arguments.
+```go
+func main() {
+	// we can create a function which checks whether a given `comparable` type is in the arguments.
+	myPredicate := blume.Is("Hello", ", ", "World", "!")
+	fmt.Println(myPredicate("hi")) // false
+	fmt.Println(myPredicate("hello")) // false
+	fmt.Println(myPredicate("Hello")) // true
+	// this enables us to construct functionality declarative and then utilize it procedurally.
+	// for example, if we wanted a filter which must have an https:// prefix
+	// and contain `github.com` and `blume`, we can construct it like so:
+	myFilter := Filter(
+		blume.HasPrefix("https://"),
+		// we can use the `blume.PredAnd` to join predicates to a single one with a logical AND
+		blume.PredAnd( 
+			blume.Contains("github.com"),
+			blume.Contains("blume"),
+		),
+	)
 
-#### `typ`
-gometa generated types.
-- `String`: gometa generated implementation of `T.Str`.
+	// blume.Filter is an array function, and acts on array inputs.
+	// for single value inputs, use a predicate instead.
+	// Most functions in blume do not work in-place. In-place variants might be added in later versions.
+	res := myFilter([]string{
+		"github.com/periaate/blume",
+		"http://github.com/periaate/blume",
+		"https://github.com/periaate/blob",
+		"https://github.com/periaate/blume",
+	})
+	fmt.Println(res, len(res)) // ["https://github.com/periaate/blume"] 1
+}
+```
 
-## TODO
-- [ ] normalize all error types to `T.Error`.
-- [ ] normalize all `(.*, error)` to `Result[.*]`.
+- blume has many array and string specific functions. It also provides fluent interfaces for these. All functionality base `blume` provides is usable with primitive types without need to use the custom types blume provides.
+```go
+func main() {
+	// blume.String is a string alias with various added methods.
+	var str blume.String
+	// blume.Array is a struct that wraps a slice, providing blume functions as methods.
+	var arr blume.Array[blume.String]
+	stringSlice := []string{
+		"Hello",
+		",",
+		" ",
+		"World",
+		"!",
+	}
+
+	// we can create a `blume.Array` from any type by calling `ToArray` with a slice
+	myArray := ToArray(stringSlice)
+
+	// blume also provides some utilites to work with type aliases
+	// such as `StoS`, which transforms between string aliases
+	arr = Map[string, blume.String](StoS)(myArray)
+	// blume.Array is not an interface type. We can access the slice inside. This may change.
+	fmt.Println(strings.Join(arr.Val, ""))
+	// alternatively, we can also call the `Values()` method
+	fmt.Println(strings.Join(arr.Values(), ""))
+}
+```
+
+- blume changes many fundamental patterns of Go, such as error handling.
+```go
+func main() {
+	// blume functions always return a single value or none.
+	// return type (T, error) becomes Result[T], while (T, ok) becomes Option[T].
+	res := fsio.ReadDir("./") // blume.Result[blume.Array[blume.String]]
+	// as this error is unrecoverable there's no need to manually handle it.
+	arr := res.Unwrap() // blume.Array[blume.String]
+	// package fsio also provides various file system specific predicates, such as `fsio.IsDir`.
+	filtered := result.Filter(fsio.IsDir)
+}
+```
+
+For a more complex example, I will use my build automatization tool to demonstrate making a multifaceted problem into a simple one.
+```go
+// note: this example is using `github.com/periaate/blume` as a dot import, hence `blume.` isn't used.
+func main() {
+	args := fsio.Args[string, String](func(s []string) bool { return len(s) >= 1 }).Unwrap()
+	arg := args.Shift().Unwrap()
+
+	// fsio.FindFirst recursively (BFS) looks through the given directory
+	// returning the first match, if found.
+	found := fsio.FindFirst("my/projects/dir/",
+		Not(Contains("/.", "node_modules", "target", "build", "data", "Modules", "mpv.net")),
+		fsio.IsDir,
+		func(f String) bool { return fsio.Base(f) == arg },
+	).Unwrap()
+	entryOpt := fsio.ReadDir(found).Unwrap().First(IsEntry) // try to find entry file, e.g., main.go
+	var entry String
+	if entryOpt.Ok() { entry = entryOpt.Unwrap() } // not all languages need entry files
+
+	// we will ascend, trying to find a project root, e.g., contains `go.mod`, `cargo.toml`, etc.
+	root := fsio.Ascend(found, IsProject[String]).Unwrap()
+	// get the directory and normalize the directory
+	root = fsio.Clean(fsio.Dir(root))
+	...
+}
 
 
-## License
-`blume` is available under the MPL-2.0 license.
+```

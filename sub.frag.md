@@ -1,2 +1,0 @@
-- {{ desc "blume/gen" }}
-- {{ desc "blume/yap" }}

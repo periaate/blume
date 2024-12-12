@@ -1,7 +1,7 @@
-package core
+package blume
 
 // All returns true if all arguments pass the [Predicate].
-func All[A any](fns ...Monadic[A, bool]) Monadic[[]A, bool] {
+func All[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
 	fn := PredAnd(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
@@ -12,7 +12,7 @@ func All[A any](fns ...Monadic[A, bool]) Monadic[[]A, bool] {
 }
 
 // Any returns true if any argument passes the [Predicate].
-func Any[A any](fns ...Monadic[A, bool]) Monadic[[]A, bool] {
+func Any[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
 	fn := PredOr(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
@@ -23,7 +23,7 @@ func Any[A any](fns ...Monadic[A, bool]) Monadic[[]A, bool] {
 }
 
 // Filter returns a slice of arguments that pass the [Predicate].
-func Filter[A any](fns ...Monadic[A, bool]) Monadic[[]A, []A] {
+func Filter[A any](fns ...FnA[A, bool]) FnA[[]A, []A] {
 	fn := PredAnd(fns...)
 	return func(args []A) (res []A) {
 		res = make([]A, 0, len(args))
@@ -35,7 +35,7 @@ func Filter[A any](fns ...Monadic[A, bool]) Monadic[[]A, []A] {
 }
 
 // Map applies the function to each argument and returns the results.
-func Map[A, B any](fn Monadic[A, B]) Monadic[[]A, []B] {
+func Map[A, B any](fn FnA[A, B]) FnA[[]A, []B] {
 	return func(args []A) (res []B) {
 		res = make([]B, 0, len(args))
 		for _, arg := range args {
@@ -46,7 +46,7 @@ func Map[A, B any](fn Monadic[A, B]) Monadic[[]A, []B] {
 }
 
 // Reduce applies the function to each argument and returns the result.
-func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Monadic[[]A, B] {
+func Reduce[A any, B any](fn FnB[B, A, B], init B) FnA[[]A, B] {
 	return func(args []A) B {
 		res := init
 		for _, arg := range args {
@@ -57,10 +57,10 @@ func Reduce[A any, B any](fn Dyadic[B, A, B], init B) Monadic[[]A, B] {
 }
 
 // Not negates a [Predicate].
-func Not[A any](fn Monadic[A, bool]) Monadic[A, bool] { return func(t A) bool { return !fn(t) } }
+func Not[A any](fn FnA[A, bool]) FnA[A, bool] { return func(t A) bool { return !fn(t) } }
 
 // Is returns a [Predicate] that checks if the argument is in the list.
-func Is[C comparable](A ...C) Monadic[C, bool] {
+func Is[C comparable](A ...C) FnA[C, bool] {
 	in := make(map[C]bool, len(A))
 	for _, a := range A {
 		in[a] = true
@@ -72,7 +72,7 @@ func Is[C comparable](A ...C) Monadic[C, bool] {
 }
 
 // First returns the first value which passes the [Predicate].
-func First[A any](fns ...Monadic[A, bool]) Monadic[[]A, Option[A]] {
+func First[A any](fns ...FnA[A, bool]) FnA[[]A, Option[A]] {
 	fn := PredOr[A](fns...)
 	return func(args []A) Option[A] {
 		for _, arg := range args {
@@ -82,14 +82,14 @@ func First[A any](fns ...Monadic[A, bool]) Monadic[[]A, Option[A]] {
 	}
 }
 
-func StrIs[A, B ~string](vals ...A) Monadic[B, bool] {
+func StrIs[A, B ~string](vals ...A) FnA[B, bool] {
 	is := Is(vals...)
 	return func(b B) bool { return is(A(b)) }
 }
 
 
 // Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipe[A any](fns ...Monadic[A, A]) Monadic[A, A] {
+func Pipe[A any](fns ...FnA[A, A]) FnA[A, A] {
 	return func(a A) A {
 		for _, fn := range fns {
 			a = fn(a)
@@ -99,13 +99,46 @@ func Pipe[A any](fns ...Monadic[A, A]) Monadic[A, A] {
 }
 
 // Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipes[A any](fns ...Monadic[A, A]) Monadic[[]A, []A] { return Map(Pipe(fns...)) }
+func Pipes[A any](fns ...FnA[A, A]) FnA[[]A, []A] { return Map(Pipe(fns...)) }
 
-// Cat concatenates two [Monadic] functions into a single [Monadic] function.
-func Cat[A, B, C any](a Monadic[A, B], b Monadic[B, C]) Monadic[A, C] {
-	return func(c A) C { return b(a(c)) }
+// Cat concatenates two [FnA] functions into a single [FnA] function.
+func Cat[A, B, C any](a FnA[A, B], b FnA[B, C]) FnA[A, C] { return func(c A) C { return b(a(c)) } }
+
+func PredAnd[A any](preds ...FnA[A, bool]) FnA[A, bool] {
+	return func(a A) bool {
+		for _, pred := range preds {
+			if !pred(a) { return false }
+		}
+		return true
+	}
 }
 
-func Con[A, B any](a Monadic[A, B], b Monadic[B, bool]) Monadic[A, bool] {
-	return func(c A) bool { return b(a(c)) }
+func PredOr[A any](preds ...FnA[A, bool]) FnA[A, bool] {
+	return func(a A) bool {
+		for _, pred := range preds {
+			if pred(a) { return true }
+		}
+		return false
+	}
+}
+
+func Lazy[A any](fn func() A) func() A {
+	var loaded bool
+	var value A
+	return func() A {
+		if !loaded { value, loaded = fn(), true }
+		return value
+	}
+}
+
+func Memo[K comparable, V any](fn func(K) V) func(K) V {
+	values := map[K]V{}
+	return func(input K) (res V) {
+		res, ok := values[input]
+		if !ok {
+			res = fn(input)
+			values[input] = res
+		}
+		return res
+	}
 }
