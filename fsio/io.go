@@ -138,7 +138,7 @@ func HasOutPipe() bool {
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args[A, S ~string](opts ...FnA[[]string, bool]) Option[Array[S]] {
+func Args[S ~string](opts ...FnA[[]string, bool]) Option[Array[S]] {
 	args := append(os.Args[1:], ReadPipe()...)
 	if !PredAnd(opts...)(args) { return None[Array[S]]() }
 	return Some(ToArray(Map[string, S](StoS)(args)))
