@@ -1,8 +1,34 @@
 package fsio
 
 import (
+	"os"
+	"strings"
+
 	. "github.com/periaate/blume"
 )
+
+// ReadDir reads the directory and returns a list of files.
+func ReadDir[S ~string](inp S) (res Array[S], err error) {
+	f := string(inp)
+	if HasPrefix("~")(f) { f = strings.Replace(f, "~", Home(), 1) }
+	if !IsDir(f) { return Err[Array[S]]("{:s} is not a directory", f) }
+	
+	entries, err := os.ReadDir(f)
+	if err != nil { return Err[Array[S]]("failed to read directory [{:s}] with error: [{:w}]", f, err) }
+
+	arr := make([]S, 0, len(entries))
+	for _, entry := range entries {
+		fp := entry.Name()
+		if entry.IsDir() { fp += "/" }
+		joined, err := Join(f, fp)
+		if err != nil { return Err[Array[S]]("failed to join path [{:s}] with [{:s}] with error: [{:w}]", f, fp, err) }
+		arr = append(arr, S(joined))
+	}
+
+	return Ok(ToArray(arr))
+}
+
+
 
 func FindFirst[A, S ~string](root A, preds ...func(S) bool) Option[String] {
 	type queueItem struct {
@@ -85,3 +111,4 @@ func Ascend[A, S ~string](root A, preds ...func(S) bool) Option[S] {
 		fp = Dir(fp)
 	}
 }
+

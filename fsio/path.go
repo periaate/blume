@@ -11,9 +11,7 @@ import (
 
 func Clean[S ~string](inp S) S {
 	path := string(inp)
-	var pre string
-	var spl string
-	var aft string
+	var pre, spl, aft string
 	aft = path
 	split := Split(path, false, "://")
 	if len(split) >= 2 {
@@ -47,27 +45,6 @@ var Home = func() func() string {
 	}
 }()
 
-// ReadDir reads the directory and returns a list of files.
-func ReadDir[S ~string](inp S) (res Array[S], err error) {
-	f := string(inp)
-	if HasPrefix("~")(f) { f = strings.Replace(f, "~", Home(), 1) }
-	if !IsDir(f) { return Err[Array[S]]("{:s} is not a directory", f) }
-	
-	entries, err := os.ReadDir(f)
-	if err != nil { return Err[Array[S]]("failed to read directory [{:s}] with error: [{:w}]", f, err) }
-
-	arr := make([]S, 0, len(entries))
-	for _, entry := range entries {
-		fp := entry.Name()
-		if entry.IsDir() { fp += "/" }
-		joined, err := Join(f, fp)
-		if err != nil { return Err[Array[S]]("failed to join path [{:s}] with [{:s}] with error: [{:w}]", f, fp, err) }
-		arr = append(arr, S(joined))
-	}
-
-	return Ok(ToArray(arr))
-}
-
 // Name returns the file name without the extension and directory.
 // TODO: create map of extensions and split by them.
 func Name[S ~string](f S) S {
@@ -76,9 +53,9 @@ func Name[S ~string](f S) S {
 	return Clean(r)
 }
 
-func AbsPath[S ~string](f S) Either[S, error] {
+func AbsPath[S ~string](f S) (S, error) {
 	path, err := fp.Abs(string(f))
-	return Auto(S(path), err)
+	return S(path), err
 }
 
 func Dir[S ~string](f S) S  { return S(fp.Dir(string(f))) }

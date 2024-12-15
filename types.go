@@ -3,22 +3,24 @@ package blume
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"reflect"
-
-	"github.com/periaate/blume/is"
 )
 
 func Zero[A any]() (a A)              { return }
 func Or[C comparable](a, b C) (res C) { if a == res   { return b };   return a }
-func Must[A, B any](a A, b B) A    { return Auto(a, b).Must() }
+func Must[A any, K comparable](a A, b K) A    {
+	if b == Zero[K]() { panic(b) }
+	return a
+}
 
-func Auto[A, B any](a A, b B) Either[A, B] { return Either[A, B]{First: a, Second: b} }
+var _ = Must[any, error]
+var _ = Must[any, bool]
 
 func Some[A any](a A) Option[A] { return Option[A]{Value: a, Ok: true} }
 func None[A any]() Option[A] { return Option[A]{Value: Zero[A](), Ok: false} }
 
 func Ok[A any](a A) (A, error) { return a, nil }
-//fuckyou
 func Err[A any](args ...any) (A, error) { return Zero[A](), StrErr(Format(args...)) }
 
 type StrErr string
@@ -29,8 +31,8 @@ type Option[A any] struct {
 	Ok    bool
 }
 
-func (o Option[A]) Must() A {
-	if !o.Ok { panic("Option is empty") }
+func (o Option[A]) Must(args ...any) A {
+	if !o.Ok { panic(Or(Format(args...), "Empty Option called with Must")) }
 	return o.Value
 }
 
@@ -39,43 +41,15 @@ func (o Option[A]) Or(def A) A {
 	return o.Value
 }
 
-type Either[A, B any] struct {
-	First A
-	Second B
-}
-
-func (e Either[A, B]) Ok() bool { return is.Truthy(e.Second) }
-
-func (e Either[A, B]) Or(def A) A {
-	if is.Truthy(e.Second) { return e.First }
-	return def
-}
-
-func (e Either[A, B]) Must(args ...any) A {
-	if is.Truthy(e.Second) { return e.First }
-	panic(Format(args...))
-}
-
-
-func fixfmt(arg string) string { return ReplaceRegex[string](`\{:\w\}`, "%$1")(arg) }
-
-//fuckyou
 func Format(args ...any) string {
-	switch len(args) {
-		case 0: return ""
-		case 1: return fmt.Sprint(args[0])
-	default:
-		s, ok := args[0].(string)
-		if ok {
-			if MatchRegex(`\{:\w\}`)(s) { return fmt.Sprintf(fixfmt(s), args[1:]...) }
-		}
-		return fmt.Sprint(args...)
+	if len(args) == 0 { return "" }
+	switch v := args[0].(type) {
+	case error: return v.Error()
+	case string:
+		if !MatchRegex(`\{:\w\}`)(v) { break }
+		return fmt.Sprintf(ReplaceRegex[string](`\{:\w\}`, "%$1")(v), args[1:]...)
 	}
-}
-
-func isFormatString[A any](a A) bool {
-	str := fmt.Sprint(a)
-	return Contains("%")(str)
+	return fmt.Sprint(args...)
 }
 
 type (
@@ -131,6 +105,10 @@ func Buf(args ...any) *bytes.Buffer {
 	switch v := arg.(type) {
 		case string: return bytes.NewBufferString(v)
 		case []byte: return bytes.NewBuffer(v)
+		case io.Reader:
+			buf := bytes.NewBuffer([]byte{})
+			io.Copy(buf, v)
+			return buf
 		default: return bytes.NewBuffer([]byte{})
 	}
 }

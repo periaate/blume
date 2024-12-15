@@ -1,0 +1,7 @@
+:8901 {
+	forward_auth {env.FW_AUTH_ADDR} {
+		uri /fw-auth/{http.request.host}{http.request.uri}
+	}
+
+	respond "Hello, World! You have been authenticated!"
+}

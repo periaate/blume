@@ -1,0 +1,1 @@
+**[:open_file_folder: blob](https://github.com/periaate/blob)** is a blob storage implementation, using HTTP `Content-Type` headers to provide a simple, yet powerful utility for storage needs in microservice or networked environments.
