@@ -3,77 +3,79 @@ package blume
 import (
 	"bytes"
 	"fmt"
-)
+	"reflect"
 
-type (
-	Fn[R any]           func() R
-	FnA[A, R any]       func(A) R
-	FnB[A, B, R any]    func(A, B) R
-	FnC[A, B, C, R any] func(A, B, C) R
+	"github.com/periaate/blume/is"
 )
 
 func Zero[A any]() (a A)              { return }
 func Or[C comparable](a, b C) (res C) { if a == res   { return b };   return a }
-func Must[A any](a A, err error) A    { if err != nil { panic(err) }; return a }
+func Must[A, B any](a A, b B) A    { return Auto(a, b).Must() }
 
-type Option[A any] interface {
-	Unwrap() A
-	Or(A) A
-	Ok() bool
+func Auto[A, B any](a A, b B) Either[A, B] { return Either[A, B]{First: a, Second: b} }
+
+func Some[A any](a A) Option[A] { return Option[A]{Value: a, Ok: true} }
+func None[A any]() Option[A] { return Option[A]{Value: Zero[A](), Ok: false} }
+
+func Ok[A any](a A) (A, error) { return a, nil }
+//fuckyou
+func Err[A any](args ...any) (A, error) { return Zero[A](), StrErr(Format(args...)) }
+
+type StrErr string
+func (e StrErr) Error() string { return string(e) }
+
+type Option[A any] struct {
+	Value A
+	Ok    bool
 }
 
-type Result[A any] interface {
-	Option[A]
-	Err() error
+func (o Option[A]) Must() A {
+	if !o.Ok { panic("Option is empty") }
+	return o.Value
 }
 
-func Ok[A any](value A)    Result[A] { return Res[A]{Opt: Opt[A]{value: value, isOk: true}} }
-func Err[A any](err error) Result[A] { return Res[A]{Opt: Opt[A]{isOk: false}, err: err} }
-func Some[A any](value A)  Option[A] { return Opt[A]{value: value, isOk: true} }
-func None[A any]()         Option[A] { return Opt[A]{isOk: false} }
-func AsOpt[A any](value A, other any) Option[A] {
-	switch v := other.(type) {
-	case error: if v != nil  { return None[A]() }
-	case bool:  if v != true { return None[A]() }
+func (o Option[A]) Or(def A) A {
+	if !o.Ok { return def }
+	return o.Value
+}
+
+type Either[A, B any] struct {
+	First A
+	Second B
+}
+
+func (e Either[A, B]) Ok() bool { return is.Truthy(e.Second) }
+
+func (e Either[A, B]) Or(def A) A {
+	if is.Truthy(e.Second) { return e.First }
+	return def
+}
+
+func (e Either[A, B]) Must(args ...any) A {
+	if is.Truthy(e.Second) { return e.First }
+	panic(Format(args...))
+}
+
+
+func fixfmt(arg string) string { return ReplaceRegex[string](`\{:\w\}`, "%$1")(arg) }
+
+//fuckyou
+func Format(args ...any) string {
+	switch len(args) {
+		case 0: return ""
+		case 1: return fmt.Sprint(args[0])
+	default:
+		s, ok := args[0].(string)
+		if ok {
+			if MatchRegex(`\{:\w\}`)(s) { return fmt.Sprintf(fixfmt(s), args[1:]...) }
+		}
+		return fmt.Sprint(args...)
 	}
-	return Some(value)
 }
 
-func Errf[A any](format string, args ...any) Result[A] {
-	return Res[A]{Opt: Opt[A]{isOk: false}, err: fmt.Errorf(format, args...)}
-}
-
-func AsRes[A any](value A, err error) Result[A] {
-	if err != nil { return Err[A](err) }
-	return Ok(value)
-}
-
-type Opt[A any] struct {
-	value A
-	isOk  bool
-	meta  string
-}
-
-func (o Opt[A]) Or(value A) A {
-	if o.isOk { return o.value }
-	return value
-}
-
-func (o Opt[A]) Ok() bool { return o.isOk }
-func (o Opt[A]) Unwrap() A {
-	if o.isOk { return o.value }
-	panic("method Unwrap called on an empty Option")
-}
-
-type Res[A any] struct {
-	Opt[A]
-	err error
-}
-
-func (r Res[A]) Err() error { return r.err }
-func (r Res[A]) Unwrap() A {
-	if r.isOk { return r.value }
-	panic("method Unwrap called on an empty Result")
+func isFormatString[A any](a A) bool {
+	str := fmt.Sprint(a)
+	return Contains("%")(str)
 }
 
 type (
@@ -84,13 +86,20 @@ type (
 	Unsigned interface { ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr }
 )
 
-func LT[N Numeric](n N) FnA[N, bool]   { return func(val N) bool { return val < n } }
-func GT[N Numeric](n N) FnA[N, bool]   { return func(val N) bool { return val > n } }
-func LTE[N Numeric](n N) FnA[N, bool]  { return func(val N) bool { return val <= n } }
-func GTE[N Numeric](n N) FnA[N, bool]  { return func(val N) bool { return val >= n } }
-func EQ[N Numeric](n N) FnA[N, bool]   { return func(val N) bool { return val == n } }
-func NEQ[N Numeric](n N) FnA[N, bool]  { return func(val N) bool { return val != n } }
-func Len(l interface{ Len() int }) int { return l.Len() }
+func LT[N Numeric](n N) func(N) bool   { return func(val N) bool { return val < n } }
+func GT[N Numeric](n N) func(N) bool   { return func(val N) bool { return val > n } }
+func LTE[N Numeric](n N) func(N) bool  { return func(val N) bool { return val <= n } }
+func GTE[N Numeric](n N) func(N) bool  { return func(val N) bool { return val >= n } }
+func EQ[N Numeric](n N) func(N) bool   { return func(val N) bool { return val == n } }
+func NEQ[N Numeric](n N) func(N) bool  { return func(val N) bool { return val != n } }
+
+func Len[A any](input A) int {
+	value := reflect.ValueOf(input)
+	if Is(reflect.Array, reflect.Slice, reflect.Map, reflect.Chan, reflect.String)(value.Kind()) {
+		return value.Len()
+	}
+	return 0 // might want to panic :D
+}
 
 func Abs[N Numeric](n N) (zero N) {
 	if n < zero { return -n }
@@ -120,8 +129,8 @@ func Buf(args ...any) *bytes.Buffer {
 	if len(args) == 0 { return bytes.NewBuffer([]byte{}) }
 	arg := args[0]
 	switch v := arg.(type) {
-	case string: return bytes.NewBufferString(v)
-	case []byte: return bytes.NewBuffer(v)
-	default: return bytes.NewBuffer([]byte{})
+		case string: return bytes.NewBufferString(v)
+		case []byte: return bytes.NewBuffer(v)
+		default: return bytes.NewBuffer([]byte{})
 	}
 }

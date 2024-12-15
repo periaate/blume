@@ -1,7 +1,7 @@
 package blume
 
 // All returns true if all arguments pass the [Predicate].
-func All[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
+func All[A any](fns ...func(A) bool) func([]A) bool {
 	fn := PredAnd(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
@@ -12,7 +12,7 @@ func All[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
 }
 
 // Any returns true if any argument passes the [Predicate].
-func Any[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
+func Any[A any](fns ...func(A) bool) func([]A) bool {
 	fn := PredOr(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
@@ -23,7 +23,7 @@ func Any[A any](fns ...FnA[A, bool]) FnA[[]A, bool] {
 }
 
 // Filter returns a slice of arguments that pass the [Predicate].
-func Filter[A any](fns ...FnA[A, bool]) FnA[[]A, []A] {
+func Filter[A any](fns ...func(A) bool) func([]A) []A {
 	fn := PredAnd(fns...)
 	return func(args []A) (res []A) {
 		res = make([]A, 0, len(args))
@@ -35,7 +35,7 @@ func Filter[A any](fns ...FnA[A, bool]) FnA[[]A, []A] {
 }
 
 // Map applies the function to each argument and returns the results.
-func Map[A, B any](fn FnA[A, B]) FnA[[]A, []B] {
+func Map[A, B any](fn func(A) B) func([]A) []B {
 	return func(args []A) (res []B) {
 		res = make([]B, 0, len(args))
 		for _, arg := range args {
@@ -46,7 +46,7 @@ func Map[A, B any](fn FnA[A, B]) FnA[[]A, []B] {
 }
 
 // Reduce applies the function to each argument and returns the result.
-func Reduce[A any, B any](fn FnB[B, A, B], init B) FnA[[]A, B] {
+func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
 	return func(args []A) B {
 		res := init
 		for _, arg := range args {
@@ -57,10 +57,10 @@ func Reduce[A any, B any](fn FnB[B, A, B], init B) FnA[[]A, B] {
 }
 
 // Not negates a [Predicate].
-func Not[A any](fn FnA[A, bool]) FnA[A, bool] { return func(t A) bool { return !fn(t) } }
+func Not[A any](fn func(A) bool) func(A) bool { return func(t A) bool { return !fn(t) } }
 
 // Is returns a [Predicate] that checks if the argument is in the list.
-func Is[C comparable](A ...C) FnA[C, bool] {
+func Is[C comparable](A ...C) func(C) bool {
 	in := make(map[C]bool, len(A))
 	for _, a := range A {
 		in[a] = true
@@ -72,7 +72,7 @@ func Is[C comparable](A ...C) FnA[C, bool] {
 }
 
 // First returns the first value which passes the [Predicate].
-func First[A any](fns ...FnA[A, bool]) FnA[[]A, Option[A]] {
+func First[A any](fns ...func(A) bool) func([]A) Option[A] {
 	fn := PredOr[A](fns...)
 	return func(args []A) Option[A] {
 		for _, arg := range args {
@@ -82,14 +82,14 @@ func First[A any](fns ...FnA[A, bool]) FnA[[]A, Option[A]] {
 	}
 }
 
-func StrIs[A, B ~string](vals ...A) FnA[B, bool] {
+func StrIs[A, B ~string](vals ...A) func(B) bool {
 	is := Is(vals...)
 	return func(b B) bool { return is(A(b)) }
 }
 
 
 // Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipe[A any](fns ...FnA[A, A]) FnA[A, A] {
+func Pipe[A any](fns ...func(A) A) func(A) A {
 	return func(a A) A {
 		for _, fn := range fns {
 			a = fn(a)
@@ -99,12 +99,12 @@ func Pipe[A any](fns ...FnA[A, A]) FnA[A, A] {
 }
 
 // Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipes[A any](fns ...FnA[A, A]) FnA[[]A, []A] { return Map(Pipe(fns...)) }
+func Pipes[A any](fns ...func(A) A) func([]A) []A { return Map(Pipe(fns...)) }
 
 // Cat concatenates two [FnA] functions into a single [FnA] function.
-func Cat[A, B, C any](a FnA[A, B], b FnA[B, C]) FnA[A, C] { return func(c A) C { return b(a(c)) } }
+func Cat[A, B, C any](a func(A) B, b func(B) C) func(A) C { return func(c A) C { return b(a(c)) } }
 
-func PredAnd[A any](preds ...FnA[A, bool]) FnA[A, bool] {
+func PredAnd[A any](preds ...func(A) bool) func(A) bool {
 	return func(a A) bool {
 		for _, pred := range preds {
 			if !pred(a) { return false }
@@ -113,7 +113,7 @@ func PredAnd[A any](preds ...FnA[A, bool]) FnA[A, bool] {
 	}
 }
 
-func PredOr[A any](preds ...FnA[A, bool]) FnA[A, bool] {
+func PredOr[A any](preds ...func(A) bool) func(A) bool {
 	return func(a A) bool {
 		for _, pred := range preds {
 			if pred(a) { return true }
@@ -142,3 +142,7 @@ func Memo[K comparable, V any](fn func(K) V) func(K) V {
 		return res
 	}
 }
+
+func Negate[A any](fn func(A) bool) func(A) bool { return func(a A) bool { return !fn(a) } }
+
+

@@ -3,8 +3,6 @@ package hnet
 import (
 	"strings"
 	"testing"
-
-	. "github.com/periaate/blume"
 )
 
 func TestURL_Custom(t *testing.T) {
@@ -12,14 +10,14 @@ func TestURL_Custom(t *testing.T) {
 
 	tests := []struct {
 		input    URL
-		options  []FnA[URL, URL]
+		options  []func(URL) URL
 		expected URL
 	}{
-		{"example.com", []FnA[URL, URL]{uppercaseTransformer}, "EXAMPLE.COM"},
-		{"example.com", []FnA[URL, URL]{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
-		{"example.com", []FnA[URL, URL]{AsProtocol(HTTPS)}, "https://example.com"},
-		{"example.com", []FnA[URL, URL]{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
-		{"example.com", []FnA[URL, URL]{AsProtocol(WSS)}, "wss://example.com"},
+		{"example.com", []func(URL) URL{uppercaseTransformer}, "EXAMPLE.COM"},
+		{"example.com", []func(URL) URL{AsProtocol(HTTP), uppercaseTransformer}, "HTTP://EXAMPLE.COM"},
+		{"example.com", []func(URL) URL{AsProtocol(HTTPS)}, "https://example.com"},
+		{"example.com", []func(URL) URL{AsProtocol(WS), uppercaseTransformer}, "WS://EXAMPLE.COM"},
+		{"example.com", []func(URL) URL{AsProtocol(WSS)}, "wss://example.com"},
 	}
 
 	for _, tt := range tests {

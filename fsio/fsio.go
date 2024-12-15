@@ -48,22 +48,24 @@ var Home = func() func() string {
 }()
 
 // ReadDir reads the directory and returns a list of files.
-func ReadDir[S ~string](inp S) Result[Array[S]] {
+func ReadDir[S ~string](inp S) (res Array[S], err error) {
 	f := string(inp)
 	if HasPrefix("~")(f) { f = strings.Replace(f, "~", Home(), 1) }
-	if !IsDir(f) { return Errf[Array[S]]("%s is not a directory", f) }
+	if !IsDir(f) { return Err[Array[S]]("{:s} is not a directory", f) }
 	
 	entries, err := os.ReadDir(f)
-	if err != nil { return Errf[Array[S]]("failed to read directory [%s] with error: [%w]", f, err) }
+	if err != nil { return Err[Array[S]]("failed to read directory [{:s}] with error: [{:w}]", f, err) }
 
-	res := make([]S, 0, len(entries))
+	arr := make([]S, 0, len(entries))
 	for _, entry := range entries {
 		fp := entry.Name()
 		if entry.IsDir() { fp += "/" }
-		res = append(res, S(Join(f, fp).Unwrap())) // a panic is impossible
+		joined, err := Join(f, fp)
+		if err != nil { return Err[Array[S]]("failed to join path [{:s}] with [{:s}] with error: [{:w}]", f, fp, err) }
+		arr = append(arr, S(joined))
 	}
 
-	return Ok(ToArray(res))
+	return Ok(ToArray(arr))
 }
 
 // Name returns the file name without the extension and directory.
@@ -74,9 +76,9 @@ func Name[S ~string](f S) S {
 	return Clean(r)
 }
 
-func AbsPath[S ~string](f S) Result[S] {
+func AbsPath[S ~string](f S) Either[S, error] {
 	path, err := fp.Abs(string(f))
-	return AsRes(S(path), err)
+	return Auto(S(path), err)
 }
 
 func Dir[S ~string](f S) S  { return S(fp.Dir(string(f))) }
@@ -113,12 +115,13 @@ func Touch[S ~string](inp S) error {
 }
 
 // Join joins the path elements.
-func Join[S ~string](args ...S) Result[S] {
+func Join[S ~string](args ...S) (S, error) {
+	if len(args) == 0 { return Err[S]("no elements to join") }
 	elems := Map(func(str S) string { return string(str) })(args)
 	var res string
 
 	elems = Filter(func(str string) bool { return str != "" })(elems)
-	if len(elems) == 0 { return Errf[S]("no elements to join") }
+	if len(elems) == 0 { return Err[S]("no elements to join") }
 	var isDir, isRel bool
 
 	if len(elems) >= 1 { isDir = HasSuffix("/", `\`)(elems[len(elems)-1]) }

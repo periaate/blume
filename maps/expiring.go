@@ -50,12 +50,11 @@ func expiration_worker[K comparable, V any](exp *Expiring[K, V]) (chan(K), chan(
 			clearing = true
 			for {
 				opt := q.Pop(Bot)
-				if !opt.Ok() {
+				if !opt.Ok {
 					if q.Len == 0 { break }
 					continue
 				}
-				k := opt.Unwrap()
-				exp.lockless_del(k)
+				exp.lockless_del(opt.Value)
 			}
 			clearing = false
 			exp.mut.Unlock()
@@ -96,14 +95,13 @@ func isExpired(t time.Time) bool { return t.Before(time.Now()) }
 
 // Get retrieves a value by key. It returns the value and a boolean indicating if the key exists.
 func (em *Expiring[K, V]) Get(k K) Option[V] {
-	opt := em.Sync.Get(k)
-	if !opt.Ok() { return None[V]() }
-	it := opt.Unwrap()
-	if isExpired(it.Expires) {
+	it := em.Sync.Get(k)
+	if !it.Ok { return None[V]() }
+	if isExpired(it.Value.Expires) {
 		em.del_ch <- k
 		return None[V]()
 	}
-	return Some(it.Value)
+	return Some(it.Value.Value)
 }
 
 // Set adds or updates a value in the map for a given key.

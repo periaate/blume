@@ -2,6 +2,7 @@ package hnet
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -12,9 +13,9 @@ import (
 
 type URL string
 
-func (u URL) ToURL(options ...FnA[URL, URL]) Result[*url.URL] { return AsRes(url.Parse(string(u.Format(options...)))) }
+func (u URL) ToURL(options ...func(URL) URL) (*url.URL, error) { return url.Parse(string(u.Format(options...))) }
 
-func (u URL) Format(options ...FnA[URL, URL]) URL {
+func (u URL) Format(options ...func(URL) URL) URL {
 	if len(options) == 0 { options = append(options, AsProtocol(HTTP)) }
 	return Pipe[URL](options...)(u)
 }
@@ -28,13 +29,23 @@ const (
 	WSS   Protocol = "wss"
 )
 
+// Use funny go type system haha why should we allow ~string as input to methods haha i love "type safety"
+func (p Protocol) Use(h any) string {
+	switch v := h.(type) {
+	case string: return string(URL(v).AsProtocol(p))
+	case URL: return string(v.AsProtocol(p))
+	case String: return string(URL(v).AsProtocol(p))
+	default: return string(URL(fmt.Sprint(h)).AsProtocol(p))
+	}
+}
+
 func (u URL) AsProtocol(protocol Protocol) URL {
 	if len(u) == 0 { return URL(protocol + "://") }
 	if HasPrefix(HTTP, HTTPS, WS, WSS)(Protocol(u)) { return URL(ReplaceRegex[URL](".*://", string(protocol+"://"))(u)) }
 	return URL(protocol) + "://" + u
 }
 
-func AsProtocol(protocol Protocol) FnA[URL, URL] { return func(u URL) URL { return u.AsProtocol(protocol) } }
+func AsProtocol(protocol Protocol) func(URL) URL { return func(u URL) URL { return u.AsProtocol(protocol) } }
 
 // Short hands for http headers.
 const (
@@ -96,6 +107,39 @@ type Status int
 func (s Status) ToError(message string) NetError { return NewError(s, message) }
 func (s Status) ToErrorf(format string, args ...any) NetError { return NewError(s, fmt.Sprintf(format, args...)) }
 func (s Status) Error() string { return s.Explanation() }
+func (s Status) Respond(w http.ResponseWriter, r io.Reader) {
+	io.Copy(w, r)
+	w.WriteHeader(int(s))
+}
+func (s Status) Respondf(w http.ResponseWriter, format string, args ...any) {
+	res := fmt.Sprintf(format, args...)
+	if len(res) == 0 { res = s.Explanation() }
+	if isErr(s) {
+		http.Error(w, res, int(s))
+		return
+	}
+	w.Write([]byte(res))
+	w.WriteHeader(int(s))
+}
+
+func (s Status) AsError(w http.ResponseWriter) error {
+	if isErr(s) {
+		http.Error(w, s.Explanation(), int(s))
+		return nil
+	}
+	return fmt.Errorf("status code [%d] is not an error", s)
+}
+
+func (s Status) AsErrorf(w http.ResponseWriter, format string, args ...any) error {
+	if isErr(s) {
+		http.Error(w, fmt.Sprintf(format, args...), int(s))
+		return nil
+	}
+	return fmt.Errorf("status code [%d] is not an error", s)
+}
+
+func isErr(s Status) bool { return int(s) >= 400 }
+
 
 func (s Status) Explanation() string {
 	switch s {

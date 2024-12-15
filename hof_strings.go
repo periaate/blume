@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func limit[A ~string | ~[]any](Max int) FnA[[]A, []A] {
+func limit[A ~string | ~[]any](Max int) func([]A) []A {
 	return func(args []A) (res []A) {
 		for _, a := range args {
 			if len(a) <= Max { res = append(res, a) }
@@ -16,7 +16,7 @@ func limit[A ~string | ~[]any](Max int) FnA[[]A, []A] {
 }
 
 // Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains[S ~string](args ...S) FnA[S, bool] {
+func Contains[S ~string](args ...S) func(S) bool {
 	return func(str S) bool {
 		for _, s := range args {
 			if strings.Contains(string(str), string(s)) { return true }
@@ -26,7 +26,7 @@ func Contains[S ~string](args ...S) FnA[S, bool] {
 }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix[S ~string](args ...S) FnA[S, bool] {
+func HasPrefix[S ~string](args ...S) func(S) bool {
 	return func(str S) bool {
 		l := limit[S](len(str))(args)
 		for _, arg := range l {
@@ -37,7 +37,7 @@ func HasPrefix[S ~string](args ...S) FnA[S, bool] {
 }
 
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix[S ~string](args ...S) FnA[S, bool] {
+func HasSuffix[S ~string](args ...S) func(S) bool {
 	return func(str S) bool {
 		l := limit[S](len(str))(args)
 		for _, arg := range l {
@@ -48,7 +48,7 @@ func HasSuffix[S ~string](args ...S) FnA[S, bool] {
 }
 
 // ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
-func ReplacePrefix[S ~string](pats ...S) FnA[S, S] {
+func ReplacePrefix[S ~string](pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 { return str }
 		for i := 0; i < len(pats); i += 2 {
@@ -64,7 +64,7 @@ func ReplacePrefix[S ~string](pats ...S) FnA[S, S] {
 }
 
 // ReplaceSuffix replaces the suffix of a string if it matches any of the given patterns.
-func ReplaceSuffix[S ~string](pats ...S) FnA[S, S] {
+func ReplaceSuffix[S ~string](pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 { return str }
 		for i := 0; i < len(pats); i += 2 {
@@ -84,7 +84,7 @@ func ReplaceSuffix[S ~string](pats ...S) FnA[S, S] {
 }
 
 // Replace replaces any found substrings with the patterns given.
-func Replace[S ~string](pats ...S) FnA[S, S] {
+func Replace[S ~string](pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 { return str }
 		for i := 0; i < len(pats); i += 2 {
@@ -94,15 +94,27 @@ func Replace[S ~string](pats ...S) FnA[S, S] {
 	}
 }
 
+
 // ReplaceRegex replaces substrings matching a regex pattern.
-func ReplaceRegex[S ~string](pat string, rep string) FnA[S, S] {
+func MatchRegex[S ~string](pats ...S) func(S) bool {
+	funcs := make([]func(S) bool, len(pats))
+	for i, pat := range pats {
+		matcher, err := regexp.Compile(string(pat))
+		if err != nil { return func(_ S) (_ bool) { return } }
+		funcs[i] = func(s S) bool { return matcher.MatchString(string(s)) }
+	}
+	return PredOr(funcs...)
+}
+
+// ReplaceRegex replaces substrings matching a regex pattern.
+func ReplaceRegex[S ~string](pat string, rep string) func(S) S {
 	matcher, err := regexp.Compile(pat)
 	if err != nil { return func(_ S) (_ S) { return } }
 	return func(s S) S { return S(matcher.ReplaceAll([]byte(string(s)), []byte(rep))) }
 }
 
 // Shift removes the first `count` characters from a string.
-func Shift[S ~string](count int) FnA[S, S] {
+func Shift[S ~string](count int) func(S) S {
 	return func(a S) (res S) {
 		if len(a) < count { return }
 		return S(string(a[count:]))
@@ -110,7 +122,7 @@ func Shift[S ~string](count int) FnA[S, S] {
 }
 
 // Pop removes all but the first `count` characters from a string.
-func Pop[S ~string](count int) FnA[S, S] {
+func Pop[S ~string](count int) func(S) S {
 	return func(a S) (res S) {
 		if len(a) < count { return }
 		return S(string(a[:count]))

@@ -38,7 +38,7 @@ func (sm *Sync[K, V]) Get(k K) Option[V] {
 	sm.mut.RLock()
 	res, ok := sm.values[k]
 	sm.mut.RUnlock()
-	return AsOpt(res, ok)
+	return Option[V]{Value: res, Ok: ok}
 }
 
 // Set adds or updates a value in the map for a given key.
@@ -57,7 +57,10 @@ func (sm *Sync[K, V]) Del(k K) (ok bool) {
 	return
 }
 
-func (sm *Sync[K, V]) lockless_get(k K) Option[V] { res, ok := sm.values[k]; return AsOpt(res, ok) }
+func (sm *Sync[K, V]) lockless_get(k K) Option[V] {
+	res, ok := sm.values[k]
+	return Option[V]{Value: res, Ok: ok}
+}
 func (sm *Sync[K, V]) lockless_set(k K, v V) V    { sm.values[k] = v;        return v }
 func (sm *Sync[K, V]) lockless_del(k K) (ok bool) {
 	if _, ok = sm.values[k]; ok { delete(sm.values, k) }

@@ -60,7 +60,7 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
 	return err
 }
 
-func Read[S ~string](fp S) Result[[]byte] { return AsRes(os.ReadFile(string(fp))) }
+// func Read[S ~string](fp S) Result[[]byte] { return AsRes(os.ReadFile(string(fp))) }
 
 // WriteAll writes the contents of the reader to the file, overwriting existing files.
 func WriteAll(f string, r io.Reader) (err error) {
@@ -137,12 +137,38 @@ func HasOutPipe() bool {
 	return (a.Mode() & os.ModeCharDevice) == 0
 }
 
+func Getenv[S ~string](key S) Option[S] {
+	val, ok := os.LookupEnv(string(key))
+	if !ok { return None[S]() }
+	return Some[S](S(val))
+}
+
 // Args returns the command-line arguments without the program name, and including any piped inputs.
-func Args[S ~string](opts ...FnA[[]string, bool]) Option[Array[S]] {
+func Args[S ~string](opts ...func([]string) bool) Option[Array[S]] {
 	args := append(os.Args[1:], ReadPipe()...)
+	if !PredAnd(opts...)(args) { return None[Array[S]]() }
+	return Some(ToArray(Map[string, S](StoS)(args)))
+}
+
+
+// Args returns the command-line arguments without the program name, and including any piped inputs.
+func IArgs[S ~string](opts ...func([]string) bool) Option[Array[S]] {
+	args := os.Args[1:]
+	if !PredAnd(opts...)(args) { return None[Array[S]]() }
+	return Some(ToArray(Map[string, S](StoS)(args)))
+}
+
+// Args returns the command-line arguments without the program name, and including any piped inputs.
+func PArgs[S ~string](opts ...func([]string) bool) Option[Array[S]] {
+	args := ReadPipe()
 	if !PredAnd(opts...)(args) { return None[Array[S]]() }
 	return Some(ToArray(Map[string, S](StoS)(args)))
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
+
+
+
+
+

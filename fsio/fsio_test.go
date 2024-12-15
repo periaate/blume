@@ -1,90 +1,140 @@
 package fsio_test
 
 import (
-	"path"
-	"path/filepath"
-	"strings"
 	"testing"
 
+	"github.com/periaate/blume/fsio"
 	. "github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/yap"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJoin(t *testing.T) {
-	TestCases := []struct {
-		Elems    []string
-		Expected string
-	}{
-		{[]string{".", "hi"}, "./hi"},
-		{[]string{"..", "hi"}, "../hi"},
-		{[]string{"base", "hi"}, "base/hi"},
-		{[]string{"base/", "hi"}, "base/hi"},
+	res, err := fsio.Join(".", "hi")
+	assert.Equal(t, res, "./hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("..", "hi")
+	assert.Equal(t, res, "../hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("base", "hi")
+	assert.Equal(t, res, "base/hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("base/", "hi")
+	assert.Equal(t, res, "base/hi")
+	assert.NoError(t, err)
 
-		{[]string{"./", "hi"}, "./hi"},
-		{[]string{"../", "hi"}, "../hi"},
-		{[]string{"./base", "hi"}, "./base/hi"},
-		{[]string{"./base/", "hi"}, "./base/hi"},
+	res, err = fsio.Join("./", "hi")
+	assert.Equal(t, res, "./hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "hi")
+	assert.Equal(t, res, "../hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base", "hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base/", "hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
 
-		{[]string{"./", "/hi"}, "./hi"},
-		{[]string{"../", "/hi"}, "../hi"},
-		{[]string{"./base", "/hi"}, "./base/hi"},
-		{[]string{"./base/", "/hi"}, "./base/hi"},
+	res, err = fsio.Join("./", "/hi")
+	assert.Equal(t, res, "./hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "/hi")
+	assert.Equal(t, res, "../hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base", "/hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base/", "/hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
 
-		{[]string{"./", "hi", "world"}, "./hi/world"},
-		{[]string{"../", "hi", "world"}, "../hi/world"},
-		{[]string{"./base", "hi", "world"}, "./base/hi/world"},
-		{[]string{"./base/", "hi", "world"}, "./base/hi/world"},
+	res, err = fsio.Join("./", "hi", "world")
+	assert.Equal(t, res, "./hi/world")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "hi", "world")
+	assert.Equal(t, res, "../hi/world")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base", "hi", "world")
+	assert.Equal(t, res, "./base/hi/world")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base/", "hi", "world")
+	assert.Equal(t, res, "./base/hi/world")
+	assert.NoError(t, err)
 
-		{[]string{"./", "//hi"}, "./hi"},
-		{[]string{"../", "//hi"}, "../hi"},
-		{[]string{"./base", "//hi"}, "./base/hi"},
-		{[]string{"./base/", "//hi"}, "./base/hi"},
+	res, err = fsio.Join("./", "//hi")
+	assert.Equal(t, res, "./hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "//hi")
+	assert.Equal(t, res, "../hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base", "//hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
+	res, err = fsio.Join("./base/", "//hi")
+	assert.Equal(t, res, "./base/hi")
+	assert.NoError(t, err)
 
-		{[]string{"./", "hi/", "//world"}, "./hi/world"},
-		{[]string{"../", "hi//", "//world"}, "../hi/world"},
+	res, err = fsio.Join("./", "hi/", "//world")
+	assert.Equal(t, res, "./hi/world")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "hi//", "//world")
+	assert.Equal(t, res, "../hi/world")
+	assert.NoError(t, err)
 
-		{[]string{"./", "hi/", "//world/"}, "./hi/world/"},
-		{[]string{"../", "hi//", "//world/"}, "../hi/world/"},
+	res, err = fsio.Join("./", "hi/", "//world/")
+	assert.Equal(t, res, "./hi/world/")
+	assert.NoError(t, err)
+	res, err = fsio.Join("../", "hi//", "//world/")
+	assert.Equal(t, res, "../hi/world/")
+	assert.NoError(t, err)
 
-		{[]string{"~/", "hi/", "//world/"}, "~/hi/world/"},
-		{[]string{"/", "hi//", "//world/"}, "/hi/world/"},
+	res, err = fsio.Join("~/", "hi/", "//world/")
+	assert.Equal(t, res, "~/hi/world/")
+	assert.NoError(t, err)
+	res, err = fsio.Join("/", "hi//", "//world/")
+	assert.Equal(t, res, "/hi/world/")
+	assert.NoError(t, err)
 
-		{[]string{`~\`, `hi\`, `\\world\`}, `~/hi/world/`},
-		{[]string{`\`, `hi\\`, `\\world\`}, `/hi/world/`},
+	res, err = fsio.Join(`~\`, `hi\`, `\\world\`)
+	assert.Equal(t, res, `~/hi/world/`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`\`, `hi\\`, `\\world\`)
+	assert.Equal(t, res, `/hi/world/`)
+	assert.NoError(t, err)
 
-		{[]string{`/`}, `/`},
-		{[]string{`\`}, `/`},
-		{[]string{`./`}, `./`},
-		{[]string{`.\`}, `./`},
+	res, err = fsio.Join(`/`)
+	assert.Equal(t, res, `/`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`\`)
+	assert.Equal(t, res, `/`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`./`)
+	assert.Equal(t, res, `./`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`.\`)
+	assert.Equal(t, res, `./`)
+	assert.NoError(t, err)
 
-		{[]string{``}, ``},
-		{[]string{`.`}, `./`},
+	res, err = fsio.Join(``)
+	assert.Error(t, err)
+	res, err = fsio.Join(`.`)
+	assert.Equal(t, res, `./`)
+	assert.NoError(t, err)
 
-		{[]string{`./blob/`, `test/AAAA`}, `./blob/test/AAAA`},
-		{
-			[]string{`http://127.0.0.1:8085`, `b`, `./`, `test/AAAAAAAAAAAAAAAAAAA`},
-			`http://127.0.0.1:8085/b/./test/AAAAAAAAAAAAAAAAAAA`,
-		},
+	res, err = fsio.Join(`./blob/`, `test/AAAA`)
+	assert.Equal(t, res, `./blob/test/AAAA`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`http://127.0.0.1:8085`, `b`, `./`, `test/AAAAAAAAAAAAAAAAAAA`)
+	assert.Equal(t, res, `http://127.0.0.1:8085/b/./test/AAAAAAAAAAAAAAAAAAA`)
+	assert.NoError(t, err)
 
-		{[]string{`http://`, `0.0.0.0:8000`, `/`}, `http://0.0.0.0:8000/`},
-		{[]string{`http://`, `//0.0.0.0:8000/`, `//`}, `http://0.0.0.0:8000/`},
-	}
-
-	yap.SetLevel(yap.L_Debug)
-	for _, tc := range TestCases {
-		t.Run(strings.Join(tc.Elems, "/"), func(t *testing.T) {
-			res := Join(tc.Elems...)
-			if len(tc.Expected) == 0 {
-				if res.Ok() { t.Fail() }
-				return
-			}
-			if res.Unwrap() != tc.Expected {
-				yap.Error("unexpcted result", "res", res, "expected", tc.Expected)
-				t.Fail()
-			}
-			yap.Debug("comparison", "res", res, "filepath", filepath.Join(tc.Elems...), "path", path.Join(tc.Elems...))
-		})
-	}
+	res, err = fsio.Join(`http://`, `0.0.0.0:8000`, `/`)
+	assert.Equal(t, res, `http://0.0.0.0:8000/`)
+	assert.NoError(t, err)
+	res, err = fsio.Join(`http://`, `//0.0.0.0:8000/`, `//`)
+	assert.Equal(t, res, `http://0.0.0.0:8000/`)
+	assert.NoError(t, err)
 }
 
 func TestClean(t *testing.T) {
@@ -103,11 +153,7 @@ func TestClean(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.inp, func(t *testing.T) {
 			res := Clean(tc.inp)
-			if res != tc.exp {
-				yap.Error("unexpcted result", "res", res, "expected", tc.exp)
-				t.Fail()
-			}
-			yap.Debug("comparison", "res", res, "filepath", filepath.Clean(tc.inp))
+			assert.Equal(t, tc.exp, res)
 		})
 	}
 }

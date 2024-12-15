@@ -4,7 +4,7 @@ import (
 	. "github.com/periaate/blume"
 )
 
-func FindFirst[A, S ~string](root A, preds ...FnA[S, bool]) Option[String] {
+func FindFirst[A, S ~string](root A, preds ...func(S) bool) Option[String] {
 	type queueItem struct {
 		path String
 	}
@@ -19,10 +19,8 @@ func FindFirst[A, S ~string](root A, preds ...FnA[S, bool]) Option[String] {
 		item := queue[0]
 		queue = queue[1:]
 
-		dirRes := ReadDir(item.path)
-		if !dirRes.Ok() { continue }
-
-		entries := dirRes.Unwrap()
+		entries, err := ReadDir(item.path)
+		if err != nil { continue }
 		for _, e := range entries.Values() {
 			eStr := e.String()
 			if !visited[eStr] {
@@ -36,7 +34,7 @@ func FindFirst[A, S ~string](root A, preds ...FnA[S, bool]) Option[String] {
 	return None[String]()
 }
 
-func Find[A, S ~string](root A, preds ...FnA[S, bool]) Option[Array[String]] {
+func Find[A, S ~string](root A, preds ...func(S) bool) Option[Array[String]] {
 	type queueItem struct {
 		path String
 	}
@@ -52,10 +50,8 @@ func Find[A, S ~string](root A, preds ...FnA[S, bool]) Option[Array[String]] {
 		item := queue[0]
 		queue = queue[1:]
 
-		dirRes := ReadDir(item.path)
-		if !dirRes.Ok() { continue }
-
-		entries := dirRes.Unwrap()
+		entries, err := ReadDir(item.path)
+		if err != nil { continue }
 		for _, e := range entries.Values() {
 			eStr := e.String()
 			if !visited[eStr] {
@@ -78,15 +74,14 @@ func Find[A, S ~string](root A, preds ...FnA[S, bool]) Option[Array[String]] {
 	return Some[Array[String]](res)
 }
 
-func Ascend[A, S ~string](root A, preds ...FnA[S, bool]) Option[S] {
+func Ascend[A, S ~string](root A, preds ...func(S) bool) Option[S] {
 	fp := String(root)
 	pred := PredAnd(preds...)
 	for {
 		if fp == Dir(fp) { return None[S]() }
-		tn := ReadDir(S(fp))
-		if !tn.Ok() { return None[S]() }
-		opt := tn.Unwrap().First(pred)
-		if opt.Ok() { return Some(opt.Unwrap()) }
+		tn, err := ReadDir(S(fp))
+		if err != nil { return None[S]() }
+		if opt := tn.First(pred); opt.Ok { return opt }
 		fp = Dir(fp)
 	}
 }

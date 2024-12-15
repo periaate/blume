@@ -19,24 +19,24 @@ func newKVP(sec int) (string, string, time.Duration) {
 func TestGetExpired(t *testing.T) {
 	m := NewExpiring[string, string]()
 	k, v, e := newKVP(-1)
-	assert.False(t, m.Set(k, v, e).Ok())
-	assert.False(t, m.Get(k).Ok())
+	assert.False(t, m.Set(k, v, e).Ok)
+	assert.False(t, m.Get(k).Ok)
 }
 
 // TestGetValid ensures that valid (not expired) items are retrievable.
 func TestGetValid(t *testing.T) {
 	m := NewExpiring[string, string]()
 	k, v, e := newKVP(1)
-	assert.True(t, m.Set(k, v, e).Ok())
-	assert.True(t, m.Get(k).Ok())
-	assert.Equal(t, v, m.Get(k).Unwrap())
+	assert.True(t, m.Set(k, v, e).Ok)
+	assert.True(t, m.Get(k).Ok)
+	assert.Equal(t, v, m.Get(k).Value)
 }
 
 // TestDel ensures that Del correctly removes items.
 func testDel(m *Expiring[string, string], Range [2]int, t *testing.T) {
 	for i := range Range[1] - Range[0] {
 		k, v, e := newKVP(i + Range[0])
-		assert.True(t, m.Set(k, v, e).Ok())
+		assert.True(t, m.Set(k, v, e).Ok)
 	}
 
 	for i := range Range[1] - Range[0] {
@@ -61,7 +61,7 @@ func TestDel(t *testing.T) {
 
 	for i := range length+1 {
 		k, _, _ := newKVP(i)
-		if !assert.False(t, m.Get(k).Ok()) { fmt.Println("Key:", k) }
+		if !assert.False(t, m.Get(k).Ok) { fmt.Println("Key:", k) }
 	}
 }
 
@@ -90,6 +90,6 @@ func TestConcurrentAccess(t *testing.T) {
 
 	for i := range count*length {
 		k, _, _ := newKVP(i)
-		if !assert.False(t, m.Get(k).Ok()) { fmt.Println("Key:", k) }
+		if !assert.False(t, m.Get(k).Ok) { fmt.Println("Key:", k) }
 	}
 }

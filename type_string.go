@@ -46,7 +46,7 @@ func (s String) String() string { return string(s) }
 func (s String) Colorize(colorCode int) String { return String(Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }
-func (s String) Trim() String                  { return String(strings.Trim(string(s), " ")) }
+func (s String) Trim(arg string) String                  { return String(strings.Trim(string(s), arg)) }
 func (s String) TrimPrefix(prefix string) String {
 	return String(strings.TrimPrefix(string(s), prefix))
 }
@@ -80,64 +80,51 @@ func Whitespaces() []string { return []string{"\r\n", "\n\r", " ", "\t", "\n", "
 
 func ToInt(s string) Option[int] {
 	i, err := strconv.Atoi(s)
-	if err != nil { return None[int]() }
-	return Some(i)
-
+	return Option[int]{Value: i, Ok: err != nil}
 }
 func ToInt8(s string) Option[int8] {
 	i, err := strconv.ParseInt(s, 10, 8)
-	if err != nil { return None[int8]() }
-	return Some(int8(i))
+	return Option[int8]{Value: int8(i), Ok: err != nil}
 }
 func ToInt16(s string) Option[int16] {
 	i, err := strconv.ParseInt(s, 10, 16)
-	if err != nil { return None[int16]() }
-	return Some(int16(i))
+	return Option[int16]{Value: int16(i), Ok: err != nil}
 }
 func ToInt32(s string) Option[int32] {
 	i, err := strconv.ParseInt(s, 10, 32)
-	if err != nil { return None[int32]() }
-	return Some(int32(i))
+	return Option[int32]{Value: int32(i), Ok: err != nil}
 }
 func ToInt64(s string) Option[int64] {
 	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil { return None[int64]() }
-	return Some(i)
+	return Option[int64]{Value: i, Ok: err != nil}
 }
 func ToUint(s string) Option[uint] {
 	i, err := strconv.ParseUint(s, 10, 0)
-	if err != nil { return None[uint]() }
-	return Some(uint(i))
+	return Option[uint]{Value: uint(i), Ok: err != nil}
 }
 func ToUint8(s string) Option[uint8] {
 	i, err := strconv.ParseUint(s, 10, 8)
-	if err != nil { return None[uint8]() }
-	return Some(uint8(i))
+	return Option[uint8]{Value: uint8(i), Ok: err != nil}
 }
 func ToUint16(s string) Option[uint16] {
 	i, err := strconv.ParseUint(s, 10, 16)
-	if err != nil { return None[uint16]() }
-	return Some(uint16(i))
+	return Option[uint16]{Value: uint16(i), Ok: err != nil}
 }
 func ToUint32(s string) Option[uint32] {
 	i, err := strconv.ParseUint(s, 10, 32)
-	if err != nil { return None[uint32]() }
-	return Some(uint32(i))
+	return Option[uint32]{Value: uint32(i), Ok: err != nil}
 }
 func ToUint64(s string) Option[uint64] {
 	i, err := strconv.ParseUint(s, 10, 64)
-	if err != nil { return None[uint64]() }
-	return Some(i)
+	return Option[uint64]{Value: i, Ok: err != nil}
 }
 func ToFloat32(s string) Option[float32] {
 	i, err := strconv.ParseFloat(s, 32)
-	if err != nil { return None[float32]() }
-	return Some(float32(i))
+	return Option[float32]{Value: float32(i), Ok: err != nil}
 }
 func ToFloat64(s string) Option[float64] {
 	i, err := strconv.ParseFloat(s, 64)
-	if err != nil { return None[float64]() }
-	return Some(i)
+	return Option[float64]{Value: i, Ok: err != nil}
 }
 
 func ToUpper(s string) string { return strings.ToUpper(s) }
@@ -148,7 +135,7 @@ func TrimPrefix(prefix string, s string) string { return strings.TrimPrefix(s, p
 func TrimSuffix(suffix string, s string) string { return strings.TrimSuffix(s, suffix) }
 func TrimSpace[S ~string](s S) S                { return S(strings.TrimSpace(string(s))) }
 
-func TrimPrefixes[S, A ~string](pats ...A) FnA[S, S] {
+func TrimPrefixes[S, A ~string](pats ...A) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
 			if HasPrefix(pat)(A(inp)) { return S(strings.TrimPrefix(string(inp), string(pat))) }
@@ -156,7 +143,8 @@ func TrimPrefixes[S, A ~string](pats ...A) FnA[S, S] {
 		return inp
 	}
 }
-func TrimSuffixes[A, S ~string](pats ...A) FnA[S, S] {
+
+func TrimSuffixes[A, S ~string](pats ...A) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
 			if HasSuffix(pat)(A(inp)) { return S(strings.TrimSuffix(string(inp), string(pat))) }

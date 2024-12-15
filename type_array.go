@@ -2,10 +2,9 @@ package blume
 
 type Array[A any] struct{ Val []A }
 
-func (a Array[A]) Map(fns ...FnA[A, A]) Array[A]       { return Array[A]{Map(Pipe(fns...))(a.Val)} }
-func (a Array[A]) First(fns ...FnA[A, bool]) Option[A] { return First(fns...)(a.Val) }
-func (a Array[A]) Reduce(fn FnB[A, A, A], init A) A     { return Reduce(fn, init)(a.Val) }
-func (a Array[A]) Filter(fns ...FnA[A, bool]) Array[A] { return Array[A]{Filter(fns...)(a.Val)} }
+func (a Array[A]) Map(fns ...func(A) A) Array[A]       { return Array[A]{Map(Pipe(fns...))(a.Val)} }
+func (a Array[A]) First(fns ...func(A) bool) Option[A] { return First(fns...)(a.Val) }
+func (a Array[A]) Filter(fns ...func(A) bool) Array[A] { return Array[A]{Filter(fns...)(a.Val)} }
 
 func (a Array[A]) Append(b ...A) Array[A]  { return Array[A]{append(a.Val, b...)} }
 func (a Array[A]) Prepend(b ...A) Array[A] { return Array[A]{append(b, a.Val...)} }
@@ -23,7 +22,7 @@ func (a Array[A]) Slice(from, to int) Array[A] {
 	return Array[A]{a.Val[from:to]}
 }
 
-// Slice !!!UNTESTED!!!
+// Shift !!!UNTESTED!!!
 func (a *Array[A]) Shift() Option[A] {
 	if len(a.Val) == 0 { return None[A]() }
 	res := a.Val[0]
@@ -31,7 +30,7 @@ func (a *Array[A]) Shift() Option[A] {
 	return Some(res)
 }
 
-// Slice !!!UNTESTED!!!
+// Pop !!!UNTESTED!!!
 func (a *Array[A]) Pop() Option[A] {
 	if len(a.Val) == 0 { return None[A]() }
 	res := a.Val[len(a.Val)-1]
