@@ -112,6 +112,18 @@ func ReadTo(f string, r io.Reader) (n int64, err error) {
 	return
 }
 
+
+// ReadPipe reads from stdin and returns a slice of bytes.
+func ReadRawPipe() (res []byte) {
+	if HasPipe() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			res = append(res, scanner.Bytes()...)
+		}
+	}
+	return
+}
+
 // ReadPipe reads from stdin and returns a slice of lines.
 func ReadPipe() (res []string) {
 	if HasPipe() {
