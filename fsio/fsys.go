@@ -28,8 +28,6 @@ func ReadDir[S ~string](inp S) (res Array[S], err error) {
 	return Ok(ToArray(arr))
 }
 
-
-
 func FindFirst[A, S ~string](root A, preds ...func(S) bool) Option[String] {
 	type queueItem struct {
 		path String
@@ -109,4 +107,3 @@ func Ascend[A, S ~string](root A, preds ...func(S) bool) Option[S] {
 		fp = Dir(fp)
 	}
 }
-

@@ -9,7 +9,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	. "github.com/periaate/blume"
 	"github.com/periaate/blume/fsio"
-	"github.com/periaate/blume/yap"
 )
 
 func main() {
@@ -39,18 +38,11 @@ func main() {
 
 	for _, t := range tags.Val {
 		v, err := semver.NewVersion(t)
-		if err != nil {
-			yap.Error("couldn't pares semantic version", "ver", t, "err", err)
-			continue
-		}
-		if lastTag == nil || v.GreaterThan(lastTag) { lastTag = v }
+		if err == nil && (lastTag == nil || v.GreaterThan(lastTag)) { lastTag = v }
 	}
 
 	if err != nil { log.Fatalf("Failed to iterate tags: %s", err) }
-
 	if lastTag == nil { lastTag, _ = semver.NewVersion("0.0.0") }
-
-
 
 	switch {
 	case Any(Is("major"))(args): fmt.Printf("v%s", lastTag.IncMajor())

@@ -15,22 +15,22 @@ var projType func(string, string, string)
 
 func Go(root, entry, name string) {
 	bin := binary.Binary(name)
-	tar := fsio.Join("/bin", bin)
+	tar := fsio.Join(fsio.Home(), ".blume/bin", bin)
+	yap.Info("building for Go", tar)
 	cmd := exec.Command("go", "build", "-o", tar, entry)
 	if debug {
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 	}
 	cmd.Dir = root
-	cmd.Dir = root
 	yap.ErrFatal(cmd.Run(), "couldn't run command", "err")
-	Done(tar, name)
+	Done(root, entry, tar, name)
 }
 
 func Rust(root, entry, name string) {
 	bin := binary.Binary(name)
 	cargoTarget := fsio.Join(root, "target", "debug", binary.Binary(name))
-	tar := fsio.Join("/bin", bin)
+	tar := fsio.Join(fsio.Home(), ".blume/bin", bin)
 	cmd := exec.Command("cargo", "build")
 	if debug {
 		cmd.Stderr = os.Stderr
@@ -40,14 +40,17 @@ func Rust(root, entry, name string) {
 	yap.ErrFatal(cmd.Run(), "couldn't run command", "err")
 
 	if err := fsio.Copy(tar, cargoTarget, true); err != nil { panic(err) }
-	Done(tar, name)
+	Done(root, entry, tar, name)
 }
 
-func Done(tar, name string) {
+func Done(root, entry, tar, name string) {
 	if fsio.Exists(tar) {
-		yap.Info("build succeeded!", "compiled", String(name), "to", String(tar))
+		switch debug {
+		case true: yap.Info("build succeeded!", "compiled", name, "to", tar, "root", root, "entry", entry)
+		default: yap.Info("build succeeded!", "compiled", name, "to", tar)
+		}
 	} else {
-		yap.Error("build failed...", "couldn't compile", name, "to", tar)
+		yap.Error("build failed...", "couldn't compile", name, "to", tar, "root", root, "entry", entry)
 	}
 }
 
@@ -70,7 +73,7 @@ func main() {
 
 	arg := args.Shift().Must()
 
-	found := fsio.FindFirst("C:/github.com/",
+	found := fsio.FindFirst("~/github.com",
 		func(s String) bool {
 			return !s.Contains("/.", "node_modules", "target", "build", "data", "Modules", "mpv.net")
 		},
@@ -101,7 +104,7 @@ func IsProject[S ~string](s S) (res bool) {
 	}
 
 	result, err := fsio.ReadDir(s)
-	if err != nil { panic(err) }
+	if err != nil { return false }
 	r := result.Filter(func(fp S) bool {
 		return Is("Cargo.toml", "go.mod", "package.json")(string(fsio.Base(fp)))
 	})
