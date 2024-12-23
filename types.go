@@ -9,13 +9,13 @@ import (
 
 func Zero[A any]() (a A)              { return }
 func Or[C comparable](a, b C) (res C) { if a == res   { return b };   return a }
-func Must[A any, K comparable](a A, b K) A    {
-	if b == Zero[K]() { panic(b) }
+func Must[A any] (a A, err error) A    {
+	if err != nil { panic(err) }
 	return a
 }
 
-var _ = Must[any, error]
-var _ = Must[any, bool]
+// var _ = Must[any, error]
+// var _ = Must[any, bool]
 
 func Some[A any](a A) Option[A] { return Option[A]{Value: a, Ok: true} }
 func None[A any]() Option[A] { return Option[A]{Value: Zero[A](), Ok: false} }

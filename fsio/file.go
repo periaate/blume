@@ -54,8 +54,8 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
 	defer f.Close()
 
 	switch force {
-	case true: err = WriteAll(string(dst), f)
-	case false: err = WriteNew(string(dst), f)
+		case true: err = WriteAll(string(dst), f)
+		case false: err = WriteNew(string(dst), f)
 	}
 	return err
 }
@@ -140,35 +140,32 @@ func HasOutPipe() bool {
 func Getenv[S ~string](key S) Option[S] {
 	val, ok := os.LookupEnv(string(key))
 	if !ok { return None[S]() }
-	return Some[S](S(val))
+	return Some(S(val))
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func Args[S ~string](opts ...func([]string) bool) Option[Array[S]] {
-	args := append(os.Args[1:], ReadPipe()...)
-	if !PredAnd(opts...)(args) { return None[Array[S]]() }
-	return Some(ToArray(Map[string, S](StoS)(args)))
+	var iargs []string
+	if len(os.Args) >= 1 { iargs = os.Args[1:] }
+	return args[S](append(iargs, ReadPipe()...), opts...)
 }
 
+func args[S ~string](arr []string, opts ...func([]string) bool) Option[Array[S]] {
+	if len(opts) == 0 { return Some(ToArray(Map[string, S](StoS)(arr))) }
+	if !PredAnd(opts...)(arr) { return None[Array[S]]() }
+	return Some(ToArray(Map[string, S](StoS)(arr)))
+}
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func IArgs[S ~string](opts ...func([]string) bool) Option[Array[S]] {
-	args := os.Args[1:]
-	if !PredAnd(opts...)(args) { return None[Array[S]]() }
-	return Some(ToArray(Map[string, S](StoS)(args)))
+	if len(os.Args) < 1 { return None[Array[S]]() }
+	return args[S](os.Args[1:], opts...)
 }
 
-// Args returns the command-line arguments without the program name, and including any piped inputs.
+// PArgs (piped arguments), returns the piped input as newline separated Array of S typed strings.
 func PArgs[S ~string](opts ...func([]string) bool) Option[Array[S]] {
-	args := ReadPipe()
-	if !PredAnd(opts...)(args) { return None[Array[S]]() }
-	return Some(ToArray(Map[string, S](StoS)(args)))
+	return args[S](ReadPipe(), opts...)
 }
 
 // Args returns the command-line arguments without the program name, and including any piped inputs.
 func SepArgs() (res [2][]string) { return [2][]string{os.Args[1:], ReadPipe()} }
-
-
-
-
-

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/Masterminds/semver/v3"
 	. "github.com/periaate/blume"
@@ -13,11 +12,8 @@ import (
 	"github.com/periaate/blume/yap"
 )
 
-func up(fp string) string { return fsio.Clean(filepath.Dir(fp)) }
-
 func main() {
-	args := fsio.Args[string]().Must().Val
-	fp := "."
+	args := fsio.Args[string]().Value.Val
 
 	switch {
 	case Any(Is("h", "help"))(args):
@@ -34,19 +30,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	sargs := Filter(Not(Is("v", "version", "h", "help", "patch", "minor", "major")))(args)
-	if len(sargs) > 0 { fp = sargs[0] }
-
 	args = Filter(Is("v", "version", "h", "help", "patch", "minor", "major"))(args)
-
-	fp = Must(filepath.Abs(fp))
-	for fp != "/" {
-		if !fsio.Exists(filepath.Join(fp, ".git")) {
-			fp = up(fp)
-			continue
-		}
-		break
-	}
 
 	tags, err := ex("git", "tag")
 	if err != nil { log.Fatalf("Failed to fetch tags: %s", err) }
@@ -65,6 +49,8 @@ func main() {
 	if err != nil { log.Fatalf("Failed to iterate tags: %s", err) }
 
 	if lastTag == nil { lastTag, _ = semver.NewVersion("0.0.0") }
+
+
 
 	switch {
 	case Any(Is("major"))(args): fmt.Printf("v%s", lastTag.IncMajor())
