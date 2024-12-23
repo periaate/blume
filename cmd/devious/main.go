@@ -80,9 +80,7 @@ func main() {
 		fsio.IsDir,
 		func(f String) bool { return fsio.Base(f) == arg },
 	).Must()
-	entries, err := fsio.ReadDir(found)
-	if err != nil { panic(err) }
-	entry := entries.First(IsEntry).Or("")
+	entry := fsio.FindFirst[String, string](found, IsEntry).Or("")
 
 	yap.Debug("looking for entry in match", entry)
 
