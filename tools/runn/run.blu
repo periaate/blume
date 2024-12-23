@@ -1,3 +1,0 @@
-run hello { wgo say ,World! }
-run meow! { wgo say awooo }
-run hiii! { wgo say  }

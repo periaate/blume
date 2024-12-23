@@ -35,8 +35,8 @@ func TestGetValid(t *testing.T) {
 // TestDel ensures that Del correctly removes items.
 func testDel(m *Expiring[string, string], Range [2]int, t *testing.T) {
 	for i := range Range[1] - Range[0] {
-		k, v, e := newKVP(i + Range[0])
-		assert.True(t, m.Set(k, v, e).Ok)
+		k, v, e := newKVP(i+1 + Range[0])
+		assert.Truef(t, m.Set(k, v, e).Ok, "tried to set, but couldn't %s", k)
 	}
 
 	for i := range Range[1] - Range[0] {
@@ -54,10 +54,6 @@ func TestDel(t *testing.T) {
 		k, _, _ := newKVP(i)
 		m.Del(k)
 	}
-
-	time.Sleep(time.Millisecond*10)
-	m.Flush()
-	time.Sleep(time.Millisecond*10)
 
 	for i := range length+1 {
 		k, _, _ := newKVP(i)
@@ -84,9 +80,6 @@ func TestConcurrentAccess(t *testing.T) {
 		k, _, _ := newKVP(i)
 		m.Del(k)
 	}
-
-	m.Flush()
-	time.Sleep(time.Millisecond*100)
 
 	for i := range count*length {
 		k, _, _ := newKVP(i)

@@ -92,13 +92,13 @@ func Touch[S ~string](inp S) error {
 }
 
 // Join joins the path elements.
-func Join[S ~string](args ...S) (S, error) {
-	if len(args) == 0 { return Err[S]("no elements to join") }
+func Join[S ~string](args ...S) S {
+	if len(args) == 0 { return "" }
 	elems := Map(func(str S) string { return string(str) })(args)
 	var res string
 
 	elems = Filter(func(str string) bool { return str != "" })(elems)
-	if len(elems) == 0 { return Err[S]("no elements to join") }
+	if len(elems) == 0 { return "" }
 	var isDir, isRel bool
 
 	if len(elems) >= 1 { isDir = HasSuffix("/", `\`)(elems[len(elems)-1]) }
@@ -121,5 +121,5 @@ func Join[S ~string](args ...S) (S, error) {
 		}
 	}
 
-	return Ok(S(res))
+	return S(res)
 }
