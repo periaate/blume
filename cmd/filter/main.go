@@ -15,7 +15,7 @@ func main() {
 		yap.SetLevel(yap.L_Debug)
 		inputArgs.Val = Filter(Not(Is("-d", "--debug")))(inputArgs.Val)
 	}
-	
+
 	mapper := Patterns(
 		Callback(Is, "is"),
 		Callback(Contains, "has", "contains"),
@@ -31,13 +31,17 @@ func main() {
 	}
 }
 
-func Pat(pats ...string) func(string) bool { return Is(append(Map(func(s string) string { return "!" + s })(pats), pats...)...) }
+func Pat(pats ...string) func(string) bool {
+	return Is(append(Map(func(s string) string { return "!" + s })(pats), pats...)...)
+}
 
 func Callback(fn func(...string) func(string) bool, pats ...string) func(string) func(string) func(string) bool {
 	pred := Pat(pats...)
 	return func(cmd string) func(string) func(string) bool {
-		if !pred(cmd) { return nil }
-		return func(args string)func(string) bool {
+		if !pred(cmd) {
+			return nil
+		}
+		return func(args string) func(string) bool {
 			res := fn(split(args)...)
 			if HasPrefix("!")(cmd) {
 				yap.Debug("negating", cmd)
@@ -68,10 +72,9 @@ func Patterns(pairs ...func(string) func(string) func(string) bool) func(s strin
 	}
 }
 
-
 func split(str string) []string {
 	mapper := Map[String, string](StoS)
-	sar := 	String(str).ReplaceRegex(`\[(.*)\]`, "$1").Split(",").Map(TrimSpace).Val
+	sar := String(str).ReplaceRegex(`\[(.*)\]`, "$1").Split(",").Map(TrimSpace).Val
 	for _, v := range sar {
 		yap.Debug("argument", v)
 	}

@@ -32,23 +32,35 @@ func main() {
 	args = Filter(Is("v", "version", "h", "help", "patch", "minor", "major"))(args)
 
 	tags, err := ex("git", "tag")
-	if err != nil { log.Fatalf("Failed to fetch tags: %s", err) }
+	if err != nil {
+		log.Fatalf("Failed to fetch tags: %s", err)
+	}
 
 	var lastTag *semver.Version
 
 	for _, t := range tags.Val {
 		v, err := semver.NewVersion(t)
-		if err == nil && (lastTag == nil || v.GreaterThan(lastTag)) { lastTag = v }
+		if err == nil && (lastTag == nil || v.GreaterThan(lastTag)) {
+			lastTag = v
+		}
 	}
 
-	if err != nil { log.Fatalf("Failed to iterate tags: %s", err) }
-	if lastTag == nil { lastTag, _ = semver.NewVersion("0.0.0") }
+	if err != nil {
+		log.Fatalf("Failed to iterate tags: %s", err)
+	}
+	if lastTag == nil {
+		lastTag, _ = semver.NewVersion("0.0.0")
+	}
 
 	switch {
-	case Any(Is("major"))(args): fmt.Printf("v%s", lastTag.IncMajor())
-	case Any(Is("minor"))(args): fmt.Printf("v%s", lastTag.IncMinor())
-	case Any(Is("patch"))(args): fmt.Printf("v%s", lastTag.IncPatch())
-	default: fmt.Printf("v%s", lastTag)
+	case Any(Is("major"))(args):
+		fmt.Printf("v%s", lastTag.IncMajor())
+	case Any(Is("minor"))(args):
+		fmt.Printf("v%s", lastTag.IncMinor())
+	case Any(Is("patch"))(args):
+		fmt.Printf("v%s", lastTag.IncPatch())
+	default:
+		fmt.Printf("v%s", lastTag)
 	}
 }
 
@@ -57,7 +69,9 @@ func ex(comd string, args ...string) (Array[string], error) {
 	buf := Buf()
 	cmd.Stdout = buf
 	err := cmd.Run()
-	if err != nil { return Err[Array[string]]("error running command err: {:s}", err) }
+	if err != nil {
+		return Err[Array[string]]("error running command err: {:s}", err)
+	}
 
 	return Ok(ToArray(Split(buf.String(), false, "\n")))
 }

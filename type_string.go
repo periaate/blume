@@ -37,7 +37,9 @@ func (s String) Split(pats ...string) Array[String] {
 }
 
 func (s String) Or(Default string) String {
-	if s == "" { return String(Default) }
+	if s == "" {
+		return String(Default)
+	}
 	return s
 }
 func (s String) Len() int       { return len(string(s)) }
@@ -46,7 +48,7 @@ func (s String) String() string { return string(s) }
 func (s String) Colorize(colorCode int) String { return String(Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }
-func (s String) Trim(arg string) String                  { return String(strings.Trim(string(s), arg)) }
+func (s String) Trim(arg string) String        { return String(strings.Trim(string(s), arg)) }
 func (s String) TrimPrefix(prefix string) String {
 	return String(strings.TrimPrefix(string(s), prefix))
 }
@@ -138,7 +140,9 @@ func TrimSpace[S ~string](s S) S                { return S(strings.TrimSpace(str
 func TrimPrefixes[S, A ~string](pats ...A) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
-			if HasPrefix(pat)(A(inp)) { return S(strings.TrimPrefix(string(inp), string(pat))) }
+			if HasPrefix(pat)(A(inp)) {
+				return S(strings.TrimPrefix(string(inp), string(pat)))
+			}
 		}
 		return inp
 	}
@@ -147,7 +151,9 @@ func TrimPrefixes[S, A ~string](pats ...A) func(S) S {
 func TrimSuffixes[A, S ~string](pats ...A) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
-			if HasSuffix(pat)(A(inp)) { return S(strings.TrimSuffix(string(inp), string(pat))) }
+			if HasSuffix(pat)(A(inp)) {
+				return S(strings.TrimSuffix(string(inp), string(pat)))
+			}
 		}
 		return inp
 	}

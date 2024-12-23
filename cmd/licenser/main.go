@@ -16,11 +16,13 @@ func main() {
 		yap.Fatal("license file already exists")
 	}
 
-	s := fsio.Args[string](func(s []string) bool {return len(s) == 1 }).Must().Val
+	s := fsio.Args[string](func(s []string) bool { return len(s) == 1 }).Must().Val
 	fmt.Printf("running licenser with argument %s\n", s[0])
 	if lic, ok := licenses[s[0]]; ok {
 		err := fsio.WriteNew("LICENSE", Buf(lic))
-		if err != nil { yap.Fatal("error writing license", "err", err) }
+		if err != nil {
+			yap.Fatal("error writing license", "err", err)
+		}
 		fmt.Printf("License %s written to LICENSE\n", s[0])
 	} else {
 		fmt.Printf("License %s not found\n\nAvailable licenses:\n%s", s[0], licensesStr)

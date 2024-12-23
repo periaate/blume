@@ -14,7 +14,7 @@ type ExpItem[V any] struct {
 
 // Expiring is a thread safe map where values have expiration dates.
 // Expiring does not automatically clear expired items, rather, they are deleted on Get.
-type Expiring[K comparable, V any] struct { *Sync[K, ExpItem[V]] }
+type Expiring[K comparable, V any] struct{ *Sync[K, ExpItem[V]] }
 
 // Iter returns a sequence of key-value pairs in the map.
 func (em *Expiring[K, V]) Iter() iter.Seq2[K, V] {
@@ -26,10 +26,15 @@ func (em *Expiring[K, V]) Iter() iter.Seq2[K, V] {
 				expiredKeys = append(expiredKeys, k)
 				continue
 			}
-			if !yield(k, v.Value) { em.mut.RUnlock(); break}
+			if !yield(k, v.Value) {
+				em.mut.RUnlock()
+				break
+			}
 		}
 
-		if len(expiredKeys) == 0 { return }
+		if len(expiredKeys) == 0 {
+			return
+		}
 
 		em.mut.Lock()
 		defer em.mut.Unlock()
@@ -50,7 +55,9 @@ func isExpired(t time.Time) bool { return t.Before(time.Now()) }
 // Get retrieves a value by key. It returns the value and a boolean indicating if the key exists.
 func (em *Expiring[K, V]) Get(k K) Option[V] {
 	it := em.Sync.Get(k)
-	if !it.Ok { return None[V]() }
+	if !it.Ok {
+		return None[V]()
+	}
 	if isExpired(it.Value.Expires) {
 		em.mut.Lock()
 		em.lockless_del(k)
@@ -63,7 +70,9 @@ func (em *Expiring[K, V]) Get(k K) Option[V] {
 // Set adds or updates a value in the map for a given key.
 func (em *Expiring[K, V]) Set(k K, v V, dur time.Duration) Option[V] {
 	expires := time.Now().Add(dur)
-	if isExpired(expires) { return None[V]() }
+	if isExpired(expires) {
+		return None[V]()
+	}
 	return Some(em.Sync.Set(k, ExpItem[V]{v, expires}).Value)
 }
 

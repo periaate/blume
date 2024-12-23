@@ -13,9 +13,15 @@ func (a Array[A]) Values() []A             { return a.Val }
 
 // Slice !!!UNTESTED!!!
 func (a Array[A]) Slice(from, to int) Array[A] {
-	if to < 0 { to = len(a.Val) + to }
-	if from < 0 { from = len(a.Val) + from }
-	if from > to { to, from = from, to }
+	if to < 0 {
+		to = len(a.Val) + to
+	}
+	if from < 0 {
+		from = len(a.Val) + from
+	}
+	if from > to {
+		to, from = from, to
+	}
 	to = Clamp(0, len(a.Val))(to)
 	from = Clamp(0, len(a.Val))(from)
 
@@ -24,7 +30,9 @@ func (a Array[A]) Slice(from, to int) Array[A] {
 
 // Shift !!!UNTESTED!!!
 func (a *Array[A]) Shift() Option[A] {
-	if len(a.Val) == 0 { return None[A]() }
+	if len(a.Val) == 0 {
+		return None[A]()
+	}
 	res := a.Val[0]
 	a.Val = a.Val[1:]
 	return Some(res)
@@ -32,7 +40,9 @@ func (a *Array[A]) Shift() Option[A] {
 
 // Pop !!!UNTESTED!!!
 func (a *Array[A]) Pop() Option[A] {
-	if len(a.Val) == 0 { return None[A]() }
+	if len(a.Val) == 0 {
+		return None[A]()
+	}
 	res := a.Val[len(a.Val)-1]
 	a.Val = a.Val[:len(a.Val)-1]
 	return Some(res)
@@ -45,8 +55,12 @@ func Pair[A any](arr []A) Array[[]A] {
 	var i int
 	for i = 0; i < len(arr); i += 2 {
 		cur := []A{}
-		if i+1 <= len(arr) { cur = append(cur, arr[i]) }
-		if i+2 <= len(arr) { cur = append(cur, arr[i+1]) }
+		if i+1 <= len(arr) {
+			cur = append(cur, arr[i])
+		}
+		if i+2 <= len(arr) {
+			cur = append(cur, arr[i+1])
+		}
 		pairs = append(pairs, cur)
 	}
 	return ToArray(pairs)

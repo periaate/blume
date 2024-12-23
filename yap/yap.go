@@ -75,12 +75,24 @@ func Encode(n int) string { return string(webSafeBase64[n%64]) }
 func kinoFormat(tim time.Time) (res string) {
 	year, month, day := tim.Date()
 	hour, min, sec := tim.Clock()
-	if includeY { res += Encode(year - 1970) }
-	if includeM { res += Encode(int(month) - 1) }
-	if includeD { res += Encode(day - 1) }
-	if includeh { res += Encode(hour) }
-	if includem { res += Encode(min) }
-	if includes { res += Encode(sec) }
+	if includeY {
+		res += Encode(year - 1970)
+	}
+	if includeM {
+		res += Encode(int(month) - 1)
+	}
+	if includeD {
+		res += Encode(day - 1)
+	}
+	if includeh {
+		res += Encode(hour)
+	}
+	if includem {
+		res += Encode(min)
+	}
+	if includes {
+		res += Encode(sec)
+	}
 	return
 }
 
@@ -101,11 +113,16 @@ func SetLevel(level Level) { l = level }
 
 func (l Level) String() string {
 	switch l {
-	case L_Error: return Colorize(LightRed,"E")
-	case L_Info: return Colorize(Cyan,"I")
-	case L_Debug: return Colorize(LightYellow,"D")
-	case L_Fatal: return Colorize(Red,"F")
-	default: return "-"
+	case L_Error:
+		return Colorize(LightRed, "E")
+	case L_Info:
+		return Colorize(Cyan, "I")
+	case L_Debug:
+		return Colorize(LightYellow, "D")
+	case L_Fatal:
+		return Colorize(Red, "F")
+	default:
+		return "-"
 	}
 }
 
@@ -114,16 +131,21 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 	strs := Map[[]any, string](
 		func(a []any) string {
 			a1 := String(fmt.Sprint(a[0]))
-			if len(a) == 1 { return a1.Colorize(LightYellow).String() + ";" }
+			if len(a) == 1 {
+				return a1.Colorize(LightYellow).String() + ";"
+			}
 			a1 = a1.ToUpper().Colorize(LightYellow)
 			a = a[1:]
 			res := Map[any, string](func(a any) string {
 				switch v := a.(type) {
-				case string: return String(fmt.Sprintf("%q", v)).Colorize(Yellow).String()
+				case string:
+					return String(fmt.Sprintf("%q", v)).Colorize(Yellow).String()
 				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 					return String(fmt.Sprint(v)).Colorize(Cyan).String()
-				case bool: return String(fmt.Sprint(v)).Colorize(LightGreen).String()
-				default: return String(fmt.Sprint(a)).Colorize(LightGreen).String()
+				case bool:
+					return String(fmt.Sprint(v)).Colorize(LightGreen).String()
+				default:
+					return String(fmt.Sprint(a)).Colorize(LightGreen).String()
 				}
 			})(a)
 			return fmt.Sprintf("%s:<%s>;", a1, strings.Join(res, ", "))
@@ -132,9 +154,15 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 
 	pr := ""
 
-	if showLevel { pr += level.String() + " " }
-	if showFile { pr += String(src).Dim().String() + "\t" }
-	if showTime { pr += String(Time()).Colorize(Cyan).Dim().String() + " " }
+	if showLevel {
+		pr += level.String() + " "
+	}
+	if showFile {
+		pr += String(src).Dim().String() + "\t"
+	}
+	if showTime {
+		pr += String(Time()).Colorize(Cyan).Dim().String() + " "
+	}
 
 	fmt.Fprintf(
 		out,
@@ -152,13 +180,18 @@ func caller(file string, line int) string {
 }
 
 func ErrFatal(v any, msg string, args ...any) {
-	if v == nil { return }
+	if v == nil {
+		return
+	}
 
 	var errMsg string
 	switch v := v.(type) {
-	case error: errMsg = v.Error()
-	case string: errMsg = v
-	default: errMsg = fmt.Sprint(v)
+	case error:
+		errMsg = v.Error()
+	case string:
+		errMsg = v
+	default:
+		errMsg = fmt.Sprint(v)
 	}
 
 	_, file, line, _ := runtime.Caller(1)
@@ -168,28 +201,42 @@ func ErrFatal(v any, msg string, args ...any) {
 }
 
 func Info(msg string, args ...any) {
-	if l < L_Info { return }
+	if l < L_Info {
+		return
+	}
 	_, file, line, ok := runtime.Caller(1)
-	if !ok { panic("Failed to get caller") }
+	if !ok {
+		panic("Failed to get caller")
+	}
 	Log(os.Stdout, "", caller(file, line), L_Info, msg, args...)
 }
 
 func Error(msg string, args ...any) {
-	if l < L_Error { return }
+	if l < L_Error {
+		return
+	}
 	_, file, line, ok := runtime.Caller(1)
-	if !ok { panic("Failed to get caller") }
+	if !ok {
+		panic("Failed to get caller")
+	}
 	Log(os.Stdout, "", caller(file, line), L_Error, msg, args...)
 }
 
 func Debug(msg string, args ...any) {
-	if l < L_Debug { return }
+	if l < L_Debug {
+		return
+	}
 	_, file, line, ok := runtime.Caller(1)
-	if !ok { panic("Failed to get caller") }
+	if !ok {
+		panic("Failed to get caller")
+	}
 	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
 }
 
 func Fatal(msg string, args ...any) {
-	if l < L_Fatal { return }
+	if l < L_Fatal {
+		return
+	}
 	_, file, line, _ := runtime.Caller(1)
 	Log(os.Stdout, "", caller(file, line), L_Debug, msg, args...)
 	os.Exit(1)

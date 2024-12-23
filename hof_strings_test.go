@@ -14,7 +14,9 @@ func TestContains(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !Contains(ex.args...)(ex.tar) { t.Fatal("match not found", ex.tar, ex.args) }
+		if !Contains(ex.args...)(ex.tar) {
+			t.Fatal("match not found", ex.tar, ex.args)
+		}
 	}
 }
 
@@ -27,7 +29,9 @@ func TestPre(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !HasPrefix(ex.args...)(ex.tar) { t.Fatal("match not found", ex.tar, ex.args) }
+		if !HasPrefix(ex.args...)(ex.tar) {
+			t.Fatal("match not found", ex.tar, ex.args)
+		}
 	}
 }
 
@@ -40,7 +44,9 @@ func TestSuf(t *testing.T) {
 	}
 
 	for _, ex := range expect {
-		if !HasSuffix(ex.args...)(ex.tar) { t.Fatal("match not found", ex.tar, ex.args) }
+		if !HasSuffix(ex.args...)(ex.tar) {
+			t.Fatal("match not found", ex.tar, ex.args)
+		}
 	}
 }
 
@@ -60,7 +66,9 @@ func TestReplacePre(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		if got := ReplacePrefix(c.pats...)(c.inp); got != c.exp { t.Fatalf("expected %s, got %s", c.exp, got) }
+		if got := ReplacePrefix(c.pats...)(c.inp); got != c.exp {
+			t.Fatalf("expected %s, got %s", c.exp, got)
+		}
 	}
 }
 
@@ -76,7 +84,9 @@ func TestReplaceSuf(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		if got := ReplaceSuffix(c.pats...)(c.inp); got != c.exp { t.Fatalf("expected %s, got %s", c.exp, got) }
+		if got := ReplaceSuffix(c.pats...)(c.inp); got != c.exp {
+			t.Fatalf("expected %s, got %s", c.exp, got)
+		}
 	}
 }
 
@@ -110,5 +120,7 @@ func TestSplitWithAll(t *testing.T) {
 	for i, r := range res {
 		fmt.Println(i+1, r)
 	}
-	if len(res) != 11 { t.Fatalf("expected 6, got %d", len(res)) }
+	if len(res) != 11 {
+		t.Fatalf("expected 6, got %d", len(res))
+	}
 }

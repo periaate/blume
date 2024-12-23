@@ -5,7 +5,9 @@ func All[A any](fns ...func(A) bool) func([]A) bool {
 	fn := PredAnd(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
-			if !fn(arg) { return false }
+			if !fn(arg) {
+				return false
+			}
 		}
 		return true
 	}
@@ -16,7 +18,9 @@ func Any[A any](fns ...func(A) bool) func([]A) bool {
 	fn := PredOr(fns...)
 	return func(args []A) bool {
 		for _, arg := range args {
-			if fn(arg) { return true }
+			if fn(arg) {
+				return true
+			}
 		}
 		return false
 	}
@@ -28,7 +32,9 @@ func Filter[A any](fns ...func(A) bool) func([]A) []A {
 	return func(args []A) (res []A) {
 		res = make([]A, 0, len(args))
 		for _, arg := range args {
-			if fn(arg) { res = append(res, arg) }
+			if fn(arg) {
+				res = append(res, arg)
+			}
 		}
 		return res
 	}
@@ -76,7 +82,9 @@ func First[A any](fns ...func(A) bool) func([]A) Option[A] {
 	fn := PredOr[A](fns...)
 	return func(args []A) Option[A] {
 		for _, arg := range args {
-			if fn(arg) { return Some(arg) }
+			if fn(arg) {
+				return Some(arg)
+			}
 		}
 		return None[A]()
 	}
@@ -86,7 +94,6 @@ func StrIs[A, B ~string](vals ...A) func(B) bool {
 	is := Is(vals...)
 	return func(b B) bool { return is(A(b)) }
 }
-
 
 // Pipe combines variadic [Transformer]s into a single [Transformer].
 func Pipe[A any](fns ...func(A) A) func(A) A {
@@ -107,7 +114,9 @@ func Cat[A, B, C any](a func(A) B, b func(B) C) func(A) C { return func(c A) C {
 func PredAnd[A any](preds ...func(A) bool) func(A) bool {
 	return func(a A) bool {
 		for _, pred := range preds {
-			if !pred(a) { return false }
+			if !pred(a) {
+				return false
+			}
 		}
 		return true
 	}
@@ -116,7 +125,9 @@ func PredAnd[A any](preds ...func(A) bool) func(A) bool {
 func PredOr[A any](preds ...func(A) bool) func(A) bool {
 	return func(a A) bool {
 		for _, pred := range preds {
-			if pred(a) { return true }
+			if pred(a) {
+				return true
+			}
 		}
 		return false
 	}
@@ -126,7 +137,9 @@ func Lazy[A any](fn func() A) func() A {
 	var loaded bool
 	var value A
 	return func() A {
-		if !loaded { value, loaded = fn(), true }
+		if !loaded {
+			value, loaded = fn(), true
+		}
 		return value
 	}
 }
@@ -144,5 +157,3 @@ func Memo[K comparable, V any](fn func(K) V) func(K) V {
 }
 
 func Negate[A any](fn func(A) bool) func(A) bool { return func(a A) bool { return !fn(a) } }
-
-

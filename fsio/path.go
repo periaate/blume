@@ -15,12 +15,16 @@ func Clean[S ~string](inp S) S {
 	aft = path
 	split := Split(path, false, "://")
 	if len(split) >= 2 {
-		if Contains("/")(split[0]) { return S(strings.Join(split, "://")) }
+		if Contains("/")(split[0]) {
+			return S(strings.Join(split, "://"))
+		}
 
 		pre = split[0]
 		spl = "://"
 		aft = strings.Join(split[1:], "/")
-		if HasPrefix("/")(aft) { aft = aft[1:] }
+		if HasPrefix("/")(aft) {
+			aft = aft[1:]
+		}
 	}
 
 	path = ToSlash(aft)
@@ -38,7 +42,9 @@ var Home = func() func() string {
 	var str string
 	var loaded bool
 	return func() string {
-		if loaded { return str }
+		if loaded {
+			return str
+		}
 		str, _ = os.UserHomeDir()
 		loaded = true
 		return str
@@ -60,12 +66,14 @@ func AbsPath[S ~string](f S) (S, error) {
 
 func Dir[S ~string](f S) S  { return S(fp.Dir(string(f))) }
 func Base[S ~string](f S) S { return S(fp.Base(string(f))) }
-func Ext[S ~string](f S) S   { return S(fp.Ext(string(f))) }
+func Ext[S ~string](f S) S  { return S(fp.Ext(string(f))) }
 
 // IsDir checks if input is a directory.
 func IsDir[S ~string](f S) bool {
 	info, err := os.Stat(string(f))
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 	return info.IsDir()
 }
 
@@ -77,36 +85,52 @@ func Exists[S ~string](f S) bool {
 
 // EnsureDir creates the directory recursively if it does not exist.
 func EnsureDir[S ~string](f S) error {
-	if Exists(f) { return nil }
+	if Exists(f) {
+		return nil
+	}
 	return os.MkdirAll(string(f), 0o755)
 }
 
 // Touch creates the file if it does not exist.
 func Touch[S ~string](inp S) error {
 	f := string(inp)
-	if Exists(f) { return nil }
-	if err := EnsureDir(Dir(f)); err != nil { return err }
+	if Exists(f) {
+		return nil
+	}
+	if err := EnsureDir(Dir(f)); err != nil {
+		return err
+	}
 	file, err := os.Create(f)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return file.Close()
 }
 
 // Join joins the path elements.
 func Join[S ~string](args ...S) S {
-	if len(args) == 0 { return "" }
+	if len(args) == 0 {
+		return ""
+	}
 	elems := Map(func(str S) string { return string(str) })(args)
 	var res string
 
 	elems = Filter(func(str string) bool { return str != "" })(elems)
-	if len(elems) == 0 { return "" }
+	if len(elems) == 0 {
+		return ""
+	}
 	var isDir, isRel bool
 
-	if len(elems) >= 1 { isDir = HasSuffix("/", `\`)(elems[len(elems)-1]) }
+	if len(elems) >= 1 {
+		isDir = HasSuffix("/", `\`)(elems[len(elems)-1])
+	}
 
 	isRel = HasPrefix(".", "./", `.\`)(elems[0]) && !HasPrefix("/", `\`, "..")(elems[0])
 
 	res = Clean(strings.Join(elems, "/"))
-	if isDir { res += "/" }
+	if isDir {
+		res += "/"
+	}
 
 	res = Clean(res)
 	if isRel || HasPrefix(".")(res) {

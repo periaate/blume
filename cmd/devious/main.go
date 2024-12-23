@@ -39,15 +39,19 @@ func Rust(root, entry, name string) {
 	cmd.Dir = root
 	yap.ErrFatal(cmd.Run(), "couldn't run command", "err")
 
-	if err := fsio.Copy(tar, cargoTarget, true); err != nil { panic(err) }
+	if err := fsio.Copy(tar, cargoTarget, true); err != nil {
+		panic(err)
+	}
 	Done(root, entry, tar, name)
 }
 
 func Done(root, entry, tar, name string) {
 	if fsio.Exists(tar) {
 		switch debug {
-		case true: yap.Info("build succeeded!", "compiled", name, "to", tar, "root", root, "entry", entry)
-		default: yap.Info("build succeeded!", "compiled", name, "to", tar)
+		case true:
+			yap.Info("build succeeded!", "compiled", name, "to", tar, "root", root, "entry", entry)
+		default:
+			yap.Info("build succeeded!", "compiled", name, "to", tar)
 		}
 	} else {
 		yap.Error("build failed...", "couldn't compile", name, "to", tar, "root", root, "entry", entry)
@@ -94,15 +98,20 @@ func main() {
 func IsProject[S ~string](s S) (res bool) {
 	if Is("Cargo.toml", "go.mod", "package.json")(string(fsio.Base(s))) {
 		switch string(fsio.Base(s)) {
-		case "Cargo.toml": projType = Rust
-		case "go.mod": projType = Go
-		case "package.json": projType = Go
+		case "Cargo.toml":
+			projType = Rust
+		case "go.mod":
+			projType = Go
+		case "package.json":
+			projType = Go
 		}
 		return true
 	}
 
 	result, err := fsio.ReadDir(s)
-	if err != nil { return false }
+	if err != nil {
+		return false
+	}
 	r := result.Filter(func(fp S) bool {
 		return Is("Cargo.toml", "go.mod", "package.json")(string(fsio.Base(fp)))
 	})

@@ -37,12 +37,15 @@ func main() {
 		}
 		cur = append(cur, arg)
 	}
-	
-	if len(cur) != 0 { sar = append(sar, cur) }
 
-	
+	if len(cur) != 0 {
+		sar = append(sar, cur)
+	}
+
 	res := Map[[]String, Command](func(inputs []String) (r Command) {
-		if len(inputs) == 0 { return }
+		if len(inputs) == 0 {
+			return
+		}
 		label := string(inputs[0])
 		cmd := string(inputs[1])
 		inputs = inputs[2:]
@@ -56,15 +59,19 @@ func main() {
 				continue
 			}
 			switch input {
-			case "--cd", "-c": setDir = true
-			default: args = append(args, string(input))
+			case "--cd", "-c":
+				setDir = true
+			default:
+				args = append(args, string(input))
 			}
 		}
 		yap.Debug("mapping input to command", "label", label, "cmd", cmd, "inputs", inputs, "args", args, "dir", dir)
 		ecmd := exec.Command(cmd, args...)
-		if len(dir) != 0 { ecmd.Dir = dir }
+		if len(dir) != 0 {
+			ecmd.Dir = dir
+		}
 		return Command{
-			cmd: ecmd,
+			cmd:   ecmd,
 			label: label,
 		}
 	})(sar)
@@ -72,7 +79,9 @@ func main() {
 	res = Filter(func(c Command) bool { return c.cmd != nil })(res)
 
 	err := RunCommands(res...)
-	if err != nil { yap.Fatal("error running commands", "error", err) }
+	if err != nil {
+		yap.Fatal("error running commands", "error", err)
+	}
 }
 
 // RunCommands executes a variadic number of exec.Cmd and streams all their outputs to stdout in real-time.
@@ -106,10 +115,12 @@ func RunCommands(cmds ...Command) error {
 			go streamOutput(stdoutPipe, cm.label, false)
 			go streamOutput(stderrPipe, cm.label, true)
 
-			if err := c.Wait(); err != nil { errChan <- fmt.Errorf("command finished with error: %w", err) }
+			if err := c.Wait(); err != nil {
+				errChan <- fmt.Errorf("command finished with error: %w", err)
+			}
 		}(cmd)
 	}
-	
+
 	wg.Wait()
 	close(errChan)
 
@@ -118,7 +129,9 @@ func RunCommands(cmds ...Command) error {
 		errs = append(errs, err)
 	}
 
-	if len(errs) > 0 { return fmt.Errorf("encountered errors: %v", errs) }
+	if len(errs) > 0 {
+		return fmt.Errorf("encountered errors: %v", errs)
+	}
 
 	return nil
 }
@@ -126,11 +139,13 @@ func RunCommands(cmds ...Command) error {
 // streamOutput streams the given reader line by line to stdout.
 func streamOutput(reader io.Reader, label string, IsErr bool) {
 	scanner := bufio.NewScanner(reader)
-	pad := strings.Repeat(" ", Clamp(0, 1<<32)(len("tools") - len(label)))
+	pad := strings.Repeat(" ", Clamp(0, 1<<32)(len("tools")-len(label)))
 	for scanner.Scan() {
 		switch IsErr {
-		case true: yap.Error(fmt.Sprintf("%s[%s] %s", pad, label, scanner.Text()))
-		default: yap.Info(fmt.Sprintf("%s[%s] %s", pad, label, scanner.Text()))
+		case true:
+			yap.Error(fmt.Sprintf("%s[%s] %s", pad, label, scanner.Text()))
+		default:
+			yap.Info(fmt.Sprintf("%s[%s] %s", pad, label, scanner.Text()))
 		}
 	}
 	if err := scanner.Err(); err != nil {

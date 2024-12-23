@@ -12,7 +12,9 @@ func (sm *Sync[K, V]) Iter() iter.Seq2[K, V] {
 		sm.mut.RLock()
 		defer sm.mut.RUnlock()
 		for k, v := range sm.values {
-			if !yield(k, v) { return }
+			if !yield(k, v) {
+				return
+			}
 		}
 	}
 }
@@ -31,7 +33,7 @@ type Sync[K comparable, V any] struct {
 }
 
 // NewSync initializes and returns a new Sync.
-func NewSync[K comparable, V any]() *Sync[K, V] { return &Sync[K, V]{ values: make(map[K]V) } }
+func NewSync[K comparable, V any]() *Sync[K, V] { return &Sync[K, V]{values: make(map[K]V)} }
 
 // Get retrieves a value by key. It returns the value and a boolean indicating if the key exists.
 func (sm *Sync[K, V]) Get(k K) Option[V] {
@@ -52,7 +54,9 @@ func (sm *Sync[K, V]) Set(k K, v V) V {
 // Del removes a value by key. It returns a boolean indicating if the key was found and removed.
 func (sm *Sync[K, V]) Del(k K) (ok bool) {
 	sm.mut.Lock()
-	if _, ok = sm.values[k]; ok { delete(sm.values, k) }
+	if _, ok = sm.values[k]; ok {
+		delete(sm.values, k)
+	}
 	sm.mut.Unlock()
 	return
 }
@@ -61,8 +65,10 @@ func (sm *Sync[K, V]) lockless_get(k K) Option[V] {
 	res, ok := sm.values[k]
 	return Option[V]{Value: res, Ok: ok}
 }
-func (sm *Sync[K, V]) lockless_set(k K, v V) V    { sm.values[k] = v;        return v }
+func (sm *Sync[K, V]) lockless_set(k K, v V) V { sm.values[k] = v; return v }
 func (sm *Sync[K, V]) lockless_del(k K) (ok bool) {
-	if _, ok = sm.values[k]; ok { delete(sm.values, k) }
+	if _, ok = sm.values[k]; ok {
+		delete(sm.values, k)
+	}
 	return
 }

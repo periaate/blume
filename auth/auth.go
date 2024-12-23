@@ -74,7 +74,9 @@ func (m *Manager) Register(s Session) (ok bool) {
 }
 
 func (m *Manager) NewLink(uses int, label string, host string, duration time.Duration) (key string, ok bool) {
-	if uses <= 0 { return }
+	if uses <= 0 {
+		return
+	}
 	yap.Info("creating link", "label", label, "host", host, "duration", duration, "uses", uses)
 	key = RandKey(32)
 	ok = m.Links.Set(key, Link{
