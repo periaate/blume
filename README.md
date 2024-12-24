@@ -50,7 +50,7 @@ Documentation for any package can be found in the READMEs at their root.
 
 
 ## Licensing
-All library code is licensed under MPL 2.0, unless otherwise specified.
-All code under any `cmd` directory is licensed under GPL 3.0, unless otherwise specified.
-In general: If you can import it, it's MPL 2.0; If you can complile it, it's GPL 3.0.
+All library code is licensed under MPL 2.0, unless otherwise specified. \
+All code under any `cmd` directory is licensed under GPL 3.0, unless otherwise specified. \
+In general: If you can import it, it's MPL 2.0; If you can compile it, it's GPL 3.0. \
 Exceptions are described in files or in the README or LICENSE files of directories.
