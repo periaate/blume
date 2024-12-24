@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/periaate/blume/fsio"
-	. "github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/yap"
 	"github.com/stretchr/testify/assert"
 )
@@ -152,7 +151,7 @@ func TestClean(t *testing.T) {
 	yap.SetLevel(yap.L_Debug)
 	for _, tc := range testCases {
 		t.Run(tc.inp, func(t *testing.T) {
-			res := Clean(tc.inp)
+			res := fsio.Clean(tc.inp)
 			assert.Equal(t, tc.exp, res)
 		})
 	}

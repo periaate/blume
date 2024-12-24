@@ -1,6 +1,8 @@
 # blume
-blume is a monorepo for my ecosystem of libraries, utilities, and services. \
-blume uses functional programming patterns such as function composition, function construction, and option types. \
+blume is a monorepo for my ecosystem of libraries, utilities, and services.
+
+blume uses functional programming patterns such as function composition, function construction, and option types.
+
 blume provides libraries for operating or working with arrays, strings, file systems, IO, and HTTP related constructs fors URLs, headers, and status codes.
 
 ## Overview
