@@ -35,7 +35,6 @@ type Session struct {
 }
 
 func (s *Session) Encode(w io.Writer) error { return json.NewEncoder(w).Encode(&s) }
-
 func (s *Session) Decode(r io.Reader) error { return json.NewDecoder(r).Decode(&s) }
 
 func (s *Session) Reader() io.Reader {

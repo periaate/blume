@@ -75,8 +75,7 @@ func Zero[A any](value A) bool {
 	return true
 }
 
-func Truthy[A any](input A) bool { return Empty(input) || Nil(input) || Empty(input) }
-
+func Truthy[A any](input A) bool   { return Empty(input) || Nil(input) || Empty(input) }
 func NotEmpty[A any](input A) bool { return !Empty(input) }
 func NotNil[A any](input A) bool   { return !Nil(input) }
 func NotZero[A any](input A) bool  { return !Zero(input) }

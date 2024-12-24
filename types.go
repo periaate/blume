@@ -21,12 +21,8 @@ func Must[A any](a A, err error) A {
 	return a
 }
 
-// var _ = Must[any, error]
-// var _ = Must[any, bool]
-
-func Some[A any](a A) Option[A] { return Option[A]{Value: a, Ok: true} }
-func None[A any]() Option[A]    { return Option[A]{Value: Zero[A](), Ok: false} }
-
+func Some[A any](a A) Option[A]         { return Option[A]{Value: a, Ok: true} }
+func None[A any]() Option[A]            { return Option[A]{Value: Zero[A](), Ok: false} }
 func Ok[A any](a A) (A, error)          { return a, nil }
 func Err[A any](args ...any) (A, error) { return Zero[A](), StrErr(Format(args...)) }
 

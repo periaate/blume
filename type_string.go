@@ -14,17 +14,13 @@ func (s String) HasSuffix(args ...string) bool { return HasSuffix(args...)(strin
 func (s String) ReplacePrefix(pats ...string) String {
 	return String(ReplacePrefix(pats...)(string(s)))
 }
-
 func (s String) ReplaceSuffix(pats ...string) String {
 	return String(ReplaceSuffix(pats...)(string(s)))
 }
-
 func (s String) Replace(pats ...string) String { return String(Replace(pats...)(string(s))) }
-
 func (s String) ReplaceRegex(pat string, rep string) String {
 	return String(ReplaceRegex[string](pat, rep)(string(s)))
 }
-
 func (s String) Shift(count int) String { return String(Shift[string](count)(string(s))) }
 func (s String) Pop(count int) String   { return String(Pop[string](count)(string(s))) }
 func (s String) Split(pats ...string) Array[String] {
@@ -42,9 +38,8 @@ func (s String) Or(Default string) String {
 	}
 	return s
 }
-func (s String) Len() int       { return len(string(s)) }
-func (s String) String() string { return string(s) }
-
+func (s String) Len() int                      { return len(string(s)) }
+func (s String) String() string                { return string(s) }
 func (s String) Colorize(colorCode int) String { return String(Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }

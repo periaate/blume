@@ -5,11 +5,10 @@ type Array[A any] struct{ Val []A }
 func (a Array[A]) Map(fns ...func(A) A) Array[A]       { return Array[A]{Map(Pipe(fns...))(a.Val)} }
 func (a Array[A]) First(fns ...func(A) bool) Option[A] { return First(fns...)(a.Val) }
 func (a Array[A]) Filter(fns ...func(A) bool) Array[A] { return Array[A]{Filter(fns...)(a.Val)} }
-
-func (a Array[A]) Append(b ...A) Array[A]  { return Array[A]{append(a.Val, b...)} }
-func (a Array[A]) Prepend(b ...A) Array[A] { return Array[A]{append(b, a.Val...)} }
-func (a Array[A]) Len() int                { return len(a.Val) }
-func (a Array[A]) Values() []A             { return a.Val }
+func (a Array[A]) Append(b ...A) Array[A]              { return Array[A]{append(a.Val, b...)} }
+func (a Array[A]) Prepend(b ...A) Array[A]             { return Array[A]{append(b, a.Val...)} }
+func (a Array[A]) Len() int                            { return len(a.Val) }
+func (a Array[A]) Values() []A                         { return a.Val }
 
 // Slice !!!UNTESTED!!!
 func (a Array[A]) Slice(from, to int) Array[A] {
