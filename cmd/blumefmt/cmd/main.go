@@ -29,7 +29,6 @@ func main() {
 		cmd.Stdout = buf
 		cmd.Start()
 
-		// Write input to the `gofmt` stdin
 		go func() {
 			defer inPipe.Close()
 			inPipe.Write(input)
