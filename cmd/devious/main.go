@@ -8,7 +8,6 @@ import (
 	"github.com/periaate/blume"
 	"github.com/periaate/blume/cmd/devious/binary"
 	"github.com/periaate/blume/pred"
-	"github.com/periaate/blume/pred/filter"
 	"github.com/periaate/blume/pred/is"
 
 	"github.com/periaate/blume/fsio"
@@ -116,7 +115,7 @@ func IsProject(s string) (res bool) {
 	if err != nil {
 		return false
 	}
-	r := filter.Filter(func(fp fsio.Entry) bool {
+	r := pred.Filter(func(fp fsio.Entry) bool {
 		return is.Any("Cargo.toml", "go.mod", "package.json")(filepath.Base(fp.Path()))
 	})(result)
 	yap.Debug("in [IsProject], ran filter", "len", len(r))

@@ -7,6 +7,7 @@ import (
 
 	"regexp"
 
+	"github.com/periaate/blume/pred"
 	"github.com/periaate/blume/pred/has"
 )
 
@@ -129,4 +130,17 @@ func TrimSuffixes(pats ...string) func(string) string {
 		}
 		return inp
 	}
+}
+
+// ReplaceRegex replaces substrings matching a regex pattern.
+func MatchRegex[S ~string](pats ...S) func(S) bool {
+	funcs := make([]func(S) bool, len(pats))
+	for i, pat := range pats {
+		matcher, err := regexp.Compile(string(pat))
+		if err != nil {
+			return func(_ S) (_ bool) { return }
+		}
+		funcs[i] = func(s S) bool { return matcher.MatchString(string(s)) }
+	}
+	return pred.Or(funcs...)
 }

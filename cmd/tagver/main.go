@@ -13,7 +13,7 @@ import (
 	"github.com/periaate/blume/pred/filter"
 	"github.com/periaate/blume/pred/has"
 	"github.com/periaate/blume/pred/is"
-	"github.com/periaate/blume/str"
+	"github.com/periaate/blume/types/str"
 )
 
 func main() {

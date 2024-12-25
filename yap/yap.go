@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/periaate/blume/str"
+	"github.com/periaate/blume/types/str"
 )
 
 type Yapfig struct {

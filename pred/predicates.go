@@ -61,3 +61,15 @@ func Any[A any](cond func(A) bool) func([]A) bool {
 		return false
 	}
 }
+
+func Filter[A any](pred func(A) bool) func([]A) []A {
+	return func(args []A) (res []A) {
+		res = make([]A, 0, len(args))
+		for _, arg := range args {
+			if pred(arg) {
+				res = append(res, arg)
+			}
+		}
+		return res
+	}
+}

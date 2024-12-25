@@ -8,10 +8,9 @@ import (
 	"path"
 	"path/filepath"
 
-	. "github.com/periaate/blume"
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/fsio/ft"
-	"github.com/periaate/blume/maps"
+	"github.com/periaate/blume/types/maps"
 )
 
 type Service struct {
@@ -64,7 +63,7 @@ func (s Service) Del(bucket, name string) error {
 	name = bucket + "/" + name
 	blob, ok := s.Blobs.Get(name)
 	if !ok {
-		return StrErr("couldn't find such blob")
+		return fmt.Errorf("couldn't find such blob")
 	}
 	ok = s.Blobs.Del(name)
 	if !ok {

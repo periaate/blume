@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/periaate/blume/maps"
+	"github.com/periaate/blume/types/maps"
 	"github.com/periaate/blume/yap"
 )
 
