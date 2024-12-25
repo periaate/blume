@@ -1,8 +1,6 @@
 package blume
 
-// All returns true if all arguments pass the [Predicate].
-func All[A any](fns ...func(A) bool) func([]A) bool {
-	fn := PredAnd(fns...)
+func All[A any](fn func(A) bool) func([]A) bool {
 	return func(args []A) bool {
 		for _, arg := range args {
 			if !fn(arg) {
@@ -13,9 +11,7 @@ func All[A any](fns ...func(A) bool) func([]A) bool {
 	}
 }
 
-// Any returns true if any argument passes the [Predicate].
-func Any[A any](fns ...func(A) bool) func([]A) bool {
-	fn := PredOr(fns...)
+func Any[A any](fn func(A) bool) func([]A) bool {
 	return func(args []A) bool {
 		for _, arg := range args {
 			if fn(arg) {
@@ -79,7 +75,7 @@ func Is[C comparable](A ...C) func(C) bool {
 
 // First returns the first value which passes the [Predicate].
 func First[A any](fns ...func(A) bool) func([]A) Option[A] {
-	fn := PredOr[A](fns...)
+	fn := PredOr(fns...)
 	return func(args []A) Option[A] {
 		for _, arg := range args {
 			if fn(arg) {

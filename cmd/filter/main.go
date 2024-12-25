@@ -4,18 +4,26 @@ import (
 	"fmt"
 
 	. "github.com/periaate/blume"
-	. "github.com/periaate/blume/fsio"
+	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/is"
 	"github.com/periaate/blume/yap"
 )
 
+// `is` keyword is heavily overloaded; consider separating it into separate keywords.
+
 func main() {
-	inputArgs := IArgs[string](is.NotEmpty[[]string]).Must()
+	inputArgs := fsio.IArgs[string](is.NotEmpty[[]string]).Must()
 	if Any(Is("-d", "--debug"))(inputArgs.Val) {
 		yap.SetLevel(yap.L_Debug)
 		inputArgs.Val = Filter(Not(Is("-d", "--debug")))(inputArgs.Val)
 	}
+	res := fsio.PArgs[string](is.NotEmpty[[]string]).Must()
+	for _, v := range res.Val {
+		fmt.Println(v)
+	}
+}
 
+func Parse(args []string) func(input []string) []string {
 	mapper := Patterns(
 		Callback(Is, "is"),
 		Callback(Contains, "has", "contains"),
@@ -24,19 +32,17 @@ func main() {
 		Callback(MatchRegex, "reg", "regex"),
 	)
 
-	maps := ToArray(Map(mapper)(inputArgs.Val)).Filter(func(f func(string) bool) bool { return f != nil })
-	res := PArgs[string](is.NotEmpty[[]string]).Must().Filter(maps.Val...)
-	for _, v := range res.Val {
-		fmt.Println(v)
+	filters := Filter(func(f func(string) bool) bool { return f != nil })(Map(mapper)(args))
+
+	return func(input []string) []string {
+		return Filter(filters...)(input)
 	}
 }
 
-func Pat(pats ...string) func(string) bool {
-	return Is(append(Map(func(s string) string { return "!" + s })(pats), pats...)...)
-}
+// func Pat(pats ...string) func(string) bool {}
 
 func Callback(fn func(...string) func(string) bool, pats ...string) func(string) func(string) func(string) bool {
-	pred := Pat(pats...)
+	pred := Is(append(Map(func(s string) string { return "!" + s })(pats), pats...)...)
 	return func(cmd string) func(string) func(string) bool {
 		if !pred(cmd) {
 			return nil
@@ -45,7 +51,7 @@ func Callback(fn func(...string) func(string) bool, pats ...string) func(string)
 			res := fn(split(args)...)
 			if HasPrefix("!")(cmd) {
 				yap.Debug("negating", cmd)
-				res = Negate[string](res)
+				res = Negate(res)
 			}
 			return res
 		}
