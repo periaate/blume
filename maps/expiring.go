@@ -3,8 +3,6 @@ package maps
 import (
 	"iter"
 	"time"
-
-	. "github.com/periaate/blume"
 )
 
 type ExpItem[V any] struct {
@@ -53,27 +51,28 @@ func NewExpiring[K comparable, V any]() *Expiring[K, V] {
 func isExpired(t time.Time) bool { return t.Before(time.Now()) }
 
 // Get retrieves a value by key. It returns the value and a boolean indicating if the key exists.
-func (em *Expiring[K, V]) Get(k K) Option[V] {
-	it := em.Sync.Get(k)
-	if !it.Ok {
-		return None[V]()
+func (em *Expiring[K, V]) Get(k K) (res V, ok bool) {
+	it, ok := em.Sync.Get(k)
+	if !ok {
+		return
 	}
-	if isExpired(it.Value.Expires) {
+	if isExpired(it.Expires) {
 		em.mut.Lock()
 		em.lockless_del(k)
 		em.mut.Unlock()
-		return None[V]()
+		return
 	}
-	return Some(it.Value.Value)
+	return
 }
 
 // Set adds or updates a value in the map for a given key.
-func (em *Expiring[K, V]) Set(k K, v V, dur time.Duration) Option[V] {
+func (em *Expiring[K, V]) Set(k K, v V, dur time.Duration) (ok bool) {
 	expires := time.Now().Add(dur)
 	if isExpired(expires) {
-		return None[V]()
+		return
 	}
-	return Some(em.Sync.Set(k, ExpItem[V]{v, expires}).Value)
+	em.Sync.Set(k, ExpItem[V]{v, expires})
+	return true
 }
 
 func (em *Expiring[K, V]) Del(k K) bool { return em.Sync.Del(k) }

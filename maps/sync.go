@@ -3,8 +3,6 @@ package maps
 import (
 	"iter"
 	"sync"
-
-	. "github.com/periaate/blume"
 )
 
 func (sm *Sync[K, V]) Iter() iter.Seq2[K, V] {
@@ -36,19 +34,18 @@ type Sync[K comparable, V any] struct {
 func NewSync[K comparable, V any]() *Sync[K, V] { return &Sync[K, V]{values: make(map[K]V)} }
 
 // Get retrieves a value by key. It returns the value and a boolean indicating if the key exists.
-func (sm *Sync[K, V]) Get(k K) Option[V] {
+func (sm *Sync[K, V]) Get(k K) (res V, ok bool) {
 	sm.mut.RLock()
-	res, ok := sm.values[k]
+	res, ok = sm.values[k]
 	sm.mut.RUnlock()
-	return Option[V]{Value: res, Ok: ok}
+	return
 }
 
 // Set adds or updates a value in the map for a given key.
-func (sm *Sync[K, V]) Set(k K, v V) V {
+func (sm *Sync[K, V]) Set(k K, v V) {
 	sm.mut.Lock()
 	sm.values[k] = v
 	sm.mut.Unlock()
-	return v
 }
 
 // Del removes a value by key. It returns a boolean indicating if the key was found and removed.
@@ -61,9 +58,9 @@ func (sm *Sync[K, V]) Del(k K) (ok bool) {
 	return
 }
 
-func (sm *Sync[K, V]) lockless_get(k K) Option[V] {
-	res, ok := sm.values[k]
-	return Option[V]{Value: res, Ok: ok}
+func (sm *Sync[K, V]) lockless_get(k K) (res V, ok bool) {
+	res, ok = sm.values[k]
+	return
 }
 func (sm *Sync[K, V]) lockless_set(k K, v V) V { sm.values[k] = v; return v }
 func (sm *Sync[K, V]) lockless_del(k K) (ok bool) {

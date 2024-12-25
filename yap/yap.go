@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/periaate/blume"
+	"github.com/periaate/blume/str"
 )
 
 type Yapfig struct {
@@ -114,43 +114,61 @@ func SetLevel(level Level) { l = level }
 func (l Level) String() string {
 	switch l {
 	case L_Error:
-		return Colorize(LightRed, "E")
+		return Colorize("E", LightRed)
 	case L_Info:
-		return Colorize(Cyan, "I")
+		return Colorize("I", Cyan)
 	case L_Debug:
-		return Colorize(LightYellow, "D")
+		return Colorize("D", LightYellow)
 	case L_Fatal:
-		return Colorize(Red, "F")
+		return Colorize("F", Red)
 	default:
 		return "-"
 	}
 }
 
+func Pair[A any](arr []A) [][]A {
+	pairs := [][]A{}
+	var i int
+	for i = 0; i < len(arr); i += 2 {
+		cur := []A{}
+		if i+1 <= len(arr) {
+			cur = append(cur, arr[i])
+		}
+		if i+2 <= len(arr) {
+			cur = append(cur, arr[i+1])
+		}
+		pairs = append(pairs, cur)
+	}
+	return pairs
+}
+
 func Log(out io.Writer, format string, src string, level Level, msg string, args ...any) {
-	res := Pair(args)
-	strs := Map[[]any, string](
-		func(a []any) string {
-			a1 := String(fmt.Sprint(a[0]))
-			if len(a) == 1 {
-				return a1.Colorize(LightYellow).String() + ";"
+	pairs := Pair(args)
+	strs := []string{}
+	for _, pair := range pairs {
+
+		first := fmt.Sprint(pair[0])
+		if len(pair) == 1 {
+			strs = append(strs, Colorize(first, LightYellow)+";")
+			continue
+		}
+		first = Colorize(first, LightYellow)
+		pair := pair[1:]
+		res := []string{}
+		for i, val := range pair {
+			switch v := val.(type) {
+			case string:
+				pair[i] = Colorize(fmt.Sprintf("%q", v), Yellow)
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+				pair[i] = Colorize(fmt.Sprint(v), Cyan)
+			case bool:
+				pair[i] = Colorize(fmt.Sprint(v), LightGreen)
+			default:
+				pair[i] = Colorize(fmt.Sprint(val), LightGreen)
 			}
-			a1 = a1.ToUpper().Colorize(LightYellow)
-			a = a[1:]
-			res := Map[any, string](func(a any) string {
-				switch v := a.(type) {
-				case string:
-					return String(fmt.Sprintf("%q", v)).Colorize(Yellow).String()
-				case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-					return String(fmt.Sprint(v)).Colorize(Cyan).String()
-				case bool:
-					return String(fmt.Sprint(v)).Colorize(LightGreen).String()
-				default:
-					return String(fmt.Sprint(a)).Colorize(LightGreen).String()
-				}
-			})(a)
-			return fmt.Sprintf("%s:<%s>;", a1, strings.Join(res, ", "))
-		},
-	)(res.Values())
+		}
+		strs = append(strs, fmt.Sprintf("%s:<%s>;", first, strings.Join(res, ", ")))
+	}
 
 	pr := ""
 
@@ -158,23 +176,23 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 		pr += level.String() + " "
 	}
 	if showFile {
-		pr += String(src).Dim().String() + "\t"
+		pr += Dim(src) + "\t"
 	}
 	if showTime {
-		pr += String(Time()).Colorize(Cyan).Dim().String() + " "
+		pr += Dim(Time()) + " "
 	}
 
 	fmt.Fprintf(
 		out,
 		"%s%s %s\n",
 		pr,
-		String(msg),
+		msg,
 		strings.Join(strs, " "),
 	)
 }
 
 func caller(file string, line int) string {
-	split := String(file).Split("/", "\\").Values()
+	split := str.Split(file, false, "/", "\\")
 	n := split[len(split)-1]
 	return fmt.Sprintf("%s:%d", n, line)
 }

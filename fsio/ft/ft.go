@@ -1,6 +1,6 @@
 package ft
 
-import . "github.com/periaate/blume"
+import "github.com/periaate/blume/has"
 
 type Kind int
 
@@ -125,24 +125,18 @@ func Html() Type       { return html }
 func Xml() Type        { return xml }
 func Json() Type       { return json }
 func Raw() Type        { return raw }
-func FromContentHeader(str string) Option[Type] {
-	v, ok := ctToType[str]
-	if !ok {
-		return None[Type]()
-	}
-	return Some(v)
+func FromContentHeader(str string) (res Type, ok bool) {
+	res, ok = ctToType[str]
+	return
 }
 
-func FromExt(str string) Option[Type] {
+func FromExt(str string) (res Type, ok bool) {
 	if len(str) == 0 {
-		return None[Type]()
+		return
 	}
-	if !HasPrefix(".")(str) {
+	if !has.Prefix(".")(str) {
 		str = "." + str
 	}
-	v, ok := ctToType[str]
-	if !ok {
-		return None[Type]()
-	}
-	return Some(v)
+	res, ok = ctToType[str]
+	return
 }

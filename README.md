@@ -1,24 +1,4 @@
 # blume
-blume is a monorepo for my ecosystem of libraries, utilities, and services.
-
-blume uses functional programming patterns such as function composition, function construction, and option types.
-
-blume provides libraries for operating or working with arrays, strings, file systems, IO, and HTTP related constructs fors URLs, headers, and status codes.
-
-## Overview
-Documentation for any package can be found in the READMEs at their root.
-
-- `blume`: core functionality of `blume`; dot imported in most files for native-like integration.
-- `blume/fsio`: file system and IO library.
-- `blume/hnet`: HTTP related functionality and types `Status`, `Header`, and `URL`.
-- `blume/yap`: structural logger.
-- `blume/maps`: threadsafe map `maps.Sync[K, V]`, and an expiring map `maps.Expiring[K, V]`.
-- `blume/media`: algorithms and wrappers for operating on images and videos.
-- `blume/blob`: embedded blob storage service.
-- `blume/cmd/tagver`: `git tag` helper for getting and managing semantic versioned git tags.
-- `blume/cmd/blumefmt`: Go formatter, inlines simple statements, prunes unnecessary newlines. Not `gofmt` compatible.
-- `blume/cmd/licenser`: utility for recognizing a license, or writing specified license to a file.
-- `blume/cmd/devious`: utility for building Go or Rust binaries to a directory in path.
 
 ## Log
 ### v0.4.0
@@ -52,7 +32,4 @@ Documentation for any package can be found in the READMEs at their root.
 
 
 ## Licensing
-All library code is licensed under MPL 2.0, unless otherwise specified. \
-All code under any `cmd` directory is licensed under GPL 3.0, unless otherwise specified. \
-In general: If you can import it, it's MPL 2.0; If you can compile it, it's GPL 3.0. \
-Exceptions are described in files or in the README or LICENSE files of directories.
+If you can import it, it's MPL 2.0; If you can compile it, it's GPL 3.0.

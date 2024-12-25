@@ -4,62 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
-	. "github.com/periaate/blume"
 	"github.com/periaate/blume/yap"
 )
-
-type URL string
-
-func (u URL) ToURL(options ...func(URL) URL) (*url.URL, error) {
-	return url.Parse(string(u.Format(options...)))
-}
-
-func (u URL) Format(options ...func(URL) URL) URL {
-	if len(options) == 0 {
-		options = append(options, AsProtocol(HTTP))
-	}
-	return Pipe(options...)(u)
-}
-
-type Protocol string
-
-const (
-	HTTP  Protocol = "http"
-	HTTPS Protocol = "https"
-	WS    Protocol = "ws"
-	WSS   Protocol = "wss"
-)
-
-// Use funny go type system haha why should we allow ~string as input to methods haha i love "type safety"
-func (p Protocol) Use(h any) string {
-	switch v := h.(type) {
-	case string:
-		return string(URL(v).AsProtocol(p))
-	case URL:
-		return string(v.AsProtocol(p))
-	case String:
-		return string(URL(v).AsProtocol(p))
-	default:
-		return string(URL(fmt.Sprint(h)).AsProtocol(p))
-	}
-}
-
-func (u URL) AsProtocol(protocol Protocol) URL {
-	if len(u) == 0 {
-		return URL(protocol + "://")
-	}
-	if HasPrefix(HTTP, HTTPS, WS, WSS)(Protocol(u)) {
-		return URL(ReplaceRegex[URL](".*://", string(protocol+"://"))(u))
-	}
-	return URL(protocol) + "://" + u
-}
-
-func AsProtocol(protocol Protocol) func(URL) URL {
-	return func(u URL) URL { return u.AsProtocol(protocol) }
-}
 
 // Short hands for http headers.
 const (

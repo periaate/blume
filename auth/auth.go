@@ -68,9 +68,7 @@ type Manager struct {
 	mut      sync.Mutex
 }
 
-func (m *Manager) Register(s Session) (ok bool) {
-	return m.Sessions.Set(s.Cookie, s, time.Until(s.T)).Ok
-}
+func (m *Manager) Register(s Session) (ok bool) { return m.Sessions.Set(s.Cookie, s, time.Until(s.T)) }
 
 func (m *Manager) NewLink(uses int, label string, host string, duration time.Duration) (key string, ok bool) {
 	if uses <= 0 {
@@ -85,7 +83,7 @@ func (m *Manager) NewLink(uses int, label string, host string, duration time.Dur
 		T:        time.Now().Add(duration),
 		Uses:     uses,
 		Duration: duration,
-	}, duration).Ok
+	}, duration)
 
 	return
 }
@@ -94,20 +92,18 @@ func (m *Manager) NewLink(uses int, label string, host string, duration time.Dur
 func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok bool) {
 	m.mut.Lock()
 	defer m.mut.Unlock()
-	opt := m.Links.Get(key)
-	if !opt.Ok {
+	link, ok := m.Links.Get(key)
+	if !ok {
 		yap.Error("link not found", "key", key)
 		return
 	}
-
-	link := opt.Value
 
 	link.Uses--
 	if link.Uses <= 0 {
 		yap.Info("link expired", "key", key)
 		m.Links.Del(key)
 	} else {
-		if !m.Links.Set(key, link, time.Until(link.T)).Ok {
+		if !m.Links.Set(key, link, time.Until(link.T)) {
 			yap.Error("error updating link", "key", key)
 			m.Links.Del(key)
 			return // this should return ? Write tests dummy!!

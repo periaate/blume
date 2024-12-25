@@ -7,15 +7,20 @@ import (
 	"os/exec"
 
 	"github.com/Masterminds/semver/v3"
-	. "github.com/periaate/blume"
+	"github.com/periaate/blume"
+	"github.com/periaate/blume/filter"
 	"github.com/periaate/blume/fsio"
+	"github.com/periaate/blume/has"
+	"github.com/periaate/blume/is"
+	"github.com/periaate/blume/pred"
+	"github.com/periaate/blume/str"
 )
 
 func main() {
-	args := fsio.Args[string]().Value.Val
+	args := blume.Must(fsio.Args(is.NotEmpty[string]))
 
 	switch {
-	case Any(Is("h", "help"))(args):
+	case pred.Any(is.Any("h", "help"))(args):
 		fmt.Println("tagver")
 		fmt.Println("tagver is a simple tool to manage semantic versioning tags in git repositories.")
 		fmt.Println("Usage:")
@@ -29,16 +34,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	args = Filter(Is("v", "version", "h", "help", "patch", "minor", "major"))(args)
+	args = filter.Any(is.Any("v", "version", "h", "help", "patch", "minor", "major"))(args)
 
-	tags, err := ex("git", "tag")
+	cmd := exec.Command("git", "tag")
+	buf := blume.Buf()
+	cmd.Stdout = buf
+	err := cmd.Run()
 	if err != nil {
 		log.Fatalf("Failed to fetch tags: %s", err)
 	}
-
 	var lastTag *semver.Version
 
-	for _, t := range tags.Val {
+	tags := str.Split(buf.String(), false, "\n")
+	for _, t := range tags {
 		v, err := semver.NewVersion(t)
 		if err == nil && (lastTag == nil || v.GreaterThan(lastTag)) {
 			lastTag = v
@@ -53,25 +61,13 @@ func main() {
 	}
 
 	switch {
-	case Any(Is("major"))(args):
+	case has.Any(args...)("major"):
 		fmt.Printf("v%s", lastTag.IncMajor())
-	case Any(Is("minor"))(args):
+	case has.Any(args...)("minor"):
 		fmt.Printf("v%s", lastTag.IncMinor())
-	case Any(Is("patch"))(args):
+	case has.Any(args...)("patch"):
 		fmt.Printf("v%s", lastTag.IncPatch())
 	default:
 		fmt.Printf("v%s", lastTag)
 	}
-}
-
-func ex(comd string, args ...string) (Array[string], error) {
-	cmd := exec.Command(comd, args...)
-	buf := Buf()
-	cmd.Stdout = buf
-	err := cmd.Run()
-	if err != nil {
-		return Err[Array[string]]("error running command err: {:s}", err)
-	}
-
-	return Ok(ToArray(Split(buf.String(), false, "\n")))
 }

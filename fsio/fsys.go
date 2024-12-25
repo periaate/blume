@@ -2,138 +2,123 @@ package fsio
 
 import (
 	"os"
-	"strings"
+	"path/filepath"
 
-	. "github.com/periaate/blume"
+	"github.com/periaate/blume/pred"
 )
 
-// ReadDir reads the directory and returns a list of files.
-func ReadDir[S ~string](inp S) (res Array[S], err error) {
-	f := string(inp)
-	if HasPrefix("~")(f) {
-		f = strings.Replace(f, "~", Home(), 1)
-	}
-	if !IsDir(f) {
-		return Err[Array[S]]("{:s} is not a directory", f)
-	}
+// Name returns the file name without the extension and directory.
+func Name(f string) string {
+	b := filepath.Base(f)
+	r := b[:len(b)-len(filepath.Ext(b))]
+	return filepath.Clean(r)
+}
 
-	entries, err := os.ReadDir(f)
+// IsDir checks if input is a directory.
+func IsDir(f string) bool {
+	info, err := os.Stat(f)
 	if err != nil {
-		return Err[Array[S]]("failed to read directory [{:s}] with error: [{:w}]", f, err)
+		return false
 	}
-
-	arr := make([]S, 0, len(entries))
-	for _, entry := range entries {
-		fp := entry.Name()
-		if entry.IsDir() {
-			fp += "/"
-		}
-		joined := Join(f, fp)
-		if len(joined) == 0 {
-			return Err[Array[S]]("path {:s} with {:s} has length of 0", f, fp)
-		}
-		arr = append(arr, S(joined))
-	}
-
-	return Ok(ToArray(arr))
+	return info.IsDir()
 }
 
-func FindFirst[A, S ~string](root A, preds ...func(S) bool) Option[String] {
-	type queueItem struct {
-		path String
+// Exists checks if the input exists.
+func Exists(f string) bool {
+	_, err := os.Stat(f)
+	return !os.IsNotExist(err)
+}
+
+type Entry struct {
+	os.DirEntry
+	root string
+}
+
+func (e Entry) Path() string { return filepath.Join(e.root, e.Name()) }
+
+// ReadDir reads the directory and returns a list of files.
+func ReadDir(root string) (res []Entry, err error) {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return
 	}
 
-	pred := PredAnd(preds...)
+	res = make([]Entry, 0, len(entries))
+	for _, v := range entries {
+		res = append(res, Entry{v, root})
+	}
 
-	queue := []queueItem{{path: String(root)}}
-	visited := make(map[string]bool)
-	visited[string(root)] = true
+	return
+}
+
+func Traverse(root string, walk func(path Entry) (skip, stop bool)) {
+	queue := []string{root}
 
 	for len(queue) > 0 {
 		item := queue[0]
 		queue = queue[1:]
 
-		entries, err := ReadDir(item.path)
+		entries, err := ReadDir(item)
 		if err != nil {
 			continue
 		}
-		for _, e := range entries.Values() {
-			eStr := e.String()
-			if !visited[eStr] {
-				visited[eStr] = true
-				if e.HasSuffix("/") {
-					queue = append(queue, queueItem{path: e})
-				}
-				if pred(S(e)) {
-					return Some(e)
-				}
+		for _, e := range entries {
+			skip, stop := walk(e)
+			if stop {
+				return
 			}
-		}
-	}
-
-	return None[String]()
-}
-
-func Find[A, S ~string](root A, preds ...func(S) bool) Option[Array[String]] {
-	type queueItem struct {
-		path String
-	}
-	pred := PredAnd(preds...)
-
-	res := Array[String]{}
-
-	queue := []queueItem{{path: String(root)}}
-	visited := make(map[string]bool)
-	visited[string(root)] = true
-
-	for len(queue) > 0 {
-		item := queue[0]
-		queue = queue[1:]
-
-		entries, err := ReadDir(item.path)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries.Values() {
-			eStr := e.String()
-			if visited[eStr] {
+			if skip {
 				continue
 			}
-			visited[eStr] = true
-			b := true
-			if !pred(S(e)) {
-				b = false
-				break
-			}
-			if b {
-				if e.HasSuffix("/") {
-					queue = append(queue, queueItem{path: e})
-				}
-				res = res.Append(e)
+			path := e.Path()
+			if IsDir(path) {
+				queue = append(queue, path)
 			}
 		}
 	}
-
-	if res.Len() == 0 {
-		return None[Array[String]]()
-	}
-	return Some(res)
 }
 
-func Ascend[A, S ~string](root A, preds ...func(S) bool) Option[S] {
-	fp := String(root)
-	pred := PredAnd(preds...)
+func First(root string, pred func(string) bool) (res string, ok bool) {
+	Traverse(root, func(entry Entry) (skip bool, stop bool) {
+		path := entry.Path()
+		if pred(path) {
+			res = path
+			ok = true
+			return false, true
+		}
+		return
+	})
+	return
+}
+
+func Find(root string, pred func(string) bool) (res []string) {
+	Traverse(root, func(entry Entry) (_ bool, _ bool) {
+		path := entry.Path()
+		if pred(path) {
+			res = append(res, path)
+		}
+		return
+	})
+	return
+}
+
+func Ascend(root string, preds ...func(string) bool) (res string, ok bool) {
+	fp := root
+	pred := pred.And(preds...)
 	for {
-		if fp == Dir(fp) {
-			return None[S]()
+		if fp == filepath.Dir(fp) {
+			return
 		}
-		tn, err := ReadDir(S(fp))
+		tn, err := ReadDir(fp)
 		if err != nil {
-			return None[S]()
+			return
 		}
-		if opt := tn.First(pred); opt.Ok {
-			return opt
+		for _, entry := range tn {
+			path := entry.Path()
+			if pred(path) {
+				return path, true
+			}
 		}
-		fp = Dir(fp)
+		fp = filepath.Dir(fp)
 	}
 }
