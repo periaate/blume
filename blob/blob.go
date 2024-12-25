@@ -50,7 +50,7 @@ func (s Service) Set(bucket, blob string, r io.Reader, ct ft.Type) (res Blob, er
 		err = fmt.Errorf("the content type for blob [%s] is not valid", name)
 		return
 	}
-	err = fsio.WriteTo(fp, r)
+	err = fsio.WriteAll(fp, r)
 	if err != nil {
 		return
 	}

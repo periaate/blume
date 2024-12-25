@@ -55,10 +55,6 @@ func Must[A any](a A, handle ...any) A {
 	return a
 }
 
-type StrErr string
-
-func (e StrErr) Error() string { return string(e) }
-
 func Buf(args ...any) *bytes.Buffer {
 	if len(args) == 0 {
 		return bytes.NewBuffer([]byte{})

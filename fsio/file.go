@@ -18,7 +18,7 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
 
 	switch force {
 	case true:
-		err = WriteTo(string(dst), f)
+		err = WriteAll(string(dst), f)
 	case false:
 		err = WriteNew(string(dst), f)
 	}
@@ -28,7 +28,7 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
 // func Read[S ~string](fp S) Result[[]byte] { return AsRes(os.ReadFile(string(fp))) }
 
 // WriteAll writes the contents of the reader to the file, overwriting existing files.
-func WriteTo(f string, r io.Reader) (err error) {
+func WriteAll(f string, r io.Reader) (err error) {
 	file, err := os.Create(f)
 	if err != nil {
 		return err
@@ -54,19 +54,6 @@ func WriteNew(f string, r io.Reader) (err error) {
 	return err
 }
 
-// AppendTo appends the contents of the reader to the file.
-func AppendTo(f string, r io.Reader) (err error) {
-	// Open the file in append mode, create if not exists
-	file, err := os.OpenFile(f, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, r)
-	return err
-}
-
 // ReadPipe reads from stdin and returns a slice of lines.
 func ReadPipe() (res []string) {
 	if HasInPipe() {
@@ -78,7 +65,6 @@ func ReadPipe() (res []string) {
 	return
 }
 
-// HasPipe evaluates whether stdin is being piped in to.
 func HasInPipe() bool {
 	a, err := os.Stdin.Stat()
 	if err != nil {
@@ -87,7 +73,6 @@ func HasInPipe() bool {
 	return (a.Mode() & os.ModeCharDevice) == 0
 }
 
-// HasPipe evaluates whether stdin is being piped in to.
 func HasOutPipe() bool {
 	a, err := os.Stdout.Stat()
 	if err != nil {
@@ -97,10 +82,9 @@ func HasOutPipe() bool {
 }
 
 func Args(preds ...func([]string) bool) (res []string, ok bool) {
-	cond := pred.And(preds...)
 	if len(os.Args) >= 1 {
 		res = os.Args[1:]
 	}
-	ok = cond(res)
+	ok = pred.And(preds...)(res)
 	return
 }
