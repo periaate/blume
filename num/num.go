@@ -1,4 +1,4 @@
-package is
+package num
 
 type (
 	Numeric interface{ Unsigned | Signed | Float }

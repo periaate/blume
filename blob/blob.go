@@ -11,7 +11,6 @@ import (
 	. "github.com/periaate/blume"
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/fsio/ft"
-	"github.com/periaate/blume/hnet"
 	"github.com/periaate/blume/maps"
 )
 
@@ -80,7 +79,7 @@ func Server(srv *Service) http.Handler {
 	mux.HandleFunc("GET /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		blob, ok := srv.Get(r.PathValue("bucket"), r.PathValue("blob"))
 		if !ok {
-			hnet.Not_Found.AsError(w)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		http.ServeFile(w, r, blob.Path)
@@ -89,12 +88,13 @@ func Server(srv *Service) http.Handler {
 	mux.HandleFunc("POST /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		ct, ok := ft.FromContentHeader(r.Header.Get("Content-Type"))
 		if !ok {
-			hnet.Bad_Request.AsErrorf(w, "the request is missing a content header")
+			// hnet.Bad_Request.AsErrorf(w, "the request is missing a content header")
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		blob, err := srv.Set(r.PathValue("bucket"), r.PathValue("blob"), r.Body, ct)
 		if err != nil {
-			hnet.Not_Found.AsErrorf(w, "%s", err)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		http.ServeFile(w, r, blob.Path)
@@ -103,10 +103,10 @@ func Server(srv *Service) http.Handler {
 	mux.HandleFunc("DELETE /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		err := srv.Del(r.PathValue("bucket"), r.PathValue("blob"))
 		if err != nil {
-			hnet.Internal_Server_Error.AsErrorf(w, "error deleting blob %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(int(hnet.OK))
+		w.WriteHeader(http.StatusOK)
 	})
 
 	return mux

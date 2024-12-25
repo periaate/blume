@@ -4,12 +4,6 @@ import (
 	"github.com/periaate/blume/pred"
 )
 
-func LT[N Numeric](n N) func(N) bool        { return func(val N) bool { return val < n } }
-func GT[N Numeric](n N) func(N) bool        { return func(val N) bool { return val > n } }
-func LTE[N Numeric](n N) func(N) bool       { return func(val N) bool { return val <= n } }
-func GTE[N Numeric](n N) func(N) bool       { return func(val N) bool { return val >= n } }
-func EQ[N Numeric](n N) func(N) bool        { return func(val N) bool { return val == n } }
-func NEQ[N Numeric](n N) func(N) bool       { return func(val N) bool { return val != n } }
 func NotEmpty[K comparable](input []K) bool { return len(input) != 0 }
 func Empty[K comparable](input []K) bool    { return len(input) == 0 }
 

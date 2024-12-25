@@ -7,7 +7,7 @@ import (
 
 	"regexp"
 
-	"github.com/periaate/blume/has"
+	"github.com/periaate/blume/pred/has"
 )
 
 // ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.

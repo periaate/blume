@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/periaate/blume/is"
+	"github.com/periaate/blume/pred/is"
 )
 
 func Or[A any](def A, in A, handle ...any) (res A) {

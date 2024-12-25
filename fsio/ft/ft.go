@@ -1,6 +1,6 @@
 package ft
 
-import "github.com/periaate/blume/has"
+import "github.com/periaate/blume/pred/has"
 
 type Kind int
 

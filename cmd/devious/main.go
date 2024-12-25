@@ -7,9 +7,9 @@ import (
 
 	"github.com/periaate/blume"
 	"github.com/periaate/blume/cmd/devious/binary"
-	"github.com/periaate/blume/filter"
-	"github.com/periaate/blume/is"
 	"github.com/periaate/blume/pred"
+	"github.com/periaate/blume/pred/filter"
+	"github.com/periaate/blume/pred/is"
 
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/yap"

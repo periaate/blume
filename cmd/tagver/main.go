@@ -8,11 +8,11 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/periaate/blume"
-	"github.com/periaate/blume/filter"
 	"github.com/periaate/blume/fsio"
-	"github.com/periaate/blume/has"
-	"github.com/periaate/blume/is"
 	"github.com/periaate/blume/pred"
+	"github.com/periaate/blume/pred/filter"
+	"github.com/periaate/blume/pred/has"
+	"github.com/periaate/blume/pred/is"
 	"github.com/periaate/blume/str"
 )
 
