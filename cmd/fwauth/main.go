@@ -1,11 +1,8 @@
-package auth
+package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
-	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -14,17 +11,13 @@ import (
 	"github.com/periaate/blume/yap"
 )
 
-func NewManager(opts ...func(*Manager)) *Manager {
-	m := &Manager{
+// to be simplified
+
+func NewManager() *Manager {
+	return &Manager{
 		Links:    maps.NewExpiring[string, Link](),
 		Sessions: maps.NewExpiring[string, Session](),
 	}
-
-	for _, opt := range opts {
-		opt(m)
-	}
-
-	return m
 }
 
 type Session struct {
@@ -32,15 +25,6 @@ type Session struct {
 	Label  string    `json:"label"`
 	Host   string    `json:"host"`
 	T      time.Time `json:"expires"`
-}
-
-func (s *Session) Encode(w io.Writer) error { return json.NewEncoder(w).Encode(&s) }
-func (s *Session) Decode(r io.Reader) error { return json.NewDecoder(r).Decode(&s) }
-
-func (s *Session) Reader() io.Reader {
-	rw := bytes.NewBuffer([]byte{})
-	s.Encode(rw)
-	return rw
 }
 
 type Link struct {
