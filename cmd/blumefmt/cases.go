@@ -1,5 +1,7 @@
 package blumefmt
 
+// TODO: switch to md based test cases.
+
 type testCase struct {
 	name    string
 	have    string

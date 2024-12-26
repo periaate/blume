@@ -20,6 +20,6 @@ func TestMust(t *testing.T) {
 	assert.Equal(t, "success", Must("success"))
 	assert.Equal(t, 20, Must(20, true))
 	assert.Panics(t, func() { Must(20, false) }, "must called with false bool")
-	assert.Equal(t, "success", Must("success", nil))
+	assert.Panics(t, func() { Must("unsupported type", nil) })
 	assert.Panics(t, func() { Must("failure", assert.AnError) }, "must called with non nil error")
 }

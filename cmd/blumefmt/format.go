@@ -11,6 +11,8 @@ import (
 	"github.com/periaate/blume/yap"
 )
 
+// This code has been generated with ChatGPT o1 and fixed by hand.
+
 // regionToInline holds information about a region in the source
 // that we want to rewrite: the opening brace, the single statement,
 // and the closing brace, all on consecutive lines/positions.

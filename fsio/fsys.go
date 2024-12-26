@@ -3,8 +3,6 @@ package fsio
 import (
 	"os"
 	"path/filepath"
-
-	"github.com/periaate/blume/pred"
 )
 
 // Name returns the file name without the extension and directory.
@@ -29,6 +27,7 @@ func Exists(f string) bool {
 	return !os.IsNotExist(err)
 }
 
+// Entry is an os.DirEntry wrapper which is aware of it's full path, not just its name.
 type Entry struct {
 	os.DirEntry
 	root string
@@ -36,36 +35,30 @@ type Entry struct {
 
 func (e Entry) Path() string { return filepath.Join(e.root, e.Name()) }
 
-// ReadDir reads the directory and returns a list of files.
 func ReadDir(root string) (res []Entry, err error) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return
 	}
-
 	res = make([]Entry, 0, len(entries))
 	for _, v := range entries {
 		res = append(res, Entry{v, root})
 	}
-
 	return
 }
 
-func Traverse(root string, walk func(path Entry) (skip, stop bool)) {
+func Traverse(root string, walk func(path Entry) (skip, stop bool)) error {
 	queue := []string{root}
-
 	for len(queue) > 0 {
-		item := queue[0]
-		queue = queue[1:]
-
+		item, queue := queue[0], queue[1:]
 		entries, err := ReadDir(item)
 		if err != nil {
-			continue
+			return err
 		}
 		for _, e := range entries {
 			skip, stop := walk(e)
 			if stop {
-				return
+				return nil
 			}
 			if skip {
 				continue
@@ -76,25 +69,22 @@ func Traverse(root string, walk func(path Entry) (skip, stop bool)) {
 			}
 		}
 	}
+	return nil
 }
 
-func First(root string, pred func(string) bool) (res string, ok bool) {
+func First(root string, cond func(string) bool) (res string, ok bool) {
 	Traverse(root, func(entry Entry) (skip bool, stop bool) {
-		path := entry.Path()
-		if pred(path) {
-			res = path
-			ok = true
-			return false, true
-		}
-		return
+		res = entry.Path()
+		ok = cond(res)
+		return false, ok
 	})
 	return
 }
 
-func Find(root string, pred func(string) bool) (res []string) {
+func Find(root string, cond func(string) bool) (res []string) {
 	Traverse(root, func(entry Entry) (_ bool, _ bool) {
 		path := entry.Path()
-		if pred(path) {
+		if cond(path) {
 			res = append(res, path)
 		}
 		return
@@ -102,23 +92,22 @@ func Find(root string, pred func(string) bool) (res []string) {
 	return
 }
 
-func Ascend(root string, preds ...func(string) bool) (res string, ok bool) {
-	fp := root
-	pred := pred.And(preds...)
+func Ascend(path string, cond func(string) bool) (res string, ok bool) {
 	for {
-		if fp == filepath.Dir(fp) {
+		if path == filepath.Dir(path) {
 			return
 		}
-		tn, err := ReadDir(fp)
+		entries, err := ReadDir(path)
 		if err != nil {
 			return
 		}
-		for _, entry := range tn {
-			path := entry.Path()
-			if pred(path) {
-				return path, true
+		for _, entry := range entries {
+			res = entry.Path()
+			ok = cond(res)
+			if ok {
+				return
 			}
 		}
-		fp = filepath.Dir(fp)
+		path = filepath.Dir(path)
 	}
 }

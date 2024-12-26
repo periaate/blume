@@ -13,81 +13,64 @@ import (
 	"github.com/periaate/blume/types/maps"
 )
 
-type Service struct {
-	Blobs *maps.Sync[string, Blob] // name -> Blob
-	Root  string                   // root must be an absolute path.
-}
-
-func NewService(root string) (res *Service, err error) {
+func New(root string, validator func(string, string) bool) (res *Store, err error) {
 	root, err = filepath.Abs(root)
-	if err != nil {
-		return
+	if err == nil {
+		res = &Store{maps.New(validator), root}
 	}
-	res = &Service{
-		Blobs: &maps.Sync[string, Blob]{},
-		Root:  root,
-	}
-	return res, err
-}
-
-type Blob struct {
-	Type ft.Type
-	Name string
-	Path string
-}
-
-func (b Blob) Open() (*os.File, error) { return os.Open(b.Path) }
-func (b Blob) delete() error           { return os.Remove(b.Path) }
-
-func (s Service) Set(bucket, blob string, r io.Reader, ct ft.Type) (res Blob, err error) {
-	err = os.MkdirAll(path.Join(s.Root, bucket), 0o777)
-	if err != nil {
-		return
-	}
-	fp := path.Join(s.Root, bucket, blob) + ct.Ext()
-	name := bucket + "/" + blob
-	if len(ct.ContentHeader()) == 0 {
-		err = fmt.Errorf("the content type for blob [%s] is not valid", name)
-		return
-	}
-	err = fsio.WriteAll(fp, r)
-	if err != nil {
-		return
-	}
-	res = Blob{ct, name, fp}
 	return
 }
 
-func (s Service) Get(bucket, name string) (Blob, bool) { return s.Blobs.Get(bucket + "/" + name) }
-func (s Service) Del(bucket, name string) error {
+type Store struct {
+	maps.Map[string, string]
+	root string
+}
+
+func (s Store) Set(bucket, blob string, r io.Reader, ct ft.Type) (res string, err error) {
+	err = os.MkdirAll(path.Join(s.root, bucket), 0o777)
+	if err != nil {
+		return
+	}
+	res = path.Join(s.root, bucket, blob) + ct.Ext()
+	err = fsio.WriteAll(res, r)
+	return
+}
+
+func (s Store) Get(bucket, name string) (val string, err error) {
+	val, ok, isValid := s.GetFull(bucket + "/" + name)
+	if !ok {
+		return "", fmt.Errorf("couldn't find such blob")
+	}
+	if !isValid {
+		return "", s.Del(bucket, name)
+	}
+	return
+}
+
+func (s Store) Del(bucket, name string) error {
 	name = bucket + "/" + name
-	blob, ok := s.Blobs.Get(name)
+	blob, ok := s.Map.Get(name)
 	if !ok {
 		return fmt.Errorf("couldn't find such blob")
 	}
-	ok = s.Blobs.Del(name)
-	if !ok {
-		return fmt.Errorf("couldn't delet blob [%s]", name)
-	}
-	return blob.delete()
+	s.Map.Del(name)
+	return os.Remove(blob)
 }
 
-func Server(srv *Service) http.Handler {
+func Server(srv *Store) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
-		blob, ok := srv.Get(r.PathValue("bucket"), r.PathValue("blob"))
-		if !ok {
+		blob, err := srv.Get(r.PathValue("bucket"), r.PathValue("blob"))
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		http.ServeFile(w, r, blob.Path)
+		http.ServeFile(w, r, blob)
 	})
-
 	mux.HandleFunc("POST /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		ct, ok := ft.FromContentHeader(r.Header.Get("Content-Type"))
 		if !ok {
-			// hnet.Bad_Request.AsErrorf(w, "the request is missing a content header")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -96,9 +79,8 @@ func Server(srv *Service) http.Handler {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		http.ServeFile(w, r, blob.Path)
+		http.ServeFile(w, r, blob)
 	})
-
 	mux.HandleFunc("DELETE /{bucket}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		err := srv.Del(r.PathValue("bucket"), r.PathValue("blob"))
 		if err != nil {

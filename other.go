@@ -51,8 +51,9 @@ func Must[A any](a A, handle ...any) A {
 			return a
 		}
 		panic("must called with non nil error")
+	default:
+		panic("must called with unsupported handle")
 	}
-	return a
 }
 
 func Buf(args ...any) *bytes.Buffer {

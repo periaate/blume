@@ -4,111 +4,119 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
-	"sync"
+	"net/url"
+	"os"
 	"time"
 
+	"github.com/periaate/blume"
 	"github.com/periaate/blume/types/maps"
+	"github.com/periaate/blume/types/str"
 	"github.com/periaate/blume/yap"
 )
 
-// to be simplified
-
-func NewManager() *Manager {
-	return &Manager{
-		Links:    maps.NewExpiring[string, Link](),
-		Sessions: maps.NewExpiring[string, Session](),
-	}
-}
-
-type Session struct {
-	Cookie string    `json:"cookie"`
-	Label  string    `json:"label"`
-	Host   string    `json:"host"`
-	T      time.Time `json:"expires"`
-}
-
 type Link struct {
-	Key   string
-	Host  string
-	Label string
-	// T is the time when the link will expire
-	T time.Time
-	// Uses is the number of times the link can be used
-	Uses int
-
-	// Duration is the duration of generated sessions
-	Duration time.Duration
+	Hash       string
+	Origin     string
+	Expiration time.Time
+	Uses       int
+	Duration   time.Duration
 }
 
-func RandKey(length int) string {
-	val := make([]byte, length)
-	rand.Read(val)
-	return base64.URLEncoding.EncodeToString(val)
+type Sess struct {
+	Hash       string
+	Origin     string
+	Expiration time.Time
 }
 
-type Manager struct {
-	Links    *maps.Expiring[string, Link]
-	Sessions *maps.Expiring[string, Session]
-	mut      sync.Mutex
+type Serv struct {
+	Links    maps.Map[string, *Link]
+	Sessions maps.Map[string, *Sess]
 }
 
-func (m *Manager) Register(s Session) (ok bool) { return m.Sessions.Set(s.Cookie, s, time.Until(s.T)) }
-
-func (m *Manager) NewLink(uses int, label string, host string, duration time.Duration) (key string, ok bool) {
-	if uses <= 0 {
-		return
-	}
-	yap.Info("creating link", "label", label, "host", host, "duration", duration, "uses", uses)
-	key = RandKey(32)
-	ok = m.Links.Set(key, Link{
-		Label:    label,
-		Host:     host,
-		Key:      key,
-		T:        time.Now().Add(duration),
-		Uses:     uses,
-		Duration: duration,
-	}, duration)
-
-	return
-}
-
-// UseLink uses a link to generate a session.
-func (m *Manager) UseLink(key string, w http.ResponseWriter) (sess Session, ok bool) {
-	m.mut.Lock()
-	defer m.mut.Unlock()
-	link, ok := m.Links.Get(key)
-	if !ok {
-		yap.Error("link not found", "key", key)
-		return
+func main() {
+	s := &Serv{
+		maps.New(func(_ string, link *Link) (ok bool) {
+			if link == nil {
+				return
+			}
+			if time.Until(link.Expiration) < 0 {
+				return
+			}
+			return link.Uses < 0
+		}),
+		maps.New(func(_ string, sess *Sess) (ok bool) {
+			if sess == nil {
+				return
+			}
+			return time.Until(sess.Expiration) < 0
+		}),
 	}
 
-	link.Uses--
-	if link.Uses <= 0 {
-		yap.Info("link expired", "key", key)
-		m.Links.Del(key)
-	} else {
-		if !m.Links.Set(key, link, time.Until(link.T)) {
-			yap.Error("error updating link", "key", key)
-			m.Links.Del(key)
-			return // this should return ? Write tests dummy!!
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /gen/{origin}/{exp}/{dur}/{uses}", func(w http.ResponseWriter, r *http.Request) {
+		origin, err := url.Parse("https://" + r.PathValue("origin"))
+		if err != nil {
+			http.Error(w, "origin is not a valid URL", 400)
+			return
 		}
-	}
 
-	cookie := RandKey(32)
-	sess = Session{
-		Cookie: cookie,
-		Label:  link.Label,
-		Host:   link.Host,
-		T:      time.Now().Add(link.Duration),
-	}
+		exp, err := str.ToInt64(r.PathValue("exp"))
+		if err != nil {
+			http.Error(w, "couldn't parse expiration to int64", 400)
+			return
+		}
+		dur, err := str.ToInt64(r.PathValue("dur"))
+		if err != nil {
+			http.Error(w, "couldn't parse duration to int64", 400)
+			return
+		}
+		uses, err := str.ToInt(r.PathValue("uses"))
+		if err != nil {
+			http.Error(w, "couldn't parse uses to int", 400)
+			return
+		}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "X-Session",
-		Value:   cookie,
-		Domain:  link.Host,
-		Expires: time.Now().Add(link.Duration),
+		l := &Link{
+			Hash:       gen(),
+			Origin:     origin.String(),
+			Expiration: time.Now().Add(time.Duration(exp)),
+			Duration:   time.Duration(dur),
+			Uses:       uses,
+		}
+
+		if !s.Links.Set(l.Hash, l) {
+			http.Error(w, "the arguments provided do not construct a valid link", 400)
+			return
+		}
+
+		w.Write([]byte(origin.String() + "/" + l.Hash))
 	})
 
-	m.Sessions.Set(sess.Cookie, sess, time.Until(sess.T))
-	return
+	http.HandleFunc("GET /fw-auth/{origin}/{hash}", func(w http.ResponseWriter, r *http.Request) {
+		origin := r.PathValue("origin")
+		hash := r.PathValue("hash")
+		sess, ok := s.Sessions.Get(hash)
+		switch {
+		case !ok, sess.Origin != origin:
+			w.WriteHeader(401)
+		default:
+			w.WriteHeader(200)
+		}
+	})
+
+	go func() {
+		addr := blume.Or("127.0.0.1:7590", os.Getenv("FW_AUTH_GEN_ADDR"))
+		yap.Info("serving link gen server", "http://"+addr)
+		yap.Fatal("error running gen server", http.ListenAndServe(addr, mux))
+	}()
+
+	addr := blume.Or("127.0.0.1:7595", os.Getenv("FW_AUTH_ADDR"))
+	yap.Info("serving fwauth server", "http://"+addr)
+	yap.Fatal("error running fwauth server", http.ListenAndServe(addr, mux))
+}
+
+func gen() string {
+	bytes := make([]byte, 32)
+	blume.Must(rand.Read(bytes))
+	return base64.URLEncoding.EncodeToString(bytes)
 }

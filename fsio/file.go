@@ -25,8 +25,6 @@ func Copy[DST, SRC ~string](dst DST, src SRC, force bool) error {
 	return err
 }
 
-// func Read[S ~string](fp S) Result[[]byte] { return AsRes(os.ReadFile(string(fp))) }
-
 // WriteAll writes the contents of the reader to the file, overwriting existing files.
 func WriteAll(f string, r io.Reader) (err error) {
 	file, err := os.Create(f)
