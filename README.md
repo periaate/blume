@@ -28,6 +28,7 @@ blume contains Go libraries and software.
 		- provides unified `Type` type to work with file extensions and mime types
 		- provides predicates to check the `Kind` of a `Type`; Video, Audio, Media, Code, ...
 - moved `blume/auth/fwauth` to `blume/cmd/fwauth`.
+	- rewrote `blume/cmd/fwauth`.
 - `blume/types/maps` changes:
 	- removed internal type `link`.
 	- removed `Expiring` type.
