@@ -23,3 +23,15 @@ func None[K comparable](args ...K) func(K) bool { return pred.Isnt(args...) }
 
 // Equal returns a predicate which checks if the input is equivalent to the argument.
 func Equal[K comparable](arg K) func(K) bool { return func(i K) bool { return arg == i } }
+
+// Ok is a testaments to Go's great type system.
+func Ok[A any](_ any, ok A) bool {
+	switch val := any(ok).(type) {
+	case bool:
+		return val
+	case error:
+		return val != nil
+	default:
+		panic("invalid ok type")
+	}
+}

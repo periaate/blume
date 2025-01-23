@@ -47,10 +47,11 @@ func ReadDir(root string) (res []Entry, err error) {
 	return
 }
 
-func Traverse(root string, walk func(path Entry) (skip, stop bool)) error {
+func Traverse(root string, walk func(path Entry) (skip, stop bool)) (err error) {
 	queue := []string{root}
+	var item string
 	for len(queue) > 0 {
-		item, queue := queue[0], queue[1:]
+		item, queue = queue[0], queue[1:]
 		entries, err := ReadDir(item)
 		if err != nil {
 			return err
@@ -63,9 +64,8 @@ func Traverse(root string, walk func(path Entry) (skip, stop bool)) error {
 			if skip {
 				continue
 			}
-			path := e.Path()
-			if IsDir(path) {
-				queue = append(queue, path)
+			if IsDir(e.Path()) {
+				queue = append(queue, e.Path())
 			}
 		}
 	}
