@@ -2,6 +2,11 @@
 blume contains Go libraries and software.
 
 ## Log
+### v0.5.1
+- `blume/fsio` actually works, instead of infinite looping.
+- `blume/yap` actually logs the value part of "key-value" pairs.
+- `blume/pred/is` has new function: `Ok`, which makes `Must` into a predicate.
+
 ### v0.5.0
 - removed `blume/auth`.
 - removed `blume/hnet`.
