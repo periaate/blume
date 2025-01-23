@@ -155,16 +155,16 @@ func Log(out io.Writer, format string, src string, level Level, msg string, args
 		first = Colorize(first, LightYellow)
 		pair := pair[1:]
 		res := []string{}
-		for i, val := range pair {
+		for _, val := range pair {
 			switch v := val.(type) {
 			case string:
-				pair[i] = Colorize(fmt.Sprintf("%q", v), Yellow)
+				res = append(res, Colorize(fmt.Sprintf("%s", v), Yellow))
 			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-				pair[i] = Colorize(fmt.Sprint(v), Cyan)
+				res = append(res, Colorize(fmt.Sprint(v), Cyan))
 			case bool:
-				pair[i] = Colorize(fmt.Sprint(v), LightGreen)
+				res = append(res, Colorize(fmt.Sprint(v), LightGreen))
 			default:
-				pair[i] = Colorize(fmt.Sprint(val), LightGreen)
+				res = append(res, Colorize(fmt.Sprint(val), LightGreen))
 			}
 		}
 		strs = append(strs, fmt.Sprintf("%s:<%s>;", first, strings.Join(res, ", ")))
