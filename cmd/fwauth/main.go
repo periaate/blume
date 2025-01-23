@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,13 +43,14 @@ func main() {
 			if time.Until(link.Expiration) < 0 {
 				return
 			}
-			return link.Uses < 0
+			link.Uses--
+			return link.Uses > 0
 		}),
 		maps.New(func(_ string, sess *Sess) (ok bool) {
 			if sess == nil {
 				return
 			}
-			return time.Until(sess.Expiration) < 0
+			return time.Until(sess.Expiration) > 0
 		}),
 	}
 
@@ -76,10 +78,12 @@ func main() {
 			return
 		}
 
+		println(origin.Host)
+
 		l := &Link{
 			Hash:       gen(),
-			Origin:     origin.String(),
-			Expiration: time.Now().Add(time.Duration(exp)),
+			Origin:     origin.Host,
+			Expiration: time.Now().Add(time.Duration(exp) * time.Minute),
 			Duration:   time.Duration(dur),
 			Uses:       uses,
 		}
@@ -92,15 +96,64 @@ func main() {
 		w.Write([]byte(origin.String() + "/" + l.Hash))
 	})
 
+	findCookie := func(r *http.Request) (ok bool) {
+		cook, err := r.Cookie("FW-Auth-Session-Token")
+		if err != nil {
+			return
+		}
+
+		val, ok := s.Sessions.Get(cook.Value)
+		fmt.Println(r.URL.Host, val.Origin)
+		if !ok {
+			return
+		}
+		if r.URL.Host != val.Origin {
+			return
+		}
+		return true
+	}
+
+	http.HandleFunc("GET /fw-auth/{origin}/", func(w http.ResponseWriter, r *http.Request) {
+		if findCookie(r) {
+			w.WriteHeader(200)
+			return
+		}
+		w.WriteHeader(401)
+	})
+
 	http.HandleFunc("GET /fw-auth/{origin}/{hash}", func(w http.ResponseWriter, r *http.Request) {
+		if findCookie(r) {
+			w.WriteHeader(200)
+			return
+		}
+
 		origin := r.PathValue("origin")
 		hash := r.PathValue("hash")
-		sess, ok := s.Sessions.Get(hash)
+		link, ok := s.Links.Get(hash)
+		println(ok)
 		switch {
-		case !ok, sess.Origin != origin:
+		case !ok, link.Origin != origin:
 			w.WriteHeader(401)
 		default:
-			w.WriteHeader(200)
+			res := gen()
+			cookie := &http.Cookie{
+				Name:  "FW-Auth-Session-Token",
+				Value: res,
+			}
+
+			ok := s.Sessions.Set(res, &Sess{
+				link.Hash,
+				link.Origin,
+				time.Now().Add(link.Duration * time.Minute),
+			})
+
+			if !ok {
+				w.WriteHeader(401)
+				return
+			}
+
+			http.SetCookie(w, cookie)
+			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	})
 
@@ -112,11 +165,11 @@ func main() {
 
 	addr := blume.Or("127.0.0.1:7595", os.Getenv("FW_AUTH_ADDR"))
 	yap.Info("serving fwauth server", "http://"+addr)
-	yap.Fatal("error running fwauth server", http.ListenAndServe(addr, mux))
+	yap.Fatal("error running fwauth server", http.ListenAndServe(addr, nil))
 }
 
 func gen() string {
 	bytes := make([]byte, 32)
-	blume.Must(rand.Read(bytes))
+	rand.Read(bytes)
 	return base64.URLEncoding.EncodeToString(bytes)
 }

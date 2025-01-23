@@ -109,6 +109,7 @@ func (em *Validated[K, V]) GetFull(key K) (res V, ok bool, valid bool) {
 
 func (em *Validated[K, V]) Set(key K, val V) (ok bool) {
 	if !em.isValid(key, val) {
+		println("isn't valid")
 		return
 	}
 	em.Sync.Set(key, val)
