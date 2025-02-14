@@ -7,6 +7,10 @@ import (
 	"github.com/periaate/blume/pred/is"
 )
 
+type Option[A any] = Either[A, bool]
+type Result[A any] = Either[A, error]
+type Pred[A any] = func(A) bool
+
 func Or[A any](def A, in A, handle ...any) (res A) {
 	if len(handle) != 0 {
 		last := handle[len(handle)-1]
@@ -16,7 +20,7 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 				return in
 			}
 			return def
-		case error:
+		default:
 			if val == nil {
 				return in
 			}
@@ -46,13 +50,11 @@ func Must[A any](a A, handle ...any) A {
 			return a
 		}
 		panic("must called with false bool")
-	case error:
+	default:
 		if val == nil {
 			return a
 		}
-		panic("must called with non nil error")
-	default:
-		panic("must called with unsupported handle")
+		panic("must called with non-nil")
 	}
 }
 
