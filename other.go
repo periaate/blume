@@ -3,8 +3,6 @@ package blume
 import (
 	"bytes"
 	"io"
-
-	"github.com/periaate/blume/pred/is"
 )
 
 type Option[A any] = Either[A, bool]
@@ -30,7 +28,7 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	anyin := any(in)
 	switch inv := anyin.(type) {
 	case string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, bool:
-		if !is.Zero(inv) {
+		if isZero(inv) {
 			return in
 		}
 		// TODO: add test case to blumefmt and fix the issue
@@ -38,6 +36,8 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	}
 	return def
 }
+
+func isZero[A comparable](value A) bool { var def A; return value == def }
 
 func Must[A any](a A, handle ...any) A {
 	if len(handle) == 0 {
@@ -58,6 +58,26 @@ func Must[A any](a A, handle ...any) A {
 	}
 }
 
+func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
+
+func IsOk[A any](a A, handle ...any) bool {
+	if len(handle) == 0 {
+		handle = append(handle, a)
+	}
+	last := handle[len(handle)-1]
+	switch val := last.(type) {
+	case bool:
+		if val {
+			return true
+		}
+	default:
+		if val == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func Buf(args ...any) *bytes.Buffer {
 	if len(args) == 0 {
 		return bytes.NewBuffer([]byte{})
@@ -76,3 +96,6 @@ func Buf(args ...any) *bytes.Buffer {
 		return bytes.NewBuffer([]byte{})
 	}
 }
+
+func True[A any](_ A) bool  { return true }
+func False[A any](_ A) bool { return false }

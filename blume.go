@@ -49,6 +49,16 @@ func SameSign[N Numeric](a, b N) bool { return (a > 0 && b > 0) || (a < 0 && b <
 
 type Array[A any] struct{ Value []A }
 
+func (arr Array[A]) Get(i int) Option[A] {
+	if i < 0 {
+		i = len(arr.Value) + i
+	}
+	if i < 0 {
+		return None[A]()
+	}
+	return Some(arr.Value[i])
+}
+
 func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
 func ToArray[A any](a []A) Array[A] { return Array[A]{a} }
 
@@ -110,6 +120,15 @@ func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }
 func Err[A any](msg string) Result[A] { return Result[A]{Other: error(SError(msg))} }
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
+
+func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
+	switch IsOk(r) {
+	case true:
+		return value(r.Value)
+	default:
+		return other(r.Other)
+	}
+}
 
 type SError string
 

@@ -1,6 +1,7 @@
 package has
 
 import (
+	"os"
 	"strings"
 
 	"github.com/periaate/blume/pred"
@@ -67,4 +68,28 @@ func Suffix[S ~string](args ...S) func(S) bool {
 		}
 		return false
 	}
+}
+
+func Pipe(file *os.File) bool {
+	stat, err := file.Stat()
+	if err != nil {
+		return false
+	}
+	return (stat.Mode() & os.ModeCharDevice) == 0
+}
+
+func InPipe() bool {
+	file, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (file.Mode() & os.ModeCharDevice) == 0
+}
+
+func OutPipe() bool {
+	file, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (file.Mode() & os.ModeCharDevice) == 0
 }

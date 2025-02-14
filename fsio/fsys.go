@@ -13,8 +13,8 @@ func Name(f string) string {
 }
 
 // IsDir checks if input is a directory.
-func IsDir(f string) bool {
-	info, err := os.Stat(f)
+func IsDir[S ~string](f S) bool {
+	info, err := os.Stat(string(f))
 	if err != nil {
 		return false
 	}
