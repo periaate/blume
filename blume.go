@@ -49,6 +49,18 @@ func SameSign[N Numeric](a, b N) bool { return (a > 0 && b > 0) || (a < 0 && b <
 
 type Array[A any] struct{ Value []A }
 
+type Length int
+
+func (l Length) Is(i int) bool { return int(l) == i }
+func (l Length) Gt(i int) bool { return int(l) > i }
+func (l Length) Lt(i int) bool { return int(l) < i }
+func (l Length) Ge(i int) bool { return int(l) >= i }
+func (l Length) Le(i int) bool { return int(l) <= i }
+func (l Length) Eq(i int) bool { return int(l) == i }
+func (l Length) Ne(i int) bool { return int(l) != i }
+
+func (arr Array[A]) Len() Length { return Length(len(arr.Value)) }
+
 func (arr Array[A]) Get(i int) Option[A] {
 	if i < 0 {
 		i = len(arr.Value) + i

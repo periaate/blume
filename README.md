@@ -2,6 +2,8 @@
 blume contains Go libraries and software.
 
 ## Log
+### v0.6.0
+
 ### v0.5.1
 - `blume/fsio` actually works, instead of infinite looping.
 - `blume/yap` actually logs the value part of "key-value" pairs.

@@ -3,6 +3,7 @@ package blume
 import (
 	"bufio"
 	"os"
+	"path/filepath"
 
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/pred/has"
@@ -81,4 +82,13 @@ func (d Directory) Ascend(pred Pred[string]) Option[String] {
 		return Some(String(res))
 	}
 	return None[String]()
+}
+
+func Read[S ~string](sar ...S) Result[String] {
+	str := filepath.Join(Map(StoD[S])(sar)...)
+	bar, err := os.ReadFile(string(str))
+	if err != nil {
+		return Err[String](err.Error())
+	}
+	return Ok(String(bar))
 }
