@@ -68,6 +68,9 @@ func (arr Array[A]) Get(i int) Option[A] {
 	if i < 0 {
 		return None[A]()
 	}
+	if i >= len(arr.Value) {
+		return None[A]()
+	}
 	return Some(arr.Value[i])
 }
 
@@ -126,7 +129,7 @@ type Either[A, B any] struct {
 }
 
 func (r Either[A, B]) Must() A    { return Must(r.Value, r.Other) }
-func (r Either[A, B]) Or(def A) A { return Or(r.Value, def, r.Other) }
+func (r Either[A, B]) Or(def A) A { return Or(def, r.Value, r.Other) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }

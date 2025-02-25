@@ -85,10 +85,14 @@ func (d Directory) Ascend(pred Pred[string]) Option[String] {
 }
 
 func Read[S ~string](sar ...S) Result[String] {
-	str := filepath.Join(Map(StoD[S])(sar)...)
+	str := Path(sar...)
 	bar, err := os.ReadFile(string(str))
 	if err != nil {
 		return Err[String](err.Error())
 	}
 	return Ok(String(bar))
+}
+
+func Path[S ~string](sar ...S) S {
+	return S(filepath.Join(ToArray(Map(StoD[S])(sar)).Map(ReplacePrefix("~", Must(os.UserHomeDir()))).Value...))
 }
