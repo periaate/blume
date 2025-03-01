@@ -7,9 +7,11 @@ import (
 
 type String string
 
-func (s String) Has(args ...Selector[string]) bool   { return Has(args...)(s.String()) }
-func (s String) Del(args ...Selector[string]) String { return String(Del(args...)(s.String())) }
-func (s String) Rep(args ...any) String              { return String(Rep[string](args...)(string(s))) }
+func (s String) Map(args ...func(String) String) String  { return Pipe(args...)(s) }
+func (s String) Maps(args ...func(string) string) String { return String(Pipe(args...)(s.String())) }
+func (s String) Has(args ...Selector[string]) bool       { return Has(args...)(s.String()) }
+func (s String) Del(args ...Selector[string]) String     { return String(Del(args...)(s.String())) }
+func (s String) Rep(args ...any) String                  { return String(Rep[string](args...)(string(s))) }
 
 func (s String) Is(args ...string) bool       { return Is(args...)(string(s)) }
 func (s String) Contains(args ...string) bool { return Contains(args...)(string(s)) }
