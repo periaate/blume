@@ -128,6 +128,7 @@ func Logs[A any](a A) { fmt.Println(a) }
 func Logf[A any](format string, args ...any) func(A) {
 	return func(arg A) { fmt.Printf(format, append(args, any(arg))...) }
 }
+func Through[A any](fn func(A)) func(A) A { return func(arg A) A { fn(arg); return arg } }
 
 type Either[A, B any] struct {
 	Value A
