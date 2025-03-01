@@ -7,14 +7,29 @@ import (
 
 type String string
 
-func (s String) Is(args ...string) bool        { return Is(args...)(string(s)) }
-func (s String) Contains(args ...string) bool  { return Contains(args...)(string(s)) }
+func (s String) Has(args ...Selector[string]) bool   { return Has(args...)(s.String()) }
+func (s String) Del(args ...Selector[string]) String { return String(Del(args...)(s.String())) }
+func (s String) Rep(args ...any) String              { return String(Rep[string](args...)(string(s))) }
+
+func (s String) Is(args ...string) bool       { return Is(args...)(string(s)) }
+func (s String) Contains(args ...string) bool { return Contains(args...)(string(s)) }
+
+// HasPrefix
+// Deprecated: Use [Has] with [Pre] instead.
 func (s String) HasPrefix(args ...string) bool { return HasPrefix(args...)(string(s)) }
+
+// HasPrefix
+// Deprecated: Use [Has] with [Suf] instead.
 func (s String) HasSuffix(args ...string) bool { return HasSuffix(args...)(string(s)) }
+
+// ReplacePrefix
+// Deprecated: Use [Rep] with [Pre] instead.
 func (s String) ReplacePrefix(pats ...string) String {
 	return String(ReplacePrefix(pats...)(string(s)))
 }
 
+// ReplaceSuffix
+// Deprecated: Use [Has] with [Suf] instead.
 func (s String) ReplaceSuffix(pats ...string) String {
 	return String(ReplaceSuffix(pats...)(string(s)))
 }
@@ -80,52 +95,65 @@ func (s String) Bold() String { return Bold(s) }
 
 func Whitespaces() []string { return []string{"\r\n", "\n\r", " ", "\t", "\n", "\r"} }
 
-func ToInt(s string) Option[int] {
-	i, err := strconv.Atoi(s)
+func (s String) ToInt() Option[int]         { return ToInt(s) }
+func (s String) ToInt8() Option[int8]       { return ToInt8(s) }
+func (s String) ToInt16() Option[int16]     { return ToInt16(s) }
+func (s String) ToInt32() Option[int32]     { return ToInt32(s) }
+func (s String) ToInt64() Option[int64]     { return ToInt64(s) }
+func (s String) ToUint() Option[uint]       { return ToUint(s) }
+func (s String) ToUint8() Option[uint8]     { return ToUint8(s) }
+func (s String) ToUint16() Option[uint16]   { return ToUint16(s) }
+func (s String) ToUint32() Option[uint32]   { return ToUint32(s) }
+func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
+func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
+func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
+
+func ToInt[S ~string](s S) Option[int] {
+	i, err := strconv.Atoi(string(s))
 	return Either[int, bool]{Value: int(i), Other: err == nil}
 }
-func ToInt8(s string) Option[int8] {
-	i, err := strconv.ParseInt(s, 10, 8)
+func ToInt8[S ~string](s S) Option[int8] {
+	i, err := strconv.ParseInt(string(s), 10, 8)
 	return Either[int8, bool]{Value: int8(i), Other: err == nil}
 }
-func ToInt16(s string) Option[int16] {
-	i, err := strconv.ParseInt(s, 10, 16)
+func ToInt16[S ~string](s S) Option[int16] {
+	i, err := strconv.ParseInt(string(s), 10, 16)
 	return Either[int16, bool]{Value: int16(i), Other: err == nil}
 }
-func ToInt32(s string) Option[int32] {
-	i, err := strconv.ParseInt(s, 10, 32)
+func ToInt32[S ~string](s S) Option[int32] {
+	i, err := strconv.ParseInt(string(s), 10, 32)
 	return Either[int32, bool]{Value: int32(i), Other: err == nil}
 }
-func ToInt64(s string) Option[int64] {
-	i, err := strconv.ParseInt(s, 10, 64)
+func ToInt64[S ~string](s S) Option[int64] {
+	i, err := strconv.ParseInt(string(s), 10, 64)
 	return Either[int64, bool]{Value: int64(i), Other: err == nil}
 }
-func ToUint(s string) Option[uint] {
-	i, err := strconv.ParseUint(s, 10, 0)
+func ToUint[S ~string](s S) Option[uint] {
+	i, err := strconv.ParseUint(string(s), 10, 0)
 	return Either[uint, bool]{Value: uint(i), Other: err == nil}
 }
-func ToUint8(s string) Option[uint8] {
-	i, err := strconv.ParseUint(s, 10, 8)
+func ToUint8[S ~string](s S) Option[uint8] {
+	i, err := strconv.ParseUint(string(s), 10, 8)
 	return Either[uint8, bool]{Value: uint8(i), Other: err == nil}
 }
-func ToUint16(s string) Option[uint16] {
-	i, err := strconv.ParseUint(s, 10, 16)
+func ToUint16[S ~string](s S) Option[uint16] {
+	i, err := strconv.ParseUint(string(s), 10, 16)
 	return Either[uint16, bool]{Value: uint16(i), Other: err == nil}
 }
-func ToUint32(s string) Option[uint32] {
-	i, err := strconv.ParseUint(s, 10, 32)
+func ToUint32[S ~string](s S) Option[uint32] {
+	i, err := strconv.ParseUint(string(s), 10, 32)
 	return Either[uint32, bool]{Value: uint32(i), Other: err == nil}
 }
-func ToUint64(s string) Option[uint64] {
-	i, err := strconv.ParseUint(s, 10, 64)
+func ToUint64[S ~string](s S) Option[uint64] {
+	i, err := strconv.ParseUint(string(s), 10, 64)
 	return Either[uint64, bool]{Value: uint64(i), Other: err == nil}
 }
-func ToFloat32(s string) Option[float32] {
-	i, err := strconv.ParseFloat(s, 32)
+func ToFloat32[S ~string](s S) Option[float32] {
+	i, err := strconv.ParseFloat(string(s), 32)
 	return Either[float32, bool]{Value: float32(i), Other: err == nil}
 }
-func ToFloat64(s string) Option[float64] {
-	i, err := strconv.ParseFloat(s, 64)
+func ToFloat64[S ~string](s S) Option[float64] {
+	i, err := strconv.ParseFloat(string(s), 64)
 	return Either[float64, bool]{Value: float64(i), Other: err == nil}
 }
 
