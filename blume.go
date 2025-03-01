@@ -121,7 +121,13 @@ func (arr Array[A]) Each(fn func(A)) Array[A] {
 	return arr
 }
 
+func Log[A any](args ...any) func(A) {
+	return func(a A) { fmt.Println(append(args, a)...) }
+}
 func Logs[A any](a A) { fmt.Println(a) }
+func Logf[A any](format string, args ...any) func(A) {
+	return func(arg A) { fmt.Printf(format, append(args, any(arg))...) }
+}
 
 type Either[A, B any] struct {
 	Value A
