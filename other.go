@@ -60,6 +60,13 @@ func Must[A any](a A, handle ...any) A {
 }
 
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
+func (e Either[A, B]) Err(msg ...any) Either[A, B] {
+	r, ok := any(Err[A](msg...)).(Either[A, B]) // scuffed mc. scuffed
+	if !ok {
+		panic("dummy you can't call error with these types dumbass")
+	}
+	return r
+}
 
 func IsOk[A any](a A, handle ...any) bool {
 	if len(handle) == 0 {
