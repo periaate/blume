@@ -140,7 +140,7 @@ func (r Either[A, B]) Or(def A) A { return Or(def, r.Value, r.Other) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }
-func Err[A any](msg string) Result[A] { return Result[A]{Other: error(SError(msg))} }
+func Err[A any](msg ...any) Result[A] { return Result[A]{Other: error(SError(fmt.Sprint(msg...)))} }
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
 
 func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
