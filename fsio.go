@@ -2,8 +2,10 @@ package blume
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/pred/has"
@@ -95,4 +97,26 @@ func Read[S ~string](sar ...S) Result[String] {
 
 func Path[S ~string](sar ...S) S {
 	return S(filepath.Join(ToArray(Map(StoD[S])(sar)).Map(ReplacePrefix("~", Must(os.UserHomeDir()))).Value...))
+}
+
+func R[A any](val A, err error) Result[A] {
+	if IsOk(val, err) {
+		return Ok(val)
+	} else {
+		return Err[A](err.Error())
+	}
+}
+
+func AppendTo[S ~string](path S) Result[*os.File] {
+	return R(os.OpenFile(string(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644))
+}
+func AppendLog[A any](f *os.File) (*os.File, func(a A) A) {
+	mut := sync.Mutex{}
+	return f,
+		func(a A) A {
+			mut.Lock()
+			defer mut.Unlock()
+			f.Write([]byte(fmt.Sprintf("%v\n", a)))
+			return a
+		}
 }
