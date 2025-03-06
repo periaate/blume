@@ -4,63 +4,17 @@ import (
 	"fmt"
 	"github.com/periaate/blume/color"
 	"github.com/periaate/blume/symbols"
-	"strconv"
 )
 
-func Opt[A any](a A, other any) Option[A] {
-	if IsOk(a, other) {
-		return Some(a)
-	}
-	return None[A]()
+func Log[A any](args ...any) func(A) {
+	return func(a A) { fmt.Println(append(args, a)...) }
+}
+func Logs[A any](a A) { fmt.Println(a) }
+func Logf[A any](format string, args ...any) func(A) {
+	return func(arg A) { fmt.Printf(format, append(args, any(arg))...) }
 }
 
-func Res[A any](a A, other any) Result[A] {
-	if IsOk(a, other) {
-		return Ok(a)
-	}
-	return Err[A](fmt.Sprint(other))
-}
-
-func Cast[T any](a any) Option[T] {
-	value, ok := a.(T)
-	return Opt(value, ok)
-}
-
-func Parse[N Integer | Float](s string, args ...any) Option[N] {
-	var a N
-	var (
-		bitSize int
-		base    = Cast[int](ToArray(args).Get(0).Or(10)).Or(10)
-	)
-
-	switch any(a).(type) {
-	case int8, uint8:
-		bitSize = 8
-	case int16, uint16:
-		bitSize = 16
-	case int32, uint32, float32:
-		bitSize = 32
-	case int64, uint64, float64:
-		bitSize = 64
-	default:
-		return None[N]()
-	}
-	var value any
-	var err error
-
-	switch any(a).(type) {
-	case int, int8, int16, int32, int64:
-		value, err = strconv.ParseInt(s, base, bitSize)
-	case uint, uint8, uint16, uint32, uint64:
-		value, err = strconv.ParseUint(s, base, bitSize)
-	case float32, float64:
-		value, err = strconv.ParseFloat(s, bitSize)
-	}
-	if err == nil {
-		return Cast[N](value)
-	}
-	return None[N]()
-}
+func Through[A any](fn func(A)) func(A) A { return func(arg A) A { fn(arg); return arg } }
 
 func HexToRGB(hex string) (int64, int64, int64) {
 	hex = String(hex).Rep(Rgx("^#*"), "").String()

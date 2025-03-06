@@ -11,6 +11,20 @@ import (
 	"github.com/periaate/blume/pred/has"
 )
 
+func Input[S ~string](from ...string) Array[String] {
+	res := []String{}
+	for _, arg := range from {
+		switch String(arg).ToLower() {
+		case "args":
+			res = append(res, Args().Must().Value...)
+		case "pipe", "piped":
+			res = append(res, Piped(os.Stdin).Must().Value...)
+		}
+	}
+
+	return ToArray(res)
+}
+
 func Args(preds ...func([]string) bool) Option[Array[String]] {
 	var res []string
 	if len(os.Args) >= 1 {

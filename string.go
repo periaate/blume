@@ -1,8 +1,10 @@
 package blume
 
 import (
-	"strconv"
+	"reflect"
 	"strings"
+
+	"github.com/periaate/blume/color"
 )
 
 type String string
@@ -53,6 +55,50 @@ func (s String) Split(pats ...string) Array[String] {
 	return ToArray(res)
 }
 
+func IsArray[A any](arg any) bool {
+	if arg == nil {
+		return false
+	}
+	kind := reflect.TypeOf(arg).Kind()
+	return kind == reflect.Array || kind == reflect.Slice
+}
+
+// func AsArray[A any](arg any) (res Option[[]A]) {
+// 	if arg == nil { return res.None() }
+// 	v := reflect.ValueOf(arg)
+// 	if v.Kind() != reflect.Array && v.Kind() != reflect.Slice { return res.None() }
+// 	length := v.Len()
+// 	result := make([]A, length)
+// 	for i := 0; i < length; i++ {
+// 		n := Cast[A](v.Index(i).Interface())
+// 		if !n.IsOk() { return res.None() }
+// 		result = append(result, n.Value)
+// 	}
+// 	return res.Ok(result)
+// }
+//
+//
+// func Spread(arg any) []any {
+// 	switch {
+// 	case IsArray[any](arg): return AsArray[any](arg).Value
+// 	default:            return []any{arg}
+// 	}
+// }
+//
+// func From[A any](arr ...any) (res Result[Array[A]]) {
+// 	if len(arr) == 1 { return res.Over(Map(Cast[A])(Spread(arr[0]))) }
+// 	return                    res.Over(Map(Cast[A])(arr))
+// }
+//
+// func (s String) Slice(from int, to ...int) Array[String] {
+// 	split := Split(string(s), false, pats...)
+// 	res := make([]String, len(split))
+// 	for i, v := range split {
+// 		res[i] = String(v)
+// 	}
+// 	return ToArray(res)
+// }
+
 func (s String) Or(Default string) String {
 	if s == "" {
 		return String(Default)
@@ -62,7 +108,7 @@ func (s String) Or(Default string) String {
 func (s String) Len() int       { return len(string(s)) }
 func (s String) String() string { return string(s) }
 
-func (s String) Colorize(colorCode int) String { return String(Colorize(colorCode, string(s))) }
+func (s String) Colorize(colorCode int) String { return String(color.Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }
 func (s String) Trim(arg string) String        { return String(strings.Trim(string(s), arg)) }
@@ -75,25 +121,25 @@ func (s String) TrimSuffix(suffix string) String {
 }
 func (s String) TrimSpace() String { return String(strings.TrimSpace(string(s))) }
 
-func (s String) Green() String        { return String(Colorize(Green, string(s))) }
-func (s String) LightGreen() String   { return String(Colorize(LightGreen, string(s))) }
-func (s String) Yellow() String       { return String(Colorize(Yellow, string(s))) }
-func (s String) LightYellow() String  { return String(Colorize(LightYellow, string(s))) }
-func (s String) Red() String          { return Colorize(Red, s) }
-func (s String) LightRed() String     { return Colorize(LightRed, s) }
-func (s String) Blue() String         { return Colorize(Blue, s) }
-func (s String) LightBlue() String    { return Colorize(LightBlue, s) }
-func (s String) Cyan() String         { return Colorize(Cyan, s) }
-func (s String) LightCyan() String    { return Colorize(LightCyan, s) }
-func (s String) Magenta() String      { return Colorize(Magenta, s) }
-func (s String) LightMagenta() String { return Colorize(LightMagenta, s) }
-func (s String) White() String        { return Colorize(White, s) }
-func (s String) Black() String        { return Colorize(Black, s) }
-func (s String) Gray() String         { return Colorize(DarkGray, s) }
-func (s String) LightGray() String    { return Colorize(LightGray, s) }
+func (s String) Green() String        { return String(color.Colorize(color.Green, string(s))) }
+func (s String) LightGreen() String   { return String(color.Colorize(color.LightGreen, string(s))) }
+func (s String) Yellow() String       { return String(color.Colorize(color.Yellow, string(s))) }
+func (s String) LightYellow() String  { return String(color.Colorize(color.LightYellow, string(s))) }
+func (s String) Red() String          { return color.Colorize(color.Red, s) }
+func (s String) LightRed() String     { return color.Colorize(color.LightRed, s) }
+func (s String) Blue() String         { return color.Colorize(color.Blue, s) }
+func (s String) LightBlue() String    { return color.Colorize(color.LightBlue, s) }
+func (s String) Cyan() String         { return color.Colorize(color.Cyan, s) }
+func (s String) LightCyan() String    { return color.Colorize(color.LightCyan, s) }
+func (s String) Magenta() String      { return color.Colorize(color.Magenta, s) }
+func (s String) LightMagenta() String { return color.Colorize(color.LightMagenta, s) }
+func (s String) White() String        { return color.Colorize(color.White, s) }
+func (s String) Black() String        { return color.Colorize(color.Black, s) }
+func (s String) Gray() String         { return color.Colorize(color.DarkGray, s) }
+func (s String) LightGray() String    { return color.Colorize(color.LightGray, s) }
 
-func (s String) Dim() String  { return Colorize(2, s) }
-func (s String) Bold() String { return Bold(s) }
+func (s String) Dim() String  { return color.Colorize(2, s) }
+func (s String) Bold() String { return color.Bold(s) }
 
 func Whitespaces() []string { return []string{"\r\n", "\n\r", " ", "\t", "\n", "\r"} }
 
@@ -109,55 +155,6 @@ func (s String) ToUint32() Option[uint32]   { return ToUint32(s) }
 func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
 func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
 func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
-
-func ToInt[S ~string](s S) Option[int] {
-	i, err := strconv.Atoi(string(s))
-	return Either[int, bool]{Value: int(i), Other: err == nil}
-}
-func ToInt8[S ~string](s S) Option[int8] {
-	i, err := strconv.ParseInt(string(s), 10, 8)
-	return Either[int8, bool]{Value: int8(i), Other: err == nil}
-}
-func ToInt16[S ~string](s S) Option[int16] {
-	i, err := strconv.ParseInt(string(s), 10, 16)
-	return Either[int16, bool]{Value: int16(i), Other: err == nil}
-}
-func ToInt32[S ~string](s S) Option[int32] {
-	i, err := strconv.ParseInt(string(s), 10, 32)
-	return Either[int32, bool]{Value: int32(i), Other: err == nil}
-}
-func ToInt64[S ~string](s S) Option[int64] {
-	i, err := strconv.ParseInt(string(s), 10, 64)
-	return Either[int64, bool]{Value: int64(i), Other: err == nil}
-}
-func ToUint[S ~string](s S) Option[uint] {
-	i, err := strconv.ParseUint(string(s), 10, 0)
-	return Either[uint, bool]{Value: uint(i), Other: err == nil}
-}
-func ToUint8[S ~string](s S) Option[uint8] {
-	i, err := strconv.ParseUint(string(s), 10, 8)
-	return Either[uint8, bool]{Value: uint8(i), Other: err == nil}
-}
-func ToUint16[S ~string](s S) Option[uint16] {
-	i, err := strconv.ParseUint(string(s), 10, 16)
-	return Either[uint16, bool]{Value: uint16(i), Other: err == nil}
-}
-func ToUint32[S ~string](s S) Option[uint32] {
-	i, err := strconv.ParseUint(string(s), 10, 32)
-	return Either[uint32, bool]{Value: uint32(i), Other: err == nil}
-}
-func ToUint64[S ~string](s S) Option[uint64] {
-	i, err := strconv.ParseUint(string(s), 10, 64)
-	return Either[uint64, bool]{Value: uint64(i), Other: err == nil}
-}
-func ToFloat32[S ~string](s S) Option[float32] {
-	i, err := strconv.ParseFloat(string(s), 32)
-	return Either[float32, bool]{Value: float32(i), Other: err == nil}
-}
-func ToFloat64[S ~string](s S) Option[float64] {
-	i, err := strconv.ParseFloat(string(s), 64)
-	return Either[float64, bool]{Value: float64(i), Other: err == nil}
-}
 
 func ToUpper(s string) string { return strings.ToUpper(s) }
 func ToLower(s string) string { return strings.ToLower(s) }
@@ -188,32 +185,3 @@ func TrimSuffixes[A, S ~string](pats ...A) func(S) S {
 		return inp
 	}
 }
-
-// Arguably coloring strings does not belong in blume. A problem for another day.
-const (
-	reset = "\033[0m"
-
-	Black        = 30
-	Red          = 31
-	Green        = 32
-	Yellow       = 33
-	Blue         = 34
-	Magenta      = 35
-	Cyan         = 36
-	LightGray    = 37
-	DarkGray     = 90
-	LightRed     = 91
-	LightGreen   = 92
-	LightYellow  = 93
-	LightBlue    = 94
-	LightMagenta = 95
-	LightCyan    = 96
-	White        = 97
-)
-
-func Colorize[S ~string](colorCode int, s S) S {
-	return "\033[" + S(strconv.Itoa(colorCode)) + "m" + s + "\033[0m"
-}
-
-func Dim[S ~string](s S) S  { return Colorize(2, s) }
-func Bold[S ~string](s S) S { return "\033[1m" + s + "\033[0m" }
