@@ -132,21 +132,3 @@ func IsOk[A any](a A, handle ...any) bool {
 	}
 	return false
 }
-
-func (r Either[A, B]) Opt(val Option[A]) Either[A, B] {
-	if val.IsOk() {
-		r = r.Pass(val.Value)
-	} else {
-		r = r.Fail()
-	}
-	return r
-}
-
-func (r Either[A, B]) Res(val Result[A]) Either[A, B] {
-	if val.IsOk() {
-		r = r.Pass(val.Value)
-	} else {
-		r = r.Fail(val.Other)
-	}
-	return r
-}

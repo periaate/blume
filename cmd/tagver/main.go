@@ -14,13 +14,15 @@ import (
 	"github.com/periaate/blume/pred/has"
 	"github.com/periaate/blume/pred/is"
 	"github.com/periaate/blume/types/str"
+
+	. "github.com/periaate/blume"
 )
 
 func main() {
 	args := blume.Must(fsio.Args(is.NotEmpty[string]))
 
 	switch {
-	case pred.Any(is.Any("h", "help"))(args):
+	case pred.Any(StrIs[string, string]("h", "help"))(args):
 		fmt.Println("tagver")
 		fmt.Println("tagver is a simple tool to manage semantic versioning tags in git repositories.")
 		fmt.Println("Usage:")
@@ -34,7 +36,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	args = filter.Any(is.Any("v", "version", "h", "help", "patch", "minor", "major"))(args)
+	args = filter.Any(StrIs[string, string]("v", "version", "h", "help", "patch", "minor", "major"))(args)
 
 	cmd := exec.Command("git", "tag")
 	buf := blume.Buf()

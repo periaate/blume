@@ -17,7 +17,7 @@ func Logf[A any](format string, args ...any) func(A) {
 func Through[A any](fn func(A)) func(A) A { return func(arg A) A { fn(arg); return arg } }
 
 func HexToRGB(hex string) (int64, int64, int64) {
-	hex = String(hex).Rep(Rgx("^#*"), "").String()
+	hex = Del[string](Rgx("^#"))(hex)
 
 	r := Parse[int64](hex[0:2], 16).Or(255)
 	g := Parse[int64](hex[2:4], 16).Or(255)
