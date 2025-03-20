@@ -7,6 +7,16 @@ import (
 	"github.com/periaate/blume/color"
 )
 
+func Join[S ~string](arg string) func(args ...S) S {
+	return func(args ...S) S {
+		return S(strings.Join(Map(StoD[S])(args), arg))
+	}
+}
+
+func Joins[S ~string](arr Array[S], arg string) S {
+	return S(strings.Join(Map(StoD[S])(arr.Value), arg))
+}
+
 type String string
 
 func (s String) Map(args ...func(String) String) String  { return Pipe(args...)(s) }

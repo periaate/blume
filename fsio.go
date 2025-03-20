@@ -37,6 +37,8 @@ func Args(preds ...func([]string) bool) Option[Array[String]] {
 	return Some(ToArray(Map(func(s string) String { return String(s) })(res)))
 }
 
+func Arg() Array[String] { return ToArray(Map(StoS[string, String])(os.Args[1:])) }
+
 func Piped(f *os.File, preds ...func([]string) bool) Option[Array[String]] {
 	ok := has.Pipe(f)
 	if !ok {

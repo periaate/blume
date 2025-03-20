@@ -47,7 +47,7 @@ func Must[A any](a A, handle ...any) A {
 		if val == nil {
 			return a
 		}
-		panic("must called with non-nil")
+		panic(P.S("must called with false bool").S(handle...))
 	}
 }
 

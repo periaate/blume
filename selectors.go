@@ -2,6 +2,7 @@ package blume
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -27,10 +28,10 @@ func Suf(suffixes ...string) Selector[string] {
 	}
 }
 
-func Rgx(pattern string) Selector[string] {
+func Rgx[S ~string](pattern string) Selector[S] {
 	re := regexp.MustCompile(pattern)
-	return func(s string) (res [][]int) {
-		return re.FindAllStringIndex(s, -1)
+	return func(s S) (res [][]int) {
+		return re.FindAllStringIndex(string(s), -1)
 	}
 }
 
@@ -115,4 +116,55 @@ func ReplaceRanges[S ~string](tar S, rep S, ranges [][]int) S {
 		tar = tar[:start] + rep + tar[end:]
 	}
 	return tar
+}
+
+func Get[S ~string](selectors ...Selector[S]) func(input S) S {
+	return func(input S) S {
+		var result strings.Builder
+		for _, fn := range selectors {
+			ranges := fn(input)
+			for _, r := range ranges {
+				if len(r) >= 2 {
+					result.WriteString(string(input[r[0]:r[1]]))
+				}
+			}
+		}
+		return S(result.String())
+	}
+}
+
+func Nth[S ~string](n int, selectors ...Selector[S]) func(input S) S {
+	return func(input S) S {
+		var allRanges [][]int
+		for _, fn := range selectors {
+			ranges := fn(input)
+			allRanges = append(allRanges, ranges...)
+		}
+
+		if len(allRanges) == 0 {
+			return S("")
+		}
+
+		// Sort ranges by start position
+		sort.Slice(allRanges, func(i, j int) bool {
+			return allRanges[i][0] < allRanges[j][0]
+		})
+
+		// Handle negative index
+		if n < 0 {
+			n = len(allRanges) + n
+		}
+
+		// Check if index is in range
+		if n < 0 || n >= len(allRanges) {
+			return S("")
+		}
+
+		r := allRanges[n]
+		if len(r) >= 2 {
+			return S(input[r[0]:r[1]])
+		}
+
+		return S("")
+	}
 }
