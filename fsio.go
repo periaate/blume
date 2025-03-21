@@ -119,7 +119,6 @@ func Path[S ~string](sar ...S) String {
 		return String(absFp)
 	}
 	return String(fp)
-	// return S(filepath.Join(ToArray(Map(StoD[S])(sar)).Map(ReplacePrefix("~", Must(os.UserHomeDir()))).Value...))
 }
 
 func R[A any](val A, err error) Result[A] {

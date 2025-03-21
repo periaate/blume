@@ -1,5 +1,7 @@
 package blume
 
+func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
+
 type Array[A any] struct{ Value []A }
 
 type Length int

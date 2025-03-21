@@ -1,10 +1,14 @@
 package blume
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/periaate/blume/color"
+	"github.com/periaate/blume/fsio"
 )
 
 func Join[S ~string](arg string) func(args ...S) S {
@@ -72,6 +76,50 @@ func IsArray[A any](arg any) bool {
 	kind := reflect.TypeOf(arg).Kind()
 	return kind == reflect.Array || kind == reflect.Slice
 }
+
+type S = String
+
+func (f String) Errorf(args ...any) error { return fmt.Errorf("%s", f.S(args...)) }
+
+func IsURL[S ~string](val S) bool {
+	return String(val).Contains("://") // giga scuff
+}
+
+func GetPath[S ~string](val S) S { return Del(Rgx[S](`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
+func GetDomain[S ~string](val S) S {
+	return ReplaceRegex[S](`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
+}
+
+func (s String) Entries() Array[String]    { return Entries(s) }
+func Entries[S ~string](s S) Array[String] { return Dir(s).Read().Must() }
+
+func (s String) Path(args ...String) String { return Path(Prepend(s, args)...) }
+
+func Exists(s String) bool { return fsio.Exists(string(s)) }
+func Chdir(s String) Result[String] {
+	switch err := os.Chdir(string(s)); err {
+	case nil:
+		return Ok(s)
+	default:
+		return Err[String](s.W().Errorf("couldn't chdir %w", err))
+	}
+}
+
+func (s String) Exists() bool { return fsio.Exists(string(s)) }
+func (s String) Chdir() Result[String] {
+	switch err := os.Chdir(string(s)); err {
+	case nil:
+		return Ok(s)
+	default:
+		return Err[String](s.W().Errorf("couldn't chdir %w", err))
+	}
+}
+
+func (s String) Base() String { return String(filepath.Base(string(s))) }
+func Base(s String) String    { return String(filepath.Base(string(s))) }
+
+func (s String) IsDir() bool { return fsio.IsDir(string(s)) }
+func IsDir(s String) bool    { return fsio.IsDir(string(s)) }
 
 // func AsArray[A any](arg any) (res Option[[]A]) {
 // 	if arg == nil { return res.None() }

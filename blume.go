@@ -351,3 +351,25 @@ func Split(str string, keep bool, match ...string) (res []string) {
 
 	return res
 }
+
+func Vals[K comparable, V any](m map[K]V) Array[V] {
+	if m == nil {
+		return Arr[V]()
+	}
+	arr := []V{}
+	for _, v := range m {
+		arr = append(arr, v)
+	}
+	return ToArray(arr)
+}
+
+func Keys[K comparable, V any](m map[K]V) Array[K] {
+	if m == nil {
+		return Arr[K]()
+	}
+	arr := []K{}
+	for k := range m {
+		arr = append(arr, k)
+	}
+	return ToArray(arr)
+}
