@@ -6,6 +6,14 @@ func StoS[A, B ~string](value A) B   { return B(value) }
 func ItoI[A, B Numeric](value A) B   { return B(value) }
 func StoD[A ~string](value A) string { return string(value) }
 
+func SD(args []String) []string     { return Map(StoD[String])(args) }
+func SS[A, B ~string](args []A) []B { return Map(StoS[A, B])(args) }
+func DS(args []string) []String     { return Map(StoS[string, String])(args) }
+
+func SAD(args ...String) Array[string]    { return ToArray(Map(StoD[String])(args)) }
+func SAS[A, B ~string](args []A) Array[B] { return ToArray(Map(StoS[A, B])(args)) }
+func DAS(args ...string) Array[String]    { return ToArray(Map(StoS[string, String])(args)) }
+
 func Parse[N Integer | Float](s string, args ...any) Option[N] {
 	var a N
 	var (

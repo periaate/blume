@@ -48,6 +48,10 @@ func ReadDir(root string) (res []Entry, err error) {
 }
 
 func Traverse(root string, walk func(path Entry) (skip, stop bool)) (err error) {
+	root, err = filepath.Abs(root)
+	if err != nil {
+		return
+	}
 	queue := []string{root}
 	var item string
 	for len(queue) > 0 {

@@ -166,8 +166,8 @@ func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
 func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
 func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
 
-func ToUpper(s string) string { return strings.ToUpper(s) }
-func ToLower(s string) string { return strings.ToLower(s) }
+func ToUpper(s String) String { return S(strings.ToUpper(string(s))) }
+func ToLower(s String) String { return S(strings.ToLower(string(s))) }
 
 func Trim(s string) string                      { return strings.Trim(s, " ") }
 func TrimPrefix(prefix string, s string) string { return strings.TrimPrefix(s, prefix) }

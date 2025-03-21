@@ -111,8 +111,15 @@ func Read[S ~string](sar ...S) Result[String] {
 	return Ok(String(bar))
 }
 
-func Path[S ~string](sar ...S) S {
-	return S(filepath.Join(ToArray(Map(StoD[S])(sar)).Map(ReplacePrefix("~", Must(os.UserHomeDir()))).Value...))
+func Path[S ~string](sar ...S) String {
+	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
+	fp := filepath.Join(SS[S, string](sar)...)
+	absFp, err := filepath.Abs(fp)
+	if err == nil {
+		return String(absFp)
+	}
+	return String(fp)
+	// return S(filepath.Join(ToArray(Map(StoD[S])(sar)).Map(ReplacePrefix("~", Must(os.UserHomeDir()))).Value...))
 }
 
 func R[A any](val A, err error) Result[A] {
