@@ -1,5 +1,7 @@
 package blume
 
+import "fmt"
+
 func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
 
 type Array[A any] struct{ Value []A }
@@ -28,6 +30,8 @@ func (arr Array[A]) Get(i int) (res Option[A]) {
 	}
 	return res.Pass(arr.Value[i])
 }
+
+func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
 
 func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
 func ToArray[A any](a []A) Array[A] { return Array[A]{a} }
@@ -74,4 +78,76 @@ func (arr Array[A]) Each(fn func(A)) Array[A] {
 		fn(value)
 	}
 	return arr
+}
+
+// Join fuck it everything is just strings now
+func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(arr.Value)) }
+
+func Sprint[A any](a A) String { return S(fmt.Sprint(a)) }
+
+func (arr Array[A]) Append(val A, rest ...A) Array[A] {
+	return ToArray(append(arr.Value, Prepend(val, rest)...))
+}
+
+func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {
+	return ToArray(append(Prepend(val, rest), arr.Value...))
+}
+
+func (arr Array[A]) Appends(val A, rest ...A) []A {
+	return append(arr.Value, Prepend(val, rest)...)
+}
+
+func (arr Array[A]) Prepends(val A, rest ...A) []A {
+	return append(Prepend(val, rest), arr.Value...)
+}
+
+func (arr Array[A]) Split(fn Pred[A]) (Array[A], Array[A]) {
+	arr_1 := []A{}
+	arr_2 := []A{}
+	for i, val := range arr.Value {
+		if !fn(val) {
+			arr_1 = append(arr_1, val)
+			continue
+		}
+		arr_2 = arr.Value[i+1:]
+		break
+	}
+
+	return ToArray(arr_1), ToArray(arr_2)
+}
+
+func (arr Array[A]) From(n int) Array[A] {
+	if n <= 0 || len(arr.Value) == 0 {
+		return arr
+	}
+	if len(arr.Value) > n {
+		arr.Value = arr.Value[n:]
+	}
+	return arr
+}
+
+func (arr Array[A]) Froms(n int) []A { return arr.From(n).Value }
+
+func Flag(arr Array[String], flag String, alt ...String) (Array[String], bool) {
+	new_arr := make([]String, 0, len(arr.Value))
+	for i, val := range arr.Value {
+		if val == flag {
+			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+		}
+		new_arr = append(new_arr, val)
+	}
+
+	return ToArray(new_arr), false
+}
+
+func (arr Array[A]) Flag(fn Pred[A]) (Array[A], bool) {
+	new_arr := make([]A, 0, len(arr.Value))
+	for i, val := range arr.Value {
+		if fn(val) {
+			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+		}
+		new_arr = append(new_arr, val)
+	}
+
+	return ToArray(new_arr), false
 }

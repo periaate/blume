@@ -47,7 +47,22 @@ func Must[A any](a A, handle ...any) A {
 		if val == nil {
 			return a
 		}
-		panic(P.S("must called with false bool").S(handle...))
+		panic(P.S("must called with nil value").S(handle...))
+	}
+}
+
+func Mustnt[A, B any](a A, handle any) B {
+	switch val := handle.(type) {
+	case bool:
+		if !val {
+			return any(val).(B)
+		}
+		panic("mustnt called with true bool")
+	default:
+		if val != nil {
+			return any(val).(B)
+		}
+		panic(P.S("mustnt called with non nil value").S(handle))
 	}
 }
 
@@ -62,8 +77,7 @@ func (r Either[A, B]) Pass(val A) Either[A, B] {
 	switch any(other).(type) {
 	case bool:
 		r.Other = any(true).(B)
-	case error:
-		r.Other = any(nil).(B)
+		// case error: r.Other = any(nil).(B) // the zero value of error is nil
 	}
 	return r
 }
@@ -83,6 +97,7 @@ func Pass[A, B any](val A) (res Either[A, B])      { return res.Pass(val) }
 func Fail[A, B any](val ...any) (res Either[A, B]) { return res.Fail(val...) }
 
 func (r Either[A, B]) Must() A    { return Must(r.Value, r.Other) }
+func (r Either[A, B]) Mustnt() B  { return Mustnt[A, B](r.Value, r.Other) }
 func (r Either[A, B]) Or(def A) A { return Or(def, r.Value, r.Other) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }

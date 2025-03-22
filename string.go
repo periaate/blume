@@ -11,10 +11,8 @@ import (
 	"github.com/periaate/blume/fsio"
 )
 
-func Join[S ~string](arg string) func(args ...S) S {
-	return func(args ...S) S {
-		return S(strings.Join(Map(StoD[S])(args), arg))
-	}
+func Join(arg String) func(args []String) String {
+	return func(args []String) String { return S(strings.Join(SD(args), arg.String())) }
 }
 
 func Joins[S ~string](arr Array[S], arg string) S {
@@ -29,8 +27,8 @@ func (s String) Has(args ...Selector[string]) bool       { return Has(args...)(s
 func (s String) Del(args ...Selector[string]) String     { return String(Del(args...)(s.String())) }
 func (s String) Rep(args ...any) String                  { return String(Rep[string](args...)(string(s))) }
 
-func (s String) Is(args ...string) bool       { return Is(args...)(string(s)) }
-func (s String) Contains(args ...string) bool { return Contains(args...)(string(s)) }
+func (s String) Is(args ...String) bool       { return Is(args...)(String(s)) }
+func (s String) Contains(args ...String) bool { return Contains(args...)(String(s)) }
 
 // HasPrefix
 // Deprecated: Use [Has] with [Pre] instead.
@@ -90,8 +88,8 @@ func GetDomain[S ~string](val S) S {
 	return ReplaceRegex[S](`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
 }
 
-func (s String) Entries() Array[String]    { return Entries(s) }
-func Entries[S ~string](s S) Array[String] { return Dir(s).Read().Must() }
+func (s String) Entries() Result[Array[String]]    { return Entries(s) }
+func Entries[S ~string](s S) Result[Array[String]] { return Dir(s).Read() }
 
 func (s String) Path(args ...String) String { return Path(Prepend(s, args)...) }
 
@@ -120,42 +118,6 @@ func Base(s String) String    { return String(filepath.Base(string(s))) }
 
 func (s String) IsDir() bool { return fsio.IsDir(string(s)) }
 func IsDir(s String) bool    { return fsio.IsDir(string(s)) }
-
-// func AsArray[A any](arg any) (res Option[[]A]) {
-// 	if arg == nil { return res.None() }
-// 	v := reflect.ValueOf(arg)
-// 	if v.Kind() != reflect.Array && v.Kind() != reflect.Slice { return res.None() }
-// 	length := v.Len()
-// 	result := make([]A, length)
-// 	for i := 0; i < length; i++ {
-// 		n := Cast[A](v.Index(i).Interface())
-// 		if !n.IsOk() { return res.None() }
-// 		result = append(result, n.Value)
-// 	}
-// 	return res.Ok(result)
-// }
-//
-//
-// func Spread(arg any) []any {
-// 	switch {
-// 	case IsArray[any](arg): return AsArray[any](arg).Value
-// 	default:            return []any{arg}
-// 	}
-// }
-//
-// func From[A any](arr ...any) (res Result[Array[A]]) {
-// 	if len(arr) == 1 { return res.Over(Map(Cast[A])(Spread(arr[0]))) }
-// 	return                    res.Over(Map(Cast[A])(arr))
-// }
-//
-// func (s String) Slice(from int, to ...int) Array[String] {
-// 	split := Split(string(s), false, pats...)
-// 	res := make([]String, len(split))
-// 	for i, v := range split {
-// 		res[i] = String(v)
-// 	}
-// 	return ToArray(res)
-// }
 
 func (s String) Or(Default string) String {
 	if s == "" {

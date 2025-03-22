@@ -58,3 +58,18 @@ func Runs[S ~string](name S, args ...S) String {
 	bar, _ := Exec(name, args...).Create().Output()
 	return String(bar).TrimSpace()
 }
+
+func Adopt(name String, args ...String) error {
+	cmd := Exec(name, args...).Create()
+	cmd.Env = append(os.Environ(), "CLICOLOR_FORCE=1", "FORCE_COLOR=true")
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func Adopts(name String, args ...String) {
+	if err := Adopt(name, args...); err != nil {
+		panic(err)
+	}
+}

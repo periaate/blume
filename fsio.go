@@ -16,7 +16,7 @@ func Input[S ~string](from ...string) Array[String] {
 	for _, arg := range from {
 		switch String(arg).ToLower() {
 		case "args":
-			res = append(res, Args().Must().Value...)
+			res = append(res, Args().Value...)
 		case "pipe", "piped":
 			res = append(res, Piped(os.Stdin).Must().Value...)
 		}
@@ -25,19 +25,27 @@ func Input[S ~string](from ...string) Array[String] {
 	return ToArray(res)
 }
 
-func Args(preds ...func([]string) bool) Option[Array[String]] {
+func Args(n ...int) Array[String] {
 	var res []string
 	if len(os.Args) >= 1 {
 		res = os.Args[1:]
 	}
-	ok := PredAnd(preds...)(res)
-	if !ok {
-		return None[Array[String]]()
+	if len(n) == 0 {
+		return DAS(res...)
 	}
-	return Some(ToArray(Map(func(s string) String { return String(s) })(res)))
+	if len(res) < n[0] {
+		return Arr[String]()
+	}
+	return DAS(res[n[0]:]...)
 }
 
-func Arg() Array[String] { return ToArray(Map(StoS[string, String])(os.Args[1:])) }
+func Arg(n int) Option[String] {
+	if len(os.Args) > n+1 {
+		return Some(S(os.Args[n+1]))
+	}
+
+	return None[String]()
+}
 
 func Piped(f *os.File, preds ...func([]string) bool) Option[Array[String]] {
 	ok := has.Pipe(f)
@@ -112,6 +120,16 @@ func Read[S ~string](sar ...S) Result[String] {
 }
 
 func Path[S ~string](sar ...S) String {
+	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
+	fp := filepath.Join(SS[S, string](sar)...)
+	absFp, err := filepath.Abs(fp)
+	if err == nil {
+		return String(absFp)
+	}
+	return String(fp)
+}
+
+func Paths(v String, sar ...String) String {
 	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fp := filepath.Join(SS[S, string](sar)...)
 	absFp, err := filepath.Abs(fp)

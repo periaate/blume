@@ -59,7 +59,10 @@ func (f String) R() String { return f + "\r" }
 func (f String) Up(lines ...int) String { return f + String(Up(ToArray(lines).Get(0).Or(1))) }
 func (f String) Clean() String          { return f + String(Clean()) }
 func (f String) S(args ...any) String   { return f + String(fmt.Sprint(args...)) }
-func (f String) W() String              { return f + String(" ") }
+func (f String) F(format String, args ...any) String {
+	return f + String(fmt.Sprintf(format.String(), args...))
+}
+func (f String) W() String { return f + String(" ") }
 
 func (f String) Print(args ...any) String   { fmt.Printf("%s%s", f, fmt.Sprint(args...)); return f }
 func (f String) Println(args ...any) String { fmt.Printf("%s%s", f, fmt.Sprintln(args...)); return f }
