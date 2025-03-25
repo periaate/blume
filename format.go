@@ -2,6 +2,8 @@ package blume
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/periaate/blume/color"
 	"github.com/periaate/blume/symbols"
 )
@@ -100,6 +102,33 @@ func (f String) Cancelled(args ...any) String {
 }
 func (f String) InProgress(args ...any) String {
 	return f.Color(color.Pending, symbols.InProgress).W().S(args...)
+}
+
+// Turn these into consts at some point when you feel like manually transferring everything from hex to rgb
+var (
+	Info       String = P.Color(color.Info, symbols.Info).W()
+	Lock       String = P.Color(color.Warning, symbols.Lock).W()
+	Debug      String = P.Color(color.Pending, symbols.Debug).W()
+	Error      String = P.Color(color.Error, symbols.Error).W()
+	Success    String = P.Color(color.Success, symbols.Success).W()
+	Warning    String = P.Color(color.Warning, symbols.Warning).W()
+	Waiting    String = P.Color(color.Waiting, symbols.Waiting).W()
+	Question   String = P.Color(color.Info, symbols.Question).W()
+	Cancelled  String = P.Color(color.Error, symbols.Cancelled).W()
+	InProgress String = P.Color(color.Pending, symbols.InProgress).W()
+)
+
+// Exit the program with a console log
+func (f String) Exit(args ...any) { Exit(args...) }
+
+// Exit the program with a console log
+func Exit(args ...any) { fmt.Printf("%s\n", ToArray(args).Join(" ")); os.Exit(1) }
+
+func OrExit[A, B any](either Either[A, B], args ...any) (res A) {
+	if !either.IsOk() {
+		Exit(P.Printf("%s [%v]", P.S(args...), either.Other))
+	}
+	return either.Value
 }
 
 func (f String) Checkbox(done bool, args ...any) String {
