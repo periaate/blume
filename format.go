@@ -2,7 +2,6 @@ package blume
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/periaate/blume/color"
 	"github.com/periaate/blume/symbols"
@@ -16,7 +15,19 @@ func Logf[A any](format string, args ...any) func(A) {
 	return func(arg A) { fmt.Printf(format, append(args, any(arg))...) }
 }
 
-func Through[A any](fn func(A)) func(A) A { return func(arg A) A { fn(arg); return arg } }
+// Turn these into consts at some point when you feel like manually transferring everything from hex to rgb
+var (
+	Info       String = P.Color(color.Info, symbols.Info).W()
+	Lock       String = P.Color(color.Warning, symbols.Lock).W()
+	Debug      String = P.Color(color.Pending, symbols.Debug).W()
+	Error      String = P.Color(color.Error, symbols.Error).W()
+	Success    String = P.Color(color.Success, symbols.Success).W()
+	Warning    String = P.Color(color.Warning, symbols.Warning).W()
+	Waiting    String = P.Color(color.Waiting, symbols.Waiting).W()
+	Question   String = P.Color(color.Info, symbols.Question).W()
+	Cancelled  String = P.Color(color.Error, symbols.Cancelled).W()
+	InProgress String = P.Color(color.Pending, symbols.InProgress).W()
+)
 
 func HexToRGB(hex string) (int64, int64, int64) {
 	hex = Del(Rgx[string]("^#"))(hex)
@@ -40,20 +51,10 @@ func ColorBg(hex string) string {
 
 const Reset = "\033[0m"
 
-func T[A any](ok bool, a A, b A) A {
-	if ok {
-		return a
-	} else {
-		return b
-	}
-}
-
 func Up(lines int) String { return String(fmt.Sprintf("\033[%dA", lines)) }
 func Clean() String       { return String(fmt.Sprint("\r\033[K")) }
 
 const P String = ""
-
-var spinChars = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 func (f String) N() String { return f + "\n" }
 func (f String) R() String { return f + "\r" }
@@ -76,6 +77,8 @@ func (f String) Printf(format string, args ...any) String {
 func (f String) Color(hex string, args ...any) String {
 	return f + String(ColorFg(hex)+fmt.Sprint(args...)+Reset)
 }
+
+var spinChars = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 func (f String) Spin(i int) String { return f + String(spinChars[i%len(spinChars)]) + " " }
 
@@ -102,33 +105,6 @@ func (f String) Cancelled(args ...any) String {
 }
 func (f String) InProgress(args ...any) String {
 	return f.Color(color.Pending, symbols.InProgress).W().S(args...)
-}
-
-// Turn these into consts at some point when you feel like manually transferring everything from hex to rgb
-var (
-	Info       String = P.Color(color.Info, symbols.Info).W()
-	Lock       String = P.Color(color.Warning, symbols.Lock).W()
-	Debug      String = P.Color(color.Pending, symbols.Debug).W()
-	Error      String = P.Color(color.Error, symbols.Error).W()
-	Success    String = P.Color(color.Success, symbols.Success).W()
-	Warning    String = P.Color(color.Warning, symbols.Warning).W()
-	Waiting    String = P.Color(color.Waiting, symbols.Waiting).W()
-	Question   String = P.Color(color.Info, symbols.Question).W()
-	Cancelled  String = P.Color(color.Error, symbols.Cancelled).W()
-	InProgress String = P.Color(color.Pending, symbols.InProgress).W()
-)
-
-// Exit the program with a console log
-func (f String) Exit(args ...any) { Exit(args...) }
-
-// Exit the program with a console log
-func Exit(args ...any) { fmt.Printf("%s\n", ToArray(args).Join(" ")); os.Exit(1) }
-
-func OrExit[A, B any](either Either[A, B], args ...any) (res A) {
-	if !either.IsOk() {
-		Exit(P.Printf("%s [%v]", P.S(args...), either.Other))
-	}
-	return either.Value
 }
 
 func (f String) Checkbox(done bool, args ...any) String {

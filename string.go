@@ -141,40 +141,7 @@ func (s String) TrimSuffix(suffix string) String {
 }
 func (s String) TrimSpace() String { return String(strings.TrimSpace(string(s))) }
 
-func (s String) Green() String        { return String(color.Colorize(color.Green, string(s))) }
-func (s String) LightGreen() String   { return String(color.Colorize(color.LightGreen, string(s))) }
-func (s String) Yellow() String       { return String(color.Colorize(color.Yellow, string(s))) }
-func (s String) LightYellow() String  { return String(color.Colorize(color.LightYellow, string(s))) }
-func (s String) Red() String          { return color.Colorize(color.Red, s) }
-func (s String) LightRed() String     { return color.Colorize(color.LightRed, s) }
-func (s String) Blue() String         { return color.Colorize(color.Blue, s) }
-func (s String) LightBlue() String    { return color.Colorize(color.LightBlue, s) }
-func (s String) Cyan() String         { return color.Colorize(color.Cyan, s) }
-func (s String) LightCyan() String    { return color.Colorize(color.LightCyan, s) }
-func (s String) Magenta() String      { return color.Colorize(color.Magenta, s) }
-func (s String) LightMagenta() String { return color.Colorize(color.LightMagenta, s) }
-func (s String) White() String        { return color.Colorize(color.White, s) }
-func (s String) Black() String        { return color.Colorize(color.Black, s) }
-func (s String) Gray() String         { return color.Colorize(color.DarkGray, s) }
-func (s String) LightGray() String    { return color.Colorize(color.LightGray, s) }
-
-func (s String) Dim() String  { return color.Colorize(2, s) }
-func (s String) Bold() String { return color.Bold(s) }
-
 func Whitespaces() []string { return []string{"\r\n", "\n\r", " ", "\t", "\n", "\r"} }
-
-func (s String) ToInt() Option[int]         { return ToInt(s) }
-func (s String) ToInt8() Option[int8]       { return ToInt8(s) }
-func (s String) ToInt16() Option[int16]     { return ToInt16(s) }
-func (s String) ToInt32() Option[int32]     { return ToInt32(s) }
-func (s String) ToInt64() Option[int64]     { return ToInt64(s) }
-func (s String) ToUint() Option[uint]       { return ToUint(s) }
-func (s String) ToUint8() Option[uint8]     { return ToUint8(s) }
-func (s String) ToUint16() Option[uint16]   { return ToUint16(s) }
-func (s String) ToUint32() Option[uint32]   { return ToUint32(s) }
-func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
-func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
-func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
 
 func ToUpper(s String) String { return S(strings.ToUpper(string(s))) }
 func ToLower(s String) String { return S(strings.ToLower(string(s))) }

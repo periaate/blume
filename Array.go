@@ -46,16 +46,6 @@ func (arr Array[A]) Filter(fn Pred[A]) Array[A] {
 	return Array[A]{Value: res}
 }
 
-func (arr Array[A]) Filter_map(fn func(A) Option[A]) Array[A] {
-	res := []A{}
-	for _, val := range arr.Value {
-		if ret := fn(val); ret.Other {
-			res = append(res, ret.Value)
-		}
-	}
-	return Array[A]{Value: res}
-}
-
 func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 	for _, val := range arr.Value {
 		if fn(val) {
@@ -66,6 +56,15 @@ func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 }
 
 func (arr Array[A]) Map(fn func(A) A) Array[A] {
+	res := make([]A, len(arr.Value))
+	for i, val := range arr.Value {
+		res[i] = fn(val)
+	}
+	return Array[A]{Value: res}
+}
+
+// TODO: flatmap
+func (arr Array[A]) Flat(fn func(A) A) Array[A] {
 	res := make([]A, len(arr.Value))
 	for i, val := range arr.Value {
 		res[i] = fn(val)

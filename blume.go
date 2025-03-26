@@ -2,6 +2,7 @@ package blume
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -23,12 +24,7 @@ func All[A any](fns ...Pred[A]) Pred[[]A] {
 func Any[A any](fns ...Pred[A]) Pred[[]A] {
 	fn := PredOr(fns...)
 	return func(args []A) bool {
-		for _, arg := range args {
-			if fn(arg) {
-				return true
-			}
-		}
-		return false
+		return slices.ContainsFunc(args, fn)
 	}
 }
 
@@ -85,7 +81,7 @@ func Is[C comparable](A ...C) func(C) bool {
 
 // First returns the first value which passes the [Predicate].
 func First[A any](fns ...Pred[A]) func([]A) Option[A] {
-	fn := PredOr[A](fns...)
+	fn := PredOr(fns...)
 	return func(args []A) Option[A] {
 		for _, arg := range args {
 			if fn(arg) {
@@ -164,7 +160,7 @@ func Memo[K comparable, V any](fn func(K) V) func(K) V {
 
 func Negate[A any](fn Pred[A]) Pred[A] { return func(a A) bool { return !fn(a) } }
 
-func limit[A ~string | ~[]any](Max int) func([]A) []A {
+func Limit[A ~string | ~[]any](Max int) func([]A) []A {
 	return func(args []A) (res []A) {
 		for _, a := range args {
 			if len(a) <= Max {
@@ -190,7 +186,7 @@ func Contains[S ~string](args ...S) func(S) bool {
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
 func HasPrefix[S ~string](args ...S) func(S) bool {
 	return func(str S) bool {
-		l := limit[S](len(str))(args)
+		l := Limit[S](len(str))(args)
 		for _, arg := range l {
 			if string(str[:len(arg)]) == string(arg) {
 				return true
@@ -203,7 +199,7 @@ func HasPrefix[S ~string](args ...S) func(S) bool {
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
 func HasSuffix[S ~string](args ...S) func(S) bool {
 	return func(str S) bool {
-		l := limit[S](len(str))(args)
+		l := Limit[S](len(str))(args)
 		for _, arg := range l {
 			if string(str[len(str)-len(arg):]) == string(arg) {
 				return true

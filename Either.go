@@ -1,9 +1,5 @@
 package blume
 
-import (
-	"fmt"
-)
-
 func Or[A any](def A, in A, handle ...any) (res A) {
 	if len(handle) != 0 {
 		last := handle[len(handle)-1]
@@ -22,12 +18,10 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	}
 	anyin := any(in)
 	switch inv := anyin.(type) {
-	case string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, bool:
+	case String, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, bool:
 		if isZero(inv) {
 			return in
 		}
-		// TODO: add test case to blumefmt and fix the issue
-		return def // blumefmt incorrectly formats this without this statement.
 	}
 	return def
 }
@@ -77,7 +71,6 @@ func (r Either[A, B]) Pass(val A) Either[A, B] {
 	switch any(other).(type) {
 	case bool:
 		r.Other = any(true).(B)
-		// case error: r.Other = any(nil).(B) // the zero value of error is nil
 	}
 	return r
 }
@@ -103,12 +96,8 @@ func (r Either[A, B]) OrExit(args ...any) A { return OrExit(r, args...) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }
-func Err[A any](msg ...any) Result[A] { return Result[A]{Other: error(SError(fmt.Sprint(msg...)))} }
+func Err[A any](msg ...any) Result[A] { return Result[A]{Other: P.Errorf(msg...)} }
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
-
-type SError string
-
-func (s SError) Error() string { return string(s) }
 
 func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
 	switch IsOk(r) {
@@ -119,17 +108,7 @@ func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
 	}
 }
 
-var _ = Some("").Must()
-var _ = Ok("").Must()
-
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
-func (e Either[A, B]) Err(msg ...any) Either[A, B] {
-	r, ok := any(Err[A](msg...)).(Either[A, B]) // scuffed mc. scuffed
-	if !ok {
-		panic("dummy you can't call error with these types dumbass")
-	}
-	return r
-}
 
 func IsOk[A any](a A, handle ...any) bool {
 	if len(handle) == 0 {
