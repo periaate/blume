@@ -63,14 +63,14 @@ func (arr Array[A]) Map(fn func(A) A) Array[A] {
 	return Array[A]{Value: res}
 }
 
-// TODO: flatmap
-func (arr Array[A]) Flat(fn func(A) A) Array[A] {
-	res := make([]A, len(arr.Value))
-	for i, val := range arr.Value {
-		res[i] = fn(val)
+func (arr Array[A]) Reduce(fn func(A, A) A, initial A) A {
+	for _, val := range arr.Value {
+		initial = fn(initial, val)
 	}
-	return Array[A]{Value: res}
+	return initial
 }
+
+func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr.Value)) }
 
 func (arr Array[A]) Each(fn func(A)) Array[A] {
 	for _, value := range arr.Value {
@@ -86,6 +86,17 @@ func Sprint[A any](a A) String { return S(fmt.Sprint(a)) }
 
 func (arr Array[A]) Append(val A, rest ...A) Array[A] {
 	return ToArray(append(arr.Value, Prepend(val, rest)...))
+}
+
+func (arr Array[A]) JoinAfter(a Array[A]) Array[A] {
+	P.Println(len(arr.Value))
+	P.Println(len(a.Value))
+	return ToArray(append(arr.Value, a.Value...))
+}
+
+func (arr Array[A]) JoinBefore(a Array[A]) Array[A] {
+	arr.Value = append(a.Value, arr.Value...)
+	return arr
 }
 
 func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {

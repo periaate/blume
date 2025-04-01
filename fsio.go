@@ -25,6 +25,20 @@ func Input[S ~string](from ...string) Array[String] {
 	return ToArray(res)
 }
 
+func AllArgs(n ...int) Array[String] {
+	res := Pip().Must().Value
+	if len(os.Args) >= 1 {
+		res = append(res, DS(os.Args[1:])...)
+	}
+	if len(n) == 0 {
+		return ToArray(res)
+	}
+	if len(res) < n[0] {
+		return Arr[String]()
+	}
+	return ToArray(res)
+}
+
 func Args(n ...int) Array[String] {
 	var res []string
 	if len(os.Args) >= 1 {
@@ -45,6 +59,19 @@ func Arg(n int) Option[String] {
 	}
 
 	return None[String]()
+}
+
+func Pip() Option[Array[String]] {
+	ok := has.Pipe(os.Stdin)
+	if !ok {
+		return None[Array[String]]()
+	}
+	var res []string
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		res = append(res, scanner.Text())
+	}
+	return Some(DAS(res...))
 }
 
 func Piped(f *os.File, preds ...func([]string) bool) Option[Array[String]] {
@@ -118,6 +145,8 @@ func Read[S ~string](sar ...S) Result[String] {
 	}
 	return Ok(String(bar))
 }
+
+func Reads(filepath String) String { return Read(filepath).Must() }
 
 func Path[S ~string](sar ...S) String {
 	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)

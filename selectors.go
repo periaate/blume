@@ -100,8 +100,8 @@ func ReplaceRanges[S ~string](tar S, rep S, ranges [][]int) S {
 		copy(sortedRanges[i], r)
 	}
 
-	for i := 0; i < len(sortedRanges); i++ {
-		for j := i + 1; j < len(sortedRanges); j++ {
+	for i := range len(sortedRanges) {
+		for j := range len(sortedRanges) {
 			if sortedRanges[i][0] < sortedRanges[j][0] {
 				sortedRanges[i], sortedRanges[j] = sortedRanges[j], sortedRanges[i]
 			}

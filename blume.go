@@ -53,6 +53,17 @@ func Map[A, B any](fn func(A) B) func([]A) []B {
 	}
 }
 
+func Maps[A, B any](fn func(A) B) func([]A) Array[B] { return Cat(Map(fn), ToArray) }
+
+func FlatMap[A, B any](fn func(A) []B) func([]A) []B {
+	return func(args []A) (res []B) {
+		for _, arg := range args {
+			res = append(res, fn(arg)...)
+		}
+		return res
+	}
+}
+
 // Reduce applies the function to each argument and returns the result.
 func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
 	return func(args []A) B {
@@ -306,6 +317,47 @@ func Pop[S ~string](count int) func(S) S {
 			return
 		}
 		return S(string(a[:count]))
+	}
+}
+
+func Splits(keep bool, match ...String) func(String) []String {
+	return func(str String) (res []S) {
+		if len(match) == 0 || len(str) == 0 {
+			return []S{str}
+		}
+
+		sort.SliceStable(match, func(i, j int) bool {
+			return len(match[i]) > len(match[j])
+		})
+
+		var lastI int
+		for i := 0; i < len(str); i++ {
+			for _, pattern := range match {
+				switch {
+				case i+len(pattern) > len(str):
+					continue
+				case str[i:i+len(pattern)] != pattern:
+					continue
+				case len(str[lastI:i]) != 0:
+					res = append(res, str[lastI:i])
+				}
+
+				lastI = i + len(pattern)
+				if len(pattern) != 0 {
+					if keep {
+						res = append(res, str[i:len(pattern)+i])
+					}
+					i += len(pattern) - 1
+				}
+				break
+			}
+		}
+
+		if len(str[lastI:]) != 0 {
+			res = append(res, str[lastI:])
+		}
+
+		return res
 	}
 }
 
