@@ -58,8 +58,8 @@ func (s String) ReplaceRegex(pat string, rep string) String {
 
 func (s String) Shift(count int) String { return String(Shift[string](count)(string(s))) }
 func (s String) Pop(count int) String   { return String(Pop[string](count)(string(s))) }
-func (s String) Split(pats ...string) Array[String] {
-	split := Split(string(s), false, pats...)
+func (s String) Split(pats ...String) Array[String] {
+	split := Split(s, false, pats...)
 	res := make([]String, len(split))
 	for i, v := range split {
 		res[i] = String(v)
@@ -127,6 +127,11 @@ func (s String) Or(Default string) String {
 }
 func (s String) Len() int       { return len(string(s)) }
 func (s String) String() string { return string(s) }
+
+func (s String) Read() Result[String] {
+	bar, err := os.ReadFile(string(s.Path()))
+	return Auto(S(bar), err)
+}
 
 func (s String) Colorize(colorCode int) String { return String(color.Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }

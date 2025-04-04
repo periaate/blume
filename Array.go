@@ -1,6 +1,8 @@
 package blume
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
 
@@ -32,6 +34,13 @@ func (arr Array[A]) Get(i int) (res Option[A]) {
 }
 
 func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
+func (arr Array[A]) Reverse() Array[A] {
+	r := make([]A, 0, len(arr.Value))
+	for i := len(arr.Value); i > 0; i-- {
+		r = append(r, arr.Value[i-1])
+	}
+	return ToArray(r)
+}
 
 func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
 func ToArray[A any](a []A) Array[A] { return Array[A]{a} }

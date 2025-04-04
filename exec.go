@@ -6,13 +6,6 @@ import (
 	"syscall"
 )
 
-type Command struct {
-	Name String
-	Args []String
-
-	Adopt bool
-}
-
 type Cmd struct {
 	Name String
 	opts CmdOption
@@ -119,7 +112,7 @@ func (next CmdOption) Adopt() CmdOption {
 	}
 }
 
-func Exec2(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
+func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 	if len(opts) == 0 {
 		opts = append(opts, CmdOpt)
 	}
@@ -130,7 +123,9 @@ func Exec2(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 	}
 }
 
-func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) error { return Exec2(name, opts...).Exec() }
+func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] {
+	return Exec(name, opts...).Exec()
+}
 
 func (c Cmd) Run() Result[String] {
 	cmd := exec.Command(c.Name.String())
@@ -142,70 +137,71 @@ func (c Cmd) Run() Result[String] {
 	return Ok(String(out))
 }
 
-func (c Cmd) Exec() error {
+func (c Cmd) Exec() Result[int] {
 	cmd := exec.Command(c.Name.String())
 	cmd = c.opts(cmd)
-	return cmd.Run()
-}
-
-func Exec[S ~string](name S, args ...S) *Command {
-	return &Command{String(name), Map(StoS[S, String])(args), false}
-}
-
-func (c *Command) Append(args ...String) *Command {
-	c.Args = append(c.Args, args...)
-	return c
-}
-
-func (c *Command) Adopts() *Command {
-	c.Adopt = true
-	return c
-}
-
-func (c *Command) Create() *exec.Cmd {
-	cmd := exec.Command(c.Name.String(), Map(StoD[String])(c.Args)...)
-	cmd.Env = append(os.Environ(), "FORCE_COLOR=true")
-	cmd.Env = append(cmd.Env, "CLICOLOR_FORCE=1")
-	if c.Adopt {
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
-	}
-	return cmd
-}
-
-func (c *Command) Run() Result[String] {
-	bar, err := c.Create().Output()
+	err := cmd.Start()
 	if err != nil {
-		return Err[String](err)
+		return Err[int](err)
 	}
-	return Ok(String(bar))
-}
 
-func Run[S ~string](name S, args ...S) Result[String] {
-	bar, err := Exec(name, args...).Create().Output()
-	if err != nil {
-		return Err[String](err)
+	err = cmd.Wait()
+
+	if err == nil {
+		return Ok(0)
 	}
-	return Ok(String(bar).TrimSpace())
-}
-
-func Runs[S ~string](name S, args ...S) String {
-	bar, _ := Exec(name, args...).Create().Output()
-	return String(bar).TrimSpace()
-}
-
-func Adopt(name String, args ...String) error {
-	cmd := Exec(name, args...).Create()
-	cmd.Env = append(os.Environ(), "CLICOLOR_FORCE=1", "FORCE_COLOR=true")
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func Adopts(name String, args ...String) {
-	if err := Adopt(name, args...); err != nil {
-		panic(err)
+	if exitError, ok := err.(*exec.ExitError); ok {
+		if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+			return Ok(status.ExitStatus())
+		}
 	}
+	return Err[int](err)
 }
+
+// func Exec[S ~string](name S, args ...S) *Command {
+// 	return &Command{String(name), Map(StoS[S, String])(args), false}
+// }
+//
+// func (c *Command) Append(args ...String) *Command {
+// 	c.Args = append(c.Args, args...)
+// 	return c
+// }
+//
+// func (c *Command) Adopts() *Command {
+// 	c.Adopt = true
+// 	return c
+// }
+//
+// func (c *Command) Create() *exec.Cmd {
+// 	cmd := exec.Command(c.Name.String(), Map(StoD[String])(c.Args)...)
+//     cmd.Env = append(os.Environ(), "FORCE_COLOR=true")
+//     cmd.Env = append(cmd.Env, "CLICOLOR_FORCE=1")
+// 	if c.Adopt {
+// 		cmd.Stdout = os.Stdout
+// 		cmd.Stdin = os.Stdin
+// 		cmd.Stderr = os.Stderr
+// 	}
+// 	return cmd
+// }
+//
+// func (c *Command) Run() Result[String] {
+// 	bar, err := c.Create().Output()
+// 	if err != nil { return Err[String](err) }
+// 	return Ok(String(bar))
+// }
+//
+// func Run[S ~string](name S, args ...S) Result[String] {
+// 	bar, err := Exec(name, args...).Create().Output()
+// 	if err != nil { return Err[String](err) }
+// 	return Ok(String(bar).TrimSpace())
+// }
+//
+// func Runs[S ~string](name S, args ...S) String {
+// 	bar, _ := Exec(name, args...).Create().Output()
+// 	return String(bar).TrimSpace()
+// }
+
+func Adopt(name String, args ...String) Result[int] {
+	return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv()).Exec()
+}
+func Adopts(name String, args ...String) { Adopt(name, args...).Must() }

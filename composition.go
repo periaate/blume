@@ -1,8 +1,48 @@
 package blume
 
+import "strings"
+
 type Tree[A any] struct {
 	This A
 	Array[Tree[A]]
+}
+
+// Traverse performs a depth-first traversal of the tree and applies the given function to each element
+func (t Tree[A]) Traverse(f func(A)) {
+	// Apply the function to the current node
+	f(t.This)
+
+	// Recursively apply to all children
+	for i := range t.Value {
+		t.Value[i].Traverse(f)
+	}
+}
+
+// PrettyPrint creates a string representation of the tree with proper indentation
+func (t Tree[A]) PrettyPrint() String {
+	return t.prettyPrintWithIndent(-1)
+}
+
+// prettyPrintWithIndent is a helper method for pretty printing with the correct indentation level
+func (t Tree[A]) prettyPrintWithIndent(indent int) String {
+	// Create the indentation string
+	var indentStr string
+	if indent > 0 {
+		indentStr = strings.Repeat("  ", indent)
+	}
+	var result String
+
+	// Start with the current node
+	if P.S(t.This).TrimSpace() != "" {
+		result = P.F("%s%v\n", indentStr, t.This)
+	}
+
+	// Add all children with increased indentation
+	for _, val := range t.Value {
+		result += val.prettyPrintWithIndent(indent + 1)
+	}
+
+	return result
 }
 
 type Composer func(Tree[String]) Tree[String]

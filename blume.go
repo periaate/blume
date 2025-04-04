@@ -361,9 +361,9 @@ func Splits(keep bool, match ...String) func(String) []String {
 	}
 }
 
-func Split(str string, keep bool, match ...string) (res []string) {
+func Split(str String, keep bool, match ...String) (res []String) {
 	if len(match) == 0 || len(str) == 0 {
-		return []string{str}
+		return []String{str}
 	}
 
 	sort.SliceStable(match, func(i, j int) bool {
