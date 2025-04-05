@@ -1,8 +1,11 @@
 package blume
 
 import (
+	"io"
 	"os"
 	"os/exec"
+	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -15,34 +18,46 @@ type CmdOption func(*exec.Cmd) *exec.Cmd
 
 var CmdOpt CmdOption = func(cmd *exec.Cmd) *exec.Cmd { return cmd }
 
-func (next CmdOption) Cwd(val String) CmdOption {
+// Cwd [Deprecated] use [Cd] instead
+func (prev CmdOption) Cwd(val String) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		cmd.Dir = val.String()
 		return cmd
 	}
 }
 
-func (next CmdOption) Env(key, val String) CmdOption {
+func (prev CmdOption) Cd(val String) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
+		cmd.Dir = val.String()
+		return cmd
+	}
+}
+
+func (prev CmdOption) Env(key, val String) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
 		cmd.Env = append(cmd.Env, string(key+"="+val))
 		return cmd
 	}
 }
 
-func (next CmdOption) Pgid(val bool) CmdOption {
+func (prev CmdOption) Pgid(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
 		}
@@ -51,12 +66,12 @@ func (next CmdOption) Pgid(val bool) CmdOption {
 	}
 }
 
-func (next CmdOption) Foreground(val bool) CmdOption {
+func (prev CmdOption) Foreground(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
 		}
@@ -65,49 +80,122 @@ func (next CmdOption) Foreground(val bool) CmdOption {
 	}
 }
 
-func (next CmdOption) AdoptEnv() CmdOption {
+func (prev CmdOption) AdoptEnv() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		cmd.Env = append(os.Environ(), cmd.Env...)
 		return cmd
 	}
 }
 
-func (next CmdOption) UserFacing() CmdOption {
+func (prev CmdOption) UserFacing() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
-		fn := next.Env("FORCE_COLOR", "true").
+		cmd = prev(cmd)
+		fn := prev.Env("FORCE_COLOR", "true").
 			Env("CLICOLOR_FORCE", "true")
 		return fn(cmd)
 	}
 }
 
-func (next CmdOption) Args(args ...String) CmdOption {
+func (prev CmdOption) Args(args ...String) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		cmd.Args = append(cmd.Args, SD(args)...)
 		return cmd
 	}
 }
 
-func (next CmdOption) Adopt() CmdOption {
+func (prev CmdOption) Adopt() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
-		cmd = next(cmd)
+		cmd = prev(cmd)
 		cmd.Stdout = os.Stdout
 		cmd.Stdin = os.Stdin
 		cmd.Stderr = os.Stderr
+		return cmd
+	}
+}
+
+func (prev CmdOption) Signal(fn func(func(os.Signal) error)) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
+		fn(func(s os.Signal) error {
+			err := cmd.Process.Signal(s)
+			cmd.Process.Wait()
+			return err
+		})
+		return cmd
+	}
+}
+
+func Signal(signals ...os.Signal) func(func(os.Signal) error) {
+	fns := []func(os.Signal) error{}
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, signals...)
+		sig := <-sigChan
+		wg := sync.WaitGroup{}
+		wg.Add(len(fns))
+		for _, fn := range fns {
+			go func() {
+				defer wg.Done()
+				if fn != nil {
+					if err := fn(sig); err != nil {
+						Error.Println(err)
+					}
+				}
+			}()
+		}
+		wg.Wait()
+		os.Exit(0)
+	}()
+
+	return func(fn func(os.Signal) error) {
+		fns = append(fns, fn)
+	}
+}
+
+func (prev CmdOption) Stdout(w io.Writer) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
+		cmd.Stdout = w
+		return cmd
+	}
+}
+func (prev CmdOption) Stderr(w io.Writer) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
+		cmd.Stderr = w
+		return cmd
+	}
+}
+func (prev CmdOption) Stdin(r io.Reader) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
+		cmd.Stdin = r
 		return cmd
 	}
 }

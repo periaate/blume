@@ -4,6 +4,9 @@ import (
 	"os"
 	"regexp"
 	"time"
+
+	"github.com/farmergreg/rfsnotify"
+	"github.com/fsnotify/fsnotify"
 )
 
 func Auto[A any](value A, handles ...any) Result[A] {
@@ -65,5 +68,31 @@ func SplitRegex(pattern String) func(input String) []String {
 		}
 
 		return result
+	}
+}
+
+func (s S) Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) S {
+	Listen(fn, recursive, ops...)(s)
+	return s
+}
+
+func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
+	rw := Auto(rfsnotify.NewWatcher()).Must()
+	f := Is(ops...)
+	go func() {
+		for {
+			ev := <-rw.Events
+			if f(fsnotify.Op(ev.Op)) {
+				fn(S(ev.Name))
+			}
+		}
+	}()
+
+	return func(s S) {
+		if recursive {
+			Auto(rw.AddRecursive(s.String())).Must()
+		} else {
+			Auto(rw.Add(s.String())).Must()
+		}
 	}
 }
