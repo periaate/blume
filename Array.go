@@ -120,7 +120,7 @@ func (arr Array[A]) Prepends(val A, rest ...A) []A {
 	return append(Prepend(val, rest), arr.Value...)
 }
 
-func (arr Array[A]) Split(fn Pred[A]) (Array[A], Array[A]) {
+func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
 	arr_1 := []A{}
 	arr_2 := []A{}
 	for i, val := range arr.Value {

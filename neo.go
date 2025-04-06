@@ -1,6 +1,7 @@
 package blume
 
 import (
+	"net/http"
 	"os"
 	"regexp"
 	"time"
@@ -95,4 +96,8 @@ func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
 			Auto(rw.Add(s.String())).Must()
 		}
 	}
+}
+
+func (s String) Serve(handler ...http.Handler) Result[any] {
+	return Auto[any](nil, http.ListenAndServe(s.String(), ToArray(handler).Get(0).Or(nil)))
 }

@@ -30,6 +30,23 @@ func (s String) Rep(args ...any) String                  { return String(Rep[str
 func (s String) Is(args ...String) bool       { return Is(args...)(String(s)) }
 func (s String) Contains(args ...String) bool { return Contains(args...)(String(s)) }
 
+func (s String) EnsurePrefix(fix String) String {
+	if HasPrefix(fix.String())(string(s)) {
+		return s
+	}
+	return fix + s
+}
+
+func (s String) EnsureSuffix(fix String) String {
+	if HasSuffix(fix.String())(string(s)) {
+		return s
+	}
+	return s + fix
+}
+
+func EnsurePrefix(fix String) func(S) S { return func(s String) S { return s.EnsurePrefix(fix) } }
+func EnsureSuffix(fix String) func(S) S { return func(s String) S { return s.EnsureSuffix(fix) } }
+
 // HasPrefix
 // Deprecated: Use [Has] with [Pre] instead.
 func (s String) HasPrefix(args ...string) bool { return HasPrefix(args...)(string(s)) }

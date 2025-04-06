@@ -114,6 +114,15 @@ func (prev CmdOption) Args(args ...String) CmdOption {
 	}
 }
 
+func (prev CmdOption) Decorate(fn func(*exec.Cmd) *exec.Cmd) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		return fn(prev(cmd))
+	}
+}
+
 func (prev CmdOption) Adopt() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
