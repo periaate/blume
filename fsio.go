@@ -137,7 +137,7 @@ func (d Directory) Ascend(pred Pred[string]) Option[String] {
 	return None[String]()
 }
 
-func Read[S ~string](sar ...S) Result[String] {
+func Read(sar ...S) Result[String] {
 	str := Path(sar...)
 	bar, err := os.ReadFile(string(str))
 	if err != nil {
@@ -148,7 +148,7 @@ func Read[S ~string](sar ...S) Result[String] {
 
 func Reads(filepath String) String { return Read(filepath).Must() }
 
-func Path[S ~string](sar ...S) String {
+func Path(sar ...S) String {
 	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fp := filepath.Join(SS[S, string](sar)...)
 	absFp, err := filepath.Abs(fp)

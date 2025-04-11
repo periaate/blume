@@ -183,7 +183,7 @@ func Limit[A ~string | ~[]any](Max int) func([]A) []A {
 }
 
 // Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains[S ~string](args ...S) func(S) bool {
+func Contains(args ...S) func(S) bool {
 	return func(str S) bool {
 		for _, s := range args {
 			if strings.Contains(string(str), string(s)) {
@@ -195,7 +195,7 @@ func Contains[S ~string](args ...S) func(S) bool {
 }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix[S ~string](args ...S) func(S) bool {
+func HasPrefix(args ...S) func(S) bool {
 	return func(str S) bool {
 		l := Limit[S](len(str))(args)
 		for _, arg := range l {
@@ -208,7 +208,7 @@ func HasPrefix[S ~string](args ...S) func(S) bool {
 }
 
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix[S ~string](args ...S) func(S) bool {
+func HasSuffix(args ...S) func(S) bool {
 	return func(str S) bool {
 		l := Limit[S](len(str))(args)
 		for _, arg := range l {
@@ -221,7 +221,7 @@ func HasSuffix[S ~string](args ...S) func(S) bool {
 }
 
 // ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
-func ReplacePrefix[S ~string](pats ...S) func(S) S {
+func ReplacePrefix(pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
@@ -242,7 +242,7 @@ func ReplacePrefix[S ~string](pats ...S) func(S) S {
 }
 
 // ReplaceSuffix replaces the suffix of a string if it matches any of the given patterns.
-func ReplaceSuffix[S ~string](pats ...S) func(S) S {
+func ReplaceSuffix(pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
@@ -266,7 +266,7 @@ func ReplaceSuffix[S ~string](pats ...S) func(S) S {
 }
 
 // Replace replaces any found substrings with the patterns given.
-func Replace[S ~string](pats ...S) func(S) S {
+func Replace(pats ...S) func(S) S {
 	return func(str S) S {
 		if len(pats)%2 != 0 {
 			return str
@@ -279,7 +279,7 @@ func Replace[S ~string](pats ...S) func(S) S {
 }
 
 // ReplaceRegex replaces substrings matching a regex pattern.
-func MatchRegex[S ~string](pats ...S) func(S) bool {
+func MatchRegex(pats ...S) func(S) bool {
 	funcs := make([]func(S) bool, len(pats))
 	for i, pat := range pats {
 		matcher, err := regexp.Compile(string(pat))
@@ -292,8 +292,8 @@ func MatchRegex[S ~string](pats ...S) func(S) bool {
 }
 
 // ReplaceRegex replaces substrings matching a regex pattern.
-func ReplaceRegex[S ~string](pat string, rep string) func(S) S {
-	matcher, err := regexp.Compile(pat)
+func ReplaceRegex(pat String, rep String) func(S) S {
+	matcher, err := regexp.Compile(pat.String())
 	if err != nil {
 		return func(_ S) (_ S) { return }
 	}
@@ -301,7 +301,7 @@ func ReplaceRegex[S ~string](pat string, rep string) func(S) S {
 }
 
 // Shift removes the first `count` characters from a string.
-func Shift[S ~string](count int) func(S) S {
+func Shift(count int) func(S) S {
 	return func(a S) (res S) {
 		if len(a) < count {
 			return
@@ -311,7 +311,7 @@ func Shift[S ~string](count int) func(S) S {
 }
 
 // Pop removes all but the first `count` characters from a string.
-func Pop[S ~string](count int) func(S) S {
+func Pop(count int) func(S) S {
 	return func(a S) (res S) {
 		if len(a) < count {
 			return

@@ -2,11 +2,27 @@ package blume
 
 import (
 	"fmt"
+	"math"
 )
+
+// func Join(elems []String, sep String) String {
+// 	b := Buf()
+// 	b.Grow(n)
+// 	b.WriteString(string(elems[0]))
+// 	for _, s := range elems[1:] {
+// 		b.WriteString(string(sep))
+// 		b.WriteString(string(s))
+// 	}
+// 	return String(b.String())
+// }
 
 func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
 
 type Array[A any] struct{ Value []A }
+
+func (a Array[A]) Pattern(selector Selector[Array[A]], actor func(Array[A], [][]int) Array[A]) Array[A] {
+	return Pattern(selector, actor)(a)
+}
 
 type Length int
 
