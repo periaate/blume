@@ -1,10 +1,27 @@
 package blume
 
-import "fmt"
+import (
+	"fmt"
+)
+
+// func Join(elems []String, sep String) String {
+// 	b := Buf()
+// 	b.Grow(n)
+// 	b.WriteString(string(elems[0]))
+// 	for _, s := range elems[1:] {
+// 		b.WriteString(string(sep))
+// 		b.WriteString(string(s))
+// 	}
+// 	return String(b.String())
+// }
 
 func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
 
 type Array[A any] struct{ Value []A }
+
+func (a Array[A]) Pattern(selector Selector[Array[A]], actor func(Array[A], [][]int) Array[A]) Array[A] {
+	return Pattern(selector, actor)(a)
+}
 
 type Length int
 
@@ -32,6 +49,13 @@ func (arr Array[A]) Get(i int) (res Option[A]) {
 }
 
 func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
+func (arr Array[A]) Reverse() Array[A] {
+	r := make([]A, 0, len(arr.Value))
+	for i := len(arr.Value); i > 0; i-- {
+		r = append(r, arr.Value[i-1])
+	}
+	return ToArray(r)
+}
 
 func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
 func ToArray[A any](a []A) Array[A] { return Array[A]{a} }
@@ -63,14 +87,14 @@ func (arr Array[A]) Map(fn func(A) A) Array[A] {
 	return Array[A]{Value: res}
 }
 
-// TODO: flatmap
-func (arr Array[A]) Flat(fn func(A) A) Array[A] {
-	res := make([]A, len(arr.Value))
-	for i, val := range arr.Value {
-		res[i] = fn(val)
+func (arr Array[A]) Reduce(fn func(A, A) A, initial A) A {
+	for _, val := range arr.Value {
+		initial = fn(initial, val)
 	}
-	return Array[A]{Value: res}
+	return initial
 }
+
+func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr.Value)) }
 
 func (arr Array[A]) Each(fn func(A)) Array[A] {
 	for _, value := range arr.Value {
@@ -88,6 +112,17 @@ func (arr Array[A]) Append(val A, rest ...A) Array[A] {
 	return ToArray(append(arr.Value, Prepend(val, rest)...))
 }
 
+func (arr Array[A]) JoinAfter(a Array[A]) Array[A] {
+	P.Println(len(arr.Value))
+	P.Println(len(a.Value))
+	return ToArray(append(arr.Value, a.Value...))
+}
+
+func (arr Array[A]) JoinBefore(a Array[A]) Array[A] {
+	arr.Value = append(a.Value, arr.Value...)
+	return arr
+}
+
 func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {
 	return ToArray(append(Prepend(val, rest), arr.Value...))
 }
@@ -100,7 +135,7 @@ func (arr Array[A]) Prepends(val A, rest ...A) []A {
 	return append(Prepend(val, rest), arr.Value...)
 }
 
-func (arr Array[A]) Split(fn Pred[A]) (Array[A], Array[A]) {
+func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
 	arr_1 := []A{}
 	arr_2 := []A{}
 	for i, val := range arr.Value {
@@ -127,10 +162,11 @@ func (arr Array[A]) From(n int) Array[A] {
 
 func (arr Array[A]) Froms(n int) []A { return arr.From(n).Value }
 
-func Flag(arr Array[String], flag String, alt ...String) (Array[String], bool) {
+func Flag(arr Array[String], flags ...String) (Array[String], bool) {
+	pred := Is(flags...)
 	new_arr := make([]String, 0, len(arr.Value))
 	for i, val := range arr.Value {
-		if val == flag {
+		if pred(val) {
 			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
 		}
 		new_arr = append(new_arr, val)
@@ -150,3 +186,61 @@ func (arr Array[A]) Flag(fn Pred[A]) (Array[A], bool) {
 
 	return ToArray(new_arr), false
 }
+
+func Seen[K comparable]() func(K) bool {
+	seen := make(map[K]any)
+	return func(k K) bool {
+		_, ok := seen[k]
+		if ok {
+			return true
+		}
+		seen[k] = nil
+		return false
+	}
+}
+
+// TODO: add UniqueBy
+func Unique[K comparable](slice []K) []K { return Filter(Not(Seen[K]()))(slice) }
+
+// TODO: add UniqueBy
+func (arr Array[A]) Unique() Array[A] {
+	var a A
+	switch any(a).(type) {
+	case string:
+		return Cast[Array[A]](Cast[Array[string]](arr).Must().Filter(Not(Seen[string]()))).Must()
+	case bool:
+		return Cast[Array[A]](Cast[Array[bool]](arr).Must().Filter(Not(Seen[bool]()))).Must()
+	case int:
+		return Cast[Array[A]](Cast[Array[int]](arr).Must().Filter(Not(Seen[int]()))).Must()
+	case uint:
+		return Cast[Array[A]](Cast[Array[uint]](arr).Must().Filter(Not(Seen[uint]()))).Must()
+	case int8:
+		return Cast[Array[A]](Cast[Array[int8]](arr).Must().Filter(Not(Seen[int8]()))).Must()
+	case uint8:
+		return Cast[Array[A]](Cast[Array[uint8]](arr).Must().Filter(Not(Seen[uint8]()))).Must()
+	case int16:
+		return Cast[Array[A]](Cast[Array[int16]](arr).Must().Filter(Not(Seen[int16]()))).Must()
+	case uint16:
+		return Cast[Array[A]](Cast[Array[uint16]](arr).Must().Filter(Not(Seen[uint16]()))).Must()
+	case int32:
+		return Cast[Array[A]](Cast[Array[int32]](arr).Must().Filter(Not(Seen[int32]()))).Must()
+	case uint32:
+		return Cast[Array[A]](Cast[Array[uint32]](arr).Must().Filter(Not(Seen[uint32]()))).Must()
+	case int64:
+		return Cast[Array[A]](Cast[Array[int64]](arr).Must().Filter(Not(Seen[int64]()))).Must()
+	case uint64:
+		return Cast[Array[A]](Cast[Array[uint64]](arr).Must().Filter(Not(Seen[uint64]()))).Must()
+	case float32:
+		return Cast[Array[A]](Cast[Array[float32]](arr).Must().Filter(Not(Seen[float32]()))).Must()
+	case float64:
+		return Cast[Array[A]](Cast[Array[float64]](arr).Must().Filter(Not(Seen[float64]()))).Must()
+	case complex64:
+		return Cast[Array[A]](Cast[Array[complex64]](arr).Must().Filter(Not(Seen[complex64]()))).Must()
+	case complex128:
+		return Cast[Array[A]](Cast[Array[complex128]](arr).Must().Filter(Not(Seen[complex128]()))).Must()
+	default:
+		return arr.Filter(Cat[A](ToString, Not(Seen[S]()))) // ¯\_(ツ)_/¯ it works, can't be bothered with reflection
+	}
+}
+
+func ToString[A any](a A) S { return P.S(a) }

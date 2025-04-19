@@ -6,10 +6,87 @@ import (
 	"strings"
 )
 
-func Pre(prefixes ...string) Selector[string] {
-	return func(s string) (res [][]int) {
+type A[T any] = Array[T]
+
+// Range returns a Selector which matches from the start, until the end.
+// TODO: what to do with recursive ranges
+// TODO: what to do with unfinished/incorrect ranges (starts, no end, end before start)
+func Range(start, end Pred[S]) Selector[A[S]] {
+	return func(s A[S]) [][]int {
+		r := [][]int{}
+		curr := []int{}
+		var started bool
+		for ind, value := range s.Value {
+			if started {
+				if !end(value) {
+					continue
+				}
+				curr = append(curr, ind)
+				r = append(r, curr)
+				curr = []int{}
+				started = false
+				continue
+			}
+			if start(value) {
+				started = true
+				curr = append(curr, ind)
+			}
+		}
+		return r
+	}
+}
+
+func RangeSel(start, end Selector[S]) Selector[A[S]] {
+	return func(s A[S]) [][]int {
+		r := [][]int{}
+		curr := []int{}
+		var started bool
+		for ind, value := range s.Value {
+			if started {
+				if len(end(value)) == 0 {
+					continue
+				}
+				curr = append(curr, ind)
+				r = append(r, curr)
+				curr = []int{}
+				started = false
+				continue
+			}
+			if len(start(value)) > 1 {
+				started = true
+				curr = append(curr, ind)
+			}
+		}
+		return r
+	}
+}
+
+func Pattern[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
+	return func(value A) A {
+		selected := selector(value)
+		result := actor(value, selected)
+		return result
+	}
+}
+
+func JoinWith(delim S) func(arr A[S], sel [][]int) A[S] {
+	return func(arr A[S], sel [][]int) A[S] {
+		res := []S{}
+		var last int
+		for _, selection := range sel {
+			res = append(res, arr.Value[last:selection[0]]...)
+			res = append(res, ToArray(arr.Value[selection[0]:selection[1]+1]).Join(delim))
+			last = selection[1] + 1
+		}
+		res = append(res, arr.Value[last:]...)
+		return ToArray(res)
+	}
+}
+
+func Pre(prefixes ...String) Selector[String] {
+	return func(s String) (res [][]int) {
 		for _, prefix := range prefixes {
-			if strings.HasPrefix(s, prefix) {
+			if strings.HasPrefix(string(s), string(prefix)) {
 				return [][]int{{0, len(prefix)}}
 			}
 		}
@@ -17,10 +94,10 @@ func Pre(prefixes ...string) Selector[string] {
 	}
 }
 
-func Suf(suffixes ...string) Selector[string] {
-	return func(s string) (res [][]int) {
+func Suf(suffixes ...String) Selector[String] {
+	return func(s String) (res [][]int) {
 		for _, suffix := range suffixes {
-			if strings.HasSuffix(s, suffix) {
+			if strings.HasSuffix(string(s), string(suffix)) {
 				return [][]int{{len(s) - len(suffix), len(s)}}
 			}
 		}
@@ -28,8 +105,12 @@ func Suf(suffixes ...string) Selector[string] {
 	}
 }
 
-func Rgx[S ~string](pattern string) Selector[S] {
-	re := regexp.MustCompile(pattern)
+func SelToPred[A any](selector Selector[A]) Pred[A] {
+	return func(input A) bool { return len(selector(input)) > 0 }
+}
+
+func Rgx(pattern S) Selector[S] {
+	re := regexp.MustCompile(string(pattern))
 	return func(s S) (res [][]int) {
 		return re.FindAllStringIndex(string(s), -1)
 	}
@@ -100,8 +181,8 @@ func ReplaceRanges[S ~string](tar S, rep S, ranges [][]int) S {
 		copy(sortedRanges[i], r)
 	}
 
-	for i := 0; i < len(sortedRanges); i++ {
-		for j := i + 1; j < len(sortedRanges); j++ {
+	for i := range len(sortedRanges) {
+		for j := range len(sortedRanges) {
 			if sortedRanges[i][0] < sortedRanges[j][0] {
 				sortedRanges[i], sortedRanges[j] = sortedRanges[j], sortedRanges[i]
 			}

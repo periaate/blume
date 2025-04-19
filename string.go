@@ -21,45 +21,49 @@ func Joins[S ~string](arr Array[S], arg string) S {
 
 type String string
 
+func (s S) In(a Array[S]) bool { return a.First(Is(s)).IsOk() }
+
 func (s String) Map(args ...func(String) String) String  { return Pipe(args...)(s) }
 func (s String) Maps(args ...func(string) string) String { return String(Pipe(args...)(s.String())) }
-func (s String) Has(args ...Selector[string]) bool       { return Has(args...)(s.String()) }
-func (s String) Del(args ...Selector[string]) String     { return String(Del(args...)(s.String())) }
+func (s String) Has(args ...Selector[String]) bool       { return Has(args...)(s) }
+func (s String) Del(args ...Selector[String]) String     { return String(Del(args...)(s)) }
 func (s String) Rep(args ...any) String                  { return String(Rep[string](args...)(string(s))) }
 
 func (s String) Is(args ...String) bool       { return Is(args...)(String(s)) }
 func (s String) Contains(args ...String) bool { return Contains(args...)(String(s)) }
 
-// HasPrefix
-// Deprecated: Use [Has] with [Pre] instead.
-func (s String) HasPrefix(args ...string) bool { return HasPrefix(args...)(string(s)) }
-
-// HasPrefix
-// Deprecated: Use [Has] with [Suf] instead.
-func (s String) HasSuffix(args ...string) bool { return HasSuffix(args...)(string(s)) }
-
-// ReplacePrefix
-// Deprecated: Use [Rep] with [Pre] instead.
-func (s String) ReplacePrefix(pats ...string) String {
-	return String(ReplacePrefix(pats...)(string(s)))
+func (s String) EnsurePrefix(fix String) String {
+	if HasPrefix(fix)(s) {
+		return s
+	}
+	return fix + s
 }
 
-// ReplaceSuffix
-// Deprecated: Use [Has] with [Suf] instead.
-func (s String) ReplaceSuffix(pats ...string) String {
-	return String(ReplaceSuffix(pats...)(string(s)))
+func (s String) EnsureSuffix(fix String) String {
+	if HasSuffix(fix)(s) {
+		return s
+	}
+	return s + fix
 }
 
-func (s String) Replace(pats ...string) String { return String(Replace(pats...)(string(s))) }
+func EnsurePrefix(fix String) func(S) S { return func(s String) S { return s.EnsurePrefix(fix) } }
+func EnsureSuffix(fix String) func(S) S { return func(s String) S { return s.EnsureSuffix(fix) } }
 
-func (s String) ReplaceRegex(pat string, rep string) String {
-	return String(ReplaceRegex[string](pat, rep)(string(s)))
+func (s String) HasPrefix(args ...S) bool       { return HasPrefix(args...)(s) }
+func (s String) HasSuffix(args ...S) bool       { return HasSuffix(args...)(s) }
+func (s String) ReplacePrefix(pats ...S) String { return String(ReplacePrefix(pats...)(s)) }
+func (s String) ReplaceSuffix(pats ...S) String { return String(ReplaceSuffix(pats...)(s)) }
+
+func (s String) Replace(pats ...S) String { return String(Replace(pats...)((s))) }
+
+func (s String) ReplaceRegex(pat S, rep S) String {
+	return ReplaceRegex(pat, rep)(s)
 }
 
-func (s String) Shift(count int) String { return String(Shift[string](count)(string(s))) }
-func (s String) Pop(count int) String   { return String(Pop[string](count)(string(s))) }
-func (s String) Split(pats ...string) Array[String] {
-	split := Split(string(s), false, pats...)
+func (s String) Shift(count int) String { return Shift(count)(s) }
+func (s String) Pop(count int) String   { return Pop(count)(s) }
+func (s String) Split(keep bool, pats ...String) Array[String] {
+	split := Split(s, false, pats...)
 	res := make([]String, len(split))
 	for i, v := range split {
 		res[i] = String(v)
@@ -83,9 +87,9 @@ func IsURL[S ~string](val S) bool {
 	return String(val).Contains("://") // giga scuff
 }
 
-func GetPath[S ~string](val S) S { return Del(Rgx[S](`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
-func GetDomain[S ~string](val S) S {
-	return ReplaceRegex[S](`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
+func GetPath(val S) S { return Del(Rgx(`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
+func GetDomain(val S) S {
+	return ReplaceRegex(`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
 }
 
 func (s String) Entries() Result[Array[String]]    { return Entries(s) }
@@ -128,6 +132,11 @@ func (s String) Or(Default string) String {
 func (s String) Len() int       { return len(string(s)) }
 func (s String) String() string { return string(s) }
 
+func (s String) Read() Result[String] {
+	bar, err := os.ReadFile(string(s.Path()))
+	return Auto(S(bar), err)
+}
+
 func (s String) Colorize(colorCode int) String { return String(color.Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }
@@ -146,15 +155,17 @@ func Whitespaces() []string { return []string{"\r\n", "\n\r", " ", "\t", "\n", "
 func ToUpper(s String) String { return S(strings.ToUpper(string(s))) }
 func ToLower(s String) String { return S(strings.ToLower(string(s))) }
 
-func Trim(s string) string                      { return strings.Trim(s, " ") }
+func Trim(delim String) func(S) S {
+	return func(s S) S { return S(strings.Trim(s.String(), delim.String())) }
+}
 func TrimPrefix(prefix string, s string) string { return strings.TrimPrefix(s, prefix) }
 func TrimSuffix(suffix string, s string) string { return strings.TrimSuffix(s, suffix) }
 func TrimSpace[S ~string](s S) S                { return S(strings.TrimSpace(string(s))) }
 
-func TrimPrefixes[S, A ~string](pats ...A) func(S) S {
+func TrimPrefixes(pats ...S) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
-			if HasPrefix(pat)(A(inp)) {
+			if HasPrefix(pat)(inp) {
 				return S(strings.TrimPrefix(string(inp), string(pat)))
 			}
 		}
@@ -162,10 +173,10 @@ func TrimPrefixes[S, A ~string](pats ...A) func(S) S {
 	}
 }
 
-func TrimSuffixes[A, S ~string](pats ...A) func(S) S {
+func TrimSuffixes(pats ...S) func(S) S {
 	return func(inp S) S {
 		for _, pat := range pats {
-			if HasSuffix(pat)(A(inp)) {
+			if HasSuffix(pat)(inp) {
 				return S(strings.TrimSuffix(string(inp), string(pat)))
 			}
 		}

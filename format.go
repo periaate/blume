@@ -30,7 +30,7 @@ var (
 )
 
 func HexToRGB(hex string) (int64, int64, int64) {
-	hex = Del(Rgx[string]("^#"))(hex)
+	hex = string(Del(Rgx("^#"))(S(hex)))
 
 	r := Parse[int64](hex[0:2], 16).Or(255)
 	g := Parse[int64](hex[2:4], 16).Or(255)
@@ -113,3 +113,19 @@ func (f String) Checkbox(done bool, args ...any) String {
 		f.Color(color.Warning, symbols.CheckboxEmpty),
 	).S(args...)
 }
+func (s String) Green() String        { return String(color.Colorize(color.Green, string(s))) }
+func (s String) LightGreen() String   { return String(color.Colorize(color.LightGreen, string(s))) }
+func (s String) Yellow() String       { return String(color.Colorize(color.Yellow, string(s))) }
+func (s String) LightYellow() String  { return String(color.Colorize(color.LightYellow, string(s))) }
+func (s String) Red() String          { return color.Colorize(color.Red, s) }
+func (s String) LightRed() String     { return color.Colorize(color.LightRed, s) }
+func (s String) Blue() String         { return color.Colorize(color.Blue, s) }
+func (s String) LightBlue() String    { return color.Colorize(color.LightBlue, s) }
+func (s String) Cyan() String         { return color.Colorize(color.Cyan, s) }
+func (s String) LightCyan() String    { return color.Colorize(color.LightCyan, s) }
+func (s String) Magenta() String      { return color.Colorize(color.Magenta, s) }
+func (s String) LightMagenta() String { return color.Colorize(color.LightMagenta, s) }
+func (s String) White() String        { return color.Colorize(color.White, s) }
+func (s String) Black() String        { return color.Colorize(color.Black, s) }
+func (s String) Gray() String         { return color.Colorize(color.DarkGray, s) }
+func (s String) LightGray() String    { return color.Colorize(color.LightGray, s) }

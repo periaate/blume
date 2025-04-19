@@ -1,6 +1,9 @@
 package blume
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 func (s String) ToInt() Option[int]         { return ToInt(s) }
 func (s String) ToInt8() Option[int8]       { return ToInt8(s) }
@@ -14,6 +17,29 @@ func (s String) ToUint32() Option[uint32]   { return ToUint32(s) }
 func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
 func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
 func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
+
+func ToAuto[A, B any](fn func(A) (B, error)) func(A) Result[B] {
+	return func(a A) Result[B] { return Auto(fn(a)) }
+}
+func ToAutos[A, B any](fn func(A) (B, error)) func(A) B {
+	return func(a A) B { return Auto(fn(a)).Must() }
+}
+
+func (s String) ParseDuration() Result[time.Duration] {
+	var value time.Duration
+	for _, v := range s.Split(false, " ").Value {
+		var res time.Duration
+		res, err := time.ParseDuration(v.String())
+		if err != nil {
+			return Auto(value, err)
+		}
+		value += res
+	}
+
+	return Ok(value)
+}
+
+func (s String) ParsesDuration() time.Duration { return s.ParseDuration().Must() }
 
 func Parse[N Integer | Float](s string, args ...any) Option[N] {
 	var a N
