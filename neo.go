@@ -4,14 +4,36 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/farmergreg/rfsnotify"
 	"github.com/fsnotify/fsnotify"
 )
 
+func IsNillable[A any](val A) bool {
+	switch any(val).(type) {
+	case error, uintptr, map[any]any, []any, chan any:
+		return true
+	default:
+		return false
+	}
+}
+
+func IsNil[A any](val A) bool {
+	switch value := any(val).(type) {
+	case error, uintptr, map[any]any, []any, chan any:
+		return value == nil
+	default:
+		return false
+	}
+}
+
 func Auto[A any](value A, handles ...any) Result[A] {
 	if IsOk(value, handles...) {
+		return Ok(value)
+	}
+	if IsNil(value) {
 		return Ok(value)
 	}
 	return Err[A](handles...)
@@ -83,15 +105,20 @@ func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
 	go func() {
 		for {
 			ev := <-rw.Events
-			if f(fsnotify.Op(ev.Op)) {
+			// I don't know why, but many create events are suffixed with `~`, as well as many events being duplicated
+			if f(fsnotify.Op(ev.Op)) && !HasSuffix("~")(S(ev.Name)) {
 				fn(S(ev.Name))
 			}
 		}
 	}()
 
 	return func(s S) {
+		s = s.Path()
 		if recursive {
-			Auto(rw.AddRecursive(s.String())).Must()
+			err := rw.AddRecursive(s.String())
+			if err != nil {
+				panic("AddRecursive return non nil error: " + err.Error())
+			}
 		} else {
 			Auto(rw.Add(s.String())).Must()
 		}
@@ -100,4 +127,32 @@ func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
 
 func (s String) Serve(handler ...http.Handler) Result[any] {
 	return Auto[any](nil, http.ListenAndServe(s.String(), ToArray(handler).Get(0).Or(nil)))
+}
+
+func DebounceMap[K comparable](callback func(K), dur time.Duration) func(K) {
+	var mu sync.Mutex
+	pending := make(map[K]time.Time)
+
+	go func() {
+		ticker := time.NewTicker(dur / 2)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			now := time.Now()
+			mu.Lock()
+			for k, timestamp := range pending {
+				if now.Sub(timestamp) >= dur {
+					go callback(k)
+					delete(pending, k)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
+
+	return func(key K) {
+		mu.Lock()
+		pending[key] = time.Now()
+		mu.Unlock()
+	}
 }

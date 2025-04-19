@@ -30,7 +30,7 @@ var (
 )
 
 func HexToRGB(hex string) (int64, int64, int64) {
-	hex = Del(Rgx[string]("^#"))(hex)
+	hex = string(Del(Rgx("^#"))(S(hex)))
 
 	r := Parse[int64](hex[0:2], 16).Or(255)
 	g := Parse[int64](hex[2:4], 16).Or(255)

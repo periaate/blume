@@ -9,6 +9,12 @@ import (
 	"syscall"
 )
 
+const (
+	SIGTERM = syscall.SIGTERM
+	SIGKILL = syscall.SIGKILL
+	SIGINT  = syscall.SIGINT
+)
+
 type Cmd struct {
 	Name String
 	opts CmdOption
@@ -149,6 +155,12 @@ func (prev CmdOption) Signal(fn func(func(os.Signal) error)) CmdOption {
 		})
 		return cmd
 	}
+}
+
+func Sig(signals ...os.Signal) chan os.Signal {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, signals...)
+	return sigChan
 }
 
 func Signal(signals ...os.Signal) func(func(os.Signal) error) {

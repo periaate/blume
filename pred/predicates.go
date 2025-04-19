@@ -1,5 +1,7 @@
 package pred
 
+import "slices"
+
 // Not negates a predicate.
 func Not[A any](fn func(A) bool) func(A) bool { return func(arg A) bool { return !fn(arg) } }
 
@@ -53,12 +55,7 @@ func Every[A any](cond func(A) bool) func([]A) bool {
 
 func Any[A any](cond func(A) bool) func([]A) bool {
 	return func(args []A) bool {
-		for _, arg := range args {
-			if cond(arg) {
-				return true
-			}
-		}
-		return false
+		return slices.ContainsFunc(args, cond)
 	}
 }
 

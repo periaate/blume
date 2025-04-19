@@ -1,5 +1,13 @@
 package blume
 
+type Option[A any] = Either[A, bool]
+type Result[A any] = Either[A, error]
+
+type Either[A, B any] struct {
+	Value A
+	Other B
+}
+
 func Or[A any](def A, in A, handle ...any) (res A) {
 	if len(handle) != 0 {
 		last := handle[len(handle)-1]
@@ -58,11 +66,6 @@ func Mustnt[A, B any](a A, handle any) B {
 		}
 		panic(P.S("mustnt called with non nil value").S(handle))
 	}
-}
-
-type Either[A, B any] struct {
-	Value A
-	Other B
 }
 
 func (r Either[A, B]) Pass(val A) Either[A, B] {
@@ -126,4 +129,8 @@ func IsOk[A any](a A, handle ...any) bool {
 		}
 	}
 	return false
+}
+
+func AllOk[A, B any](arr []Either[A, B]) bool {
+	return Reduce(func(acc bool, cur Either[A, B]) bool { return acc && cur.IsOk() }, true)(arr)
 }

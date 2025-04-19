@@ -21,10 +21,12 @@ func Joins[S ~string](arr Array[S], arg string) S {
 
 type String string
 
+func (s S) In(a Array[S]) bool { return a.First(Is(s)).IsOk() }
+
 func (s String) Map(args ...func(String) String) String  { return Pipe(args...)(s) }
 func (s String) Maps(args ...func(string) string) String { return String(Pipe(args...)(s.String())) }
-func (s String) Has(args ...Selector[string]) bool       { return Has(args...)(s.String()) }
-func (s String) Del(args ...Selector[string]) String     { return String(Del(args...)(s.String())) }
+func (s String) Has(args ...Selector[String]) bool       { return Has(args...)(s) }
+func (s String) Del(args ...Selector[String]) String     { return String(Del(args...)(s)) }
 func (s String) Rep(args ...any) String                  { return String(Rep[string](args...)(string(s))) }
 
 func (s String) Is(args ...String) bool       { return Is(args...)(String(s)) }
@@ -47,25 +49,10 @@ func (s String) EnsureSuffix(fix String) String {
 func EnsurePrefix(fix String) func(S) S { return func(s String) S { return s.EnsurePrefix(fix) } }
 func EnsureSuffix(fix String) func(S) S { return func(s String) S { return s.EnsureSuffix(fix) } }
 
-// HasPrefix
-// Deprecated: Use [Has] with [Pre] instead.
-func (s String) HasPrefix(args ...S) bool { return HasPrefix(args...)(s) }
-
-// HasPrefix
-// Deprecated: Use [Has] with [Suf] instead.
-func (s String) HasSuffix(args ...S) bool { return HasSuffix(args...)(s) }
-
-// ReplacePrefix
-// Deprecated: Use [Rep] with [Pre] instead.
-func (s String) ReplacePrefix(pats ...S) String {
-	return String(ReplacePrefix(pats...)(s))
-}
-
-// ReplaceSuffix
-// Deprecated: Use [Has] with [Suf] instead.
-func (s String) ReplaceSuffix(pats ...S) String {
-	return String(ReplaceSuffix(pats...)(s))
-}
+func (s String) HasPrefix(args ...S) bool       { return HasPrefix(args...)(s) }
+func (s String) HasSuffix(args ...S) bool       { return HasSuffix(args...)(s) }
+func (s String) ReplacePrefix(pats ...S) String { return String(ReplacePrefix(pats...)(s)) }
+func (s String) ReplaceSuffix(pats ...S) String { return String(ReplaceSuffix(pats...)(s)) }
 
 func (s String) Replace(pats ...S) String { return String(Replace(pats...)((s))) }
 
@@ -75,7 +62,7 @@ func (s String) ReplaceRegex(pat S, rep S) String {
 
 func (s String) Shift(count int) String { return Shift(count)(s) }
 func (s String) Pop(count int) String   { return Pop(count)(s) }
-func (s String) Split(pats ...String) Array[String] {
+func (s String) Split(keep bool, pats ...String) Array[String] {
 	split := Split(s, false, pats...)
 	res := make([]String, len(split))
 	for i, v := range split {
@@ -100,7 +87,7 @@ func IsURL[S ~string](val S) bool {
 	return String(val).Contains("://") // giga scuff
 }
 
-func GetPath(val S) S { return Del(Rgx[S](`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
+func GetPath(val S) S { return Del(Rgx(`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
 func GetDomain(val S) S {
 	return ReplaceRegex(`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
 }
