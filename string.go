@@ -62,14 +62,11 @@ func (s String) ReplaceRegex(pat S, rep S) String {
 
 func (s String) Shift(count int) String { return Shift(count)(s) }
 func (s String) Pop(count int) String   { return Pop(count)(s) }
-func (s String) Split(keep bool, pats ...String) Array[String] {
-	split := Split(s, false, pats...)
-	res := make([]String, len(split))
-	for i, v := range split {
-		res[i] = String(v)
-	}
-	return ToArray(res)
-}
+
+func (s String) SplitRegex(pat S) Array[String]                { return ToArray(SplitRegex(pat)(s)) }
+func (s String) SplitsRegex(pat S) []String                    { return SplitRegex(pat)(s) }
+func (s String) Split(keep bool, pats ...String) Array[String] { return ToArray(Split(s, false, pats...)) }
+func (s String) Splits(keep bool, pats ...String) []String     { return Split(s, keep, pats...) }
 
 func IsArray[A any](arg any) bool {
 	if arg == nil {
@@ -80,6 +77,7 @@ func IsArray[A any](arg any) bool {
 }
 
 type S = String
+type E = error
 
 func (f String) Errorf(args ...any) error { return fmt.Errorf("%s", f.S(args...)) }
 

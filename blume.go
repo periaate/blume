@@ -78,6 +78,8 @@ func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
 // Not negates a [Predicate].
 func Not[A any](fn Pred[A]) Pred[A] { return func(t A) bool { return !fn(t) } }
 
+func IsEvery[C comparable](args ...C) func(C) bool { return PredAnd(Map(V2M[C](Is))(args)...) }
+
 // Is returns a [Predicate] that checks if the argument is in the list.
 func Is[C comparable](A ...C) func(C) bool {
 	in := make(map[C]bool, len(A))
@@ -191,6 +193,14 @@ func Contains(args ...S) func(S) bool {
 			}
 		}
 		return false
+	}
+}
+
+func Includes[K comparable](inclusive bool) func(args ...K) func([]K) bool {
+	return func(args ...K) func([]K) bool {
+		var pred Pred[K]
+		if inclusive { pred = Is(args...) } else { pred = IsEvery(args...) }
+		return func(arr []K) bool { return slices.ContainsFunc(arr, pred) }
 	}
 }
 

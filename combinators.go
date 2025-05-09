@@ -9,3 +9,31 @@ func T[A any](ok bool, a A, b A) A {
 	}
 }
 func Thunk[A, B any](val A) func(_ B) A { return func(_ B) A { return val } }
+
+func V2M[A, B any](fn func(...A) B) func(A) B { return func(arg A) B { return fn(arg) }}
+
+// type Ifs[A any] func(bool) A
+
+// func If[A any]() Ifs[A] { return func(b bool) (res A) { return } }
+
+// func (i Ifs[A]) Then(arg A) Ifs[A] {
+// 	return func(input bool) (output A) {
+// 		if input { return arg }
+// 		return i(input)
+// 	}
+// }
+//
+// func (i Ifs[A]) Else(arg A) Ifs[A] {
+// 	return func(input bool) (output A) {
+// 		if !input { return arg }
+// 		return i(input)
+// 	}
+// }
+
+func If[A any](ok bool, a A, b A) A {
+	if ok {
+		return a
+	} else {
+		return b
+	}
+}

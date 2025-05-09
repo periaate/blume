@@ -1,15 +1,17 @@
 package symbols
 
-const InProgress string = "󰔟"    // Process icon
-const Success string = "󰄬"       // Check mark
-const Error string = "󰅖"         // X mark
-const Warning string = "󰀦"       // Warning sign
-const Waiting string = "󰔟"       // Clock icon
-const Pending string = "󰏫"       // Dot icon
-const Cancelled string = "󰅗"     // Cancelled icon
-const Info string = "󰋼"          // Info icon
-const Question string = "󰋖"      // Question mark
-const Debug string = "󱁢"         // Bug icon
-const Lock string = "󰍁"          // Lock icon
-const CheckboxEmpty string = "󰄱" // Empty checkbox
-const CheckboxDone string = "󰄲"  // Checked checkbox
+var (
+	InProgress string = "󰔟"    // Process icon
+	Success string = "󰄬"       // Check mark
+	Error string = "󰅖"         // X mark
+	Warning string = "󰀦"       // Warning sign
+	Waiting string = "󰔟"       // Clock icon
+	Pending string = "󰏫"       // Dot icon
+	Cancelled string = "󰅗"     // Cancelled icon
+	Info string = "󰋼"          // Info icon
+	Question string = "󰋖"      // Question mark
+	Debug string = "󱁢"         // Bug icon
+	Lock string = "󰍁"          // Lock icon
+	CheckboxEmpty string = "󰄱" // Empty checkbox
+	CheckboxDone string = "󰄲"  // Checked checkbox
+)

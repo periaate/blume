@@ -256,15 +256,17 @@ func (c Cmd) Exec() Result[int] {
 
 	err = cmd.Wait()
 
+
 	if err == nil {
 		return Ok(0)
 	}
-	if exitError, ok := err.(*exec.ExitError); ok {
-		if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
-			return Ok(status.ExitStatus())
-		}
-	}
-	return Err[int](err)
+	return Err[int](cmd.ProcessState.ExitCode())
+	// if exitError, ok := err.(*exec.ExitError); ok {
+	// 	if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+	// 		return Ok(status.ExitStatus())
+	// 	}
+	// }
+	// return Err[int](err)
 }
 
 // func Exec[S ~string](name S, args ...S) *Command {

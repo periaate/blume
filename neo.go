@@ -66,6 +66,7 @@ func (p String) WriteFile(bytes []byte, n os.FileMode) Result[String] {
 	return Auto(p, os.WriteFile(p.String(), bytes, n))
 }
 
+// SplitRegex keeps matches
 func SplitRegex(pattern String) func(input String) []String {
 	return func(input String) []String {
 		re := regexp.MustCompile(pattern.String())

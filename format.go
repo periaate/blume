@@ -15,6 +15,8 @@ func Logf[A any](format string, args ...any) func(A) {
 	return func(arg A) { fmt.Printf(format, append(args, any(arg))...) }
 }
 
+func Logt[A any](args ...any) func(A) A { return func(arg A) A { fmt.Print(args...); return arg } }
+
 // Turn these into consts at some point when you feel like manually transferring everything from hex to rgb
 var (
 	Info       String = P.Color(color.Info, symbols.Info).W()
@@ -58,6 +60,7 @@ const P String = ""
 
 func (f String) N() String { return f + "\n" }
 func (f String) R() String { return f + "\r" }
+func (f String) T() String { return f + "\t" }
 
 func (f String) Up(lines ...int) String { return f + String(Up(ToArray(lines).Get(0).Or(1))) }
 func (f String) Clean() String          { return f + String(Clean()) }
@@ -82,29 +85,29 @@ var spinChars = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧",
 
 func (f String) Spin(i int) String { return f + String(spinChars[i%len(spinChars)]) + " " }
 
-func (f String) Info(args ...any) String { return f.Color(color.Info, symbols.Info).W().S(args...) }
-func (f String) Lock(args ...any) String { return f.Color(color.Warning, symbols.Lock).W().S(args...) }
+func (f String) Info(args ...any) String { return Info.S(args...) }
+func (f String) Lock(args ...any) String { return Warning.S(args...) }
 func (f String) Debug(args ...any) String {
-	return f.Color(color.Pending, symbols.Debug).W().S(args...)
+	return Debug.S(args...)
 }
-func (f String) Error(args ...any) String { return f.Color(color.Error, symbols.Error).W().S(args...) }
+func (f String) Error(args ...any) String { return Error.S(args...) }
 func (f String) Success(args ...any) String {
-	return f.Color(color.Success, symbols.Success).W().S(args...)
+	return Success.S(args...)
 }
 func (f String) Warning(args ...any) String {
-	return f.Color(color.Warning, symbols.Warning).W().S(args...)
+	return Warning.S(args...)
 }
 func (f String) Waiting(args ...any) String {
-	return f.Color(color.Waiting, symbols.Waiting).W().S(args...)
+	return Waiting.S(args...)
 }
 func (f String) Question(args ...any) String {
-	return f.Color(color.Info, symbols.Question).W().S(args...)
+	return Info.S(args...)
 }
 func (f String) Cancelled(args ...any) String {
-	return f.Color(color.Error, symbols.Cancelled).W().S(args...)
+	return Error.S(args...)
 }
 func (f String) InProgress(args ...any) String {
-	return f.Color(color.Pending, symbols.InProgress).W().S(args...)
+	return InProgress.S(args...)
 }
 
 func (f String) Checkbox(done bool, args ...any) String {
