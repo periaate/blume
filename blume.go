@@ -53,6 +53,16 @@ func Map[A, B any](fn func(A) B) func([]A) []B {
 	}
 }
 
+func AMap[A, B any](fn func(A) B) func(Array[A]) Array[B] {
+	return func(args Array[A]) Array[B] {
+		res := make([]B, 0, len(args.Value))
+		for _, arg := range args.Value {
+			res = append(res, fn(arg))
+		}
+		return ToArray(res)
+	}
+}
+
 func Maps[A, B any](fn func(A) B) func([]A) Array[B] { return Cat(Map(fn), ToArray) }
 
 func FlatMap[A, B any](fn func(A) []B) func([]A) []B {
@@ -75,8 +85,25 @@ func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
 	}
 }
 
+func Fold[A any, B any](fn func(B, A) B, init ...B) func([]A) B {
+	var in B
+	if len(init) > 0 { in = init[0] }
+	return func(args []A) B {
+		res := in
+		for _, arg := range args {
+			res = fn(res, arg)
+		}
+		return res
+	}
+}
+
 // Not negates a [Predicate].
 func Not[A any](fn Pred[A]) Pred[A] { return func(t A) bool { return !fn(t) } }
+
+func IsZero[K comparable](a K) bool {
+	var def K
+	return a == def
+}
 
 func IsEvery[C comparable](args ...C) func(C) bool { return PredAnd(Map(V2M[C](Is))(args)...) }
 

@@ -135,6 +135,8 @@ func (s String) Read() Result[String] {
 	return Auto(S(bar), err)
 }
 
+func (s String) Open() Result[*os.File] { return Auto(os.Open(string(s))) }
+
 func (s String) Colorize(colorCode int) String { return String(color.Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }
 func (s String) ToLower() String               { return String(strings.ToLower(string(s))) }

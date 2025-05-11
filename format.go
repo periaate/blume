@@ -19,16 +19,16 @@ func Logt[A any](args ...any) func(A) A { return func(arg A) A { fmt.Print(args.
 
 // Turn these into consts at some point when you feel like manually transferring everything from hex to rgb
 var (
-	Info       String = P.Color(color.Info, symbols.Info).W()
-	Lock       String = P.Color(color.Warning, symbols.Lock).W()
-	Debug      String = P.Color(color.Pending, symbols.Debug).W()
-	Error      String = P.Color(color.Error, symbols.Error).W()
-	Success    String = P.Color(color.Success, symbols.Success).W()
-	Warning    String = P.Color(color.Warning, symbols.Warning).W()
-	Waiting    String = P.Color(color.Waiting, symbols.Waiting).W()
-	Question   String = P.Color(color.Info, symbols.Question).W()
-	Cancelled  String = P.Color(color.Error, symbols.Cancelled).W()
-	InProgress String = P.Color(color.Pending, symbols.InProgress).W()
+	Info       String = P.Color(color.Info, symbols.Info)
+	Lock       String = P.Color(color.Warning, symbols.Lock)
+	Debug      String = P.Color(color.Pending, symbols.Debug)
+	Error      String = P.Color(color.Error, symbols.Error)
+	Success    String = P.Color(color.Success, symbols.Success)
+	Warning    String = P.Color(color.Warning, symbols.Warning)
+	Waiting    String = P.Color(color.Waiting, symbols.Waiting)
+	Question   String = P.Color(color.Info, symbols.Question)
+	Cancelled  String = P.Color(color.Error, symbols.Cancelled)
+	InProgress String = P.Color(color.Pending, symbols.InProgress)
 )
 
 func HexToRGB(hex string) (int64, int64, int64) {
@@ -68,10 +68,15 @@ func (f String) S(args ...any) String   { return f + String(fmt.Sprint(args...))
 func (f String) F(format String, args ...any) String {
 	return f + String(fmt.Sprintf(format.String(), args...))
 }
+
+func (f String) SelfF(format String, args ...any) String {
+	return String(fmt.Sprintf(format.String(), Prepend[any](f, args)...))
+}
 func (f String) W() String { return f + String(" ") }
 
 func (f String) Print(args ...any) String   { fmt.Printf("%s%s", f, fmt.Sprint(args...)); return f }
 func (f String) Println(args ...any) String { fmt.Printf("%s%s", f, fmt.Sprintln(args...)); return f }
+func (f String) Printsln(s S) String { fmt.Println("%s%s", f, s); return f }
 func (f String) Printf(format string, args ...any) String {
 	fmt.Printf("%s%s", f, fmt.Sprintf(format, args...))
 	return f

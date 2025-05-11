@@ -79,6 +79,8 @@ func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 	return res.Fail()
 }
 
+func (arr Array[A]) Then(fn func(Array[A]) Array[A]) Array[A] { return fn(arr) }
+
 func (arr Array[A]) Map(fn func(A) A) Array[A] {
 	res := make([]A, len(arr.Value))
 	for i, val := range arr.Value {
@@ -101,6 +103,14 @@ func (arr Array[A]) Each(fn func(A)) Array[A] {
 		fn(value)
 	}
 	return arr
+}
+
+func Each[A any](fn func(A)) func(Array[A]) {
+	return func(arr Array[A]) {
+		for _, value := range arr.Value {
+			fn(value)
+		}
+	}
 }
 
 // Join fuck it everything is just strings now
@@ -237,5 +247,25 @@ func Pair[A any](arr Array[A]) (res Result[Array[Array[A]]]) {
 	}
 	return res.Pass(Array[Array[A]]{Value: arrs})
 }
+
+func Pairs[A any](arr Array[A]) (res Array[Array[A]]) {
+	l := len(arr.Value)
+	if l%2 != 0 { Exit("pairs called with an uneven array") }
+	arrs := make([]Array[A], 0, l/2)
+	for i := range l/2 {
+		n := i*2
+		arrs = append(arrs, Array[A]{ Value: []A{ arr.Value[n], arr.Value[n+1] } })
+	}
+	return Array[Array[A]]{Value: arrs}
+}
+
+func ArrayFlat[A any](arr Array[Array[A]]) Array[A] {
+	res := Arr[A]()
+	for _, a := range arr.Value {
+		res = res.JoinAfter(a)
+	}
+	return res
+}
+
 
 

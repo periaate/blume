@@ -3,6 +3,8 @@ package blume
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -106,6 +108,47 @@ type Directory string
 
 func Dir[S ~string](root S) Directory { return Directory(root) }
 
+func (d Directory) Serve() http.Handler {
+	s := S(d)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.Path(S(r.URL.EscapedPath())).Rep(Rgx(`(\.+)`), ".", Pre("~"), "").Open().Then(func(f *os.File) *os.File {
+			defer f.Close()
+			io.Copy(w, f)
+			return f
+		})
+	})
+}
+
+func Muxes(src, pat S, muxs ...*http.ServeMux) *http.ServeMux {
+	var mux *http.ServeMux
+	if len(muxs) > 0 {
+		mux = muxs[0]
+	}
+	if mux == nil { mux = http.DefaultServeMux }
+	rgx1 := ReplaceRegex(`(\.+)`, ".")
+	rgx2 := ReplaceRegex("~", "")
+	rep := ReplacePrefix(pat, "")
+	s := string(src)
+	mux.Handle(string(pat.Println()), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := rgx1(S(r.URL.EscapedPath()))
+		path = rgx2(path)
+		path = rep(path)
+
+		f, err := os.Open(filepath.Join(s, string(path)))
+		if err != nil {
+			f, err = os.Open(filepath.Join(s, string(path.EnsureSuffix("/")) + "index.html"))
+			if err != nil {
+				http.Error(w, err.Error(), 400)
+				return
+			}
+		}
+
+		defer f.Close()
+		io.Copy(w, f) 
+	}))
+	return mux
+}
+
 func (d Directory) Read() Result[Array[String]] {
 	if res, err := fsio.ReadDir(string(d)); err == nil {
 		return Ok(ToArray(Map(func(file fsio.Entry) String {
@@ -147,6 +190,8 @@ func Read(sar ...S) Result[String] {
 }
 
 func Reads(filepath String) String { return Read(filepath).Must() }
+
+func (s S) And(fns ...func(S) bool) bool { return PredAnd(fns...)(s) }
 
 func Path(sar ...S) String {
 	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)

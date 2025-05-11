@@ -47,3 +47,15 @@ func FanInWriter(w io.Writer) (func(), func() io.Writer) {
 
 	return shutdown, newWriter
 }
+
+func CopyTo(dst io.Writer) func(src Reader) Result[int64] {
+	return func(src Reader) Result[int64] { return Auto(io.Copy(dst, src)) }
+}
+
+func CopiesTo(dst io.Writer) func(src Reader) { return func(src Reader) { _, err := io.Copy(dst, src); if err != nil { panic(err) } } }
+
+// func CopyTo(src Reader) func(dst Writer) Result[int64] {
+// 	return func(dst Writer) Result[int64] { return Auto(io.Copy(dst, src)) }
+// }
+//
+// func CopiesTo(src Reader) func(dst Writer) { return func(dst Writer) { io.Copy(dst, src) } }
