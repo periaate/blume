@@ -58,6 +58,20 @@ func (prev CmdOption) Env(key, val String) CmdOption {
 	}
 }
 
+func (prev CmdOption) Sid(val bool) CmdOption {
+	return func(cmd *exec.Cmd) *exec.Cmd {
+		if cmd == nil {
+			return cmd
+		}
+		cmd = prev(cmd)
+		if cmd.SysProcAttr == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{}
+		}
+		cmd.SysProcAttr.Setsid = val
+		return cmd
+	}
+}
+
 func (prev CmdOption) Pgid(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
@@ -232,41 +246,30 @@ func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 	}
 }
 
-func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] {
-	return Exec(name, opts...).Exec()
-}
+func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }
 
 func (c Cmd) Run() Result[String] {
 	cmd := exec.Command(c.Name.String())
 	cmd = c.opts(cmd)
 	out, err := cmd.Output()
-	if err != nil {
-		return Err[String](err)
-	}
+	if err != nil { return Err[String](err) }
 	return Ok(String(out))
 }
 
 func (c Cmd) Exec() Result[int] {
 	cmd := exec.Command(c.Name.String())
 	cmd = c.opts(cmd)
-	err := cmd.Start()
-	if err != nil {
-		return Err[int](err)
-	}
-
-	err = cmd.Wait()
-
-
-	if err == nil {
-		return Ok(0)
-	}
+	if err := cmd.Start(); err != nil { return Err[int](err) }
+	if cmd.Wait() == nil { return Ok(0) }
 	return Err[int](cmd.ProcessState.ExitCode())
-	// if exitError, ok := err.(*exec.ExitError); ok {
-	// 	if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
-	// 		return Ok(status.ExitStatus())
-	// 	}
-	// }
-	// return Err[int](err)
+}
+
+func (c Cmd) Start() Result[*exec.Cmd] {
+	cmd := exec.Command(c.Name.String())
+	cmd = c.opts(cmd)
+	err := cmd.Start()
+	if err != nil { return Err[*exec.Cmd](err) }
+	return Ok(cmd)
 }
 
 // func Exec[S ~string](name S, args ...S) *Command {
