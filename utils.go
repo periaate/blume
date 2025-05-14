@@ -22,3 +22,10 @@ func OrExit[A, B any](either Either[A, B], args ...any) (res A) {
 	}
 	return either.Value
 }
+
+func OrExits[A, B any](either Either[A, B]) (res A) {
+	if !either.IsOk() {
+		Exit(P.Printf("%v", either.Other))
+	}
+	return either.Value
+}

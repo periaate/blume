@@ -1,6 +1,7 @@
 package blume
 
 func Through[A any](fn func(A)) func(A) A { return func(arg A) A { fn(arg); return arg } }
+func Ignore[A any](fn func(A) A) func(A) { return func(arg A) { fn(arg) } }
 func T[A any](ok bool, a A, b A) A {
 	if ok {
 		return a

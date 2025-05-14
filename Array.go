@@ -2,6 +2,7 @@ package blume
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 // func Join(elems []String, sep String) String {
@@ -22,6 +23,17 @@ type Array[A any] struct{ Value []A }
 func (a Array[A]) Pattern(selector Selector[Array[A]], actor func(Array[A], [][]int) Array[A]) Array[A] {
 	return Pattern(selector, actor)(a)
 }
+
+func (a Array[A]) Shuffle() Array[A] {
+	args := a.Value
+	rand.Shuffle(len(args), func(i, j int) {
+		temp := args[j]
+		args[j] = args[i]
+		args[i] = temp
+	})
+	return ToArray(args)
+}
+
 
 type Length int
 
@@ -47,6 +59,19 @@ func (arr Array[A]) Get(i int) (res Option[A]) {
 	}
 	return res.Pass(arr.Value[i])
 }
+
+func (arr Array[A]) Slice(start int, ends ...int) (res Array[A]) {
+	l := len(arr.Value)
+	if l == 0 { return }
+	c := Clamp(0, len(arr.Value))
+	if start < 0 { start = l+start }
+	if len(ends) == 0 { return ToArray(arr.Value[c(start):]) }
+	end := ToArray(ends).Gets(0)
+	if end   < 0 { end   = l+end }
+	return ToArray(arr.Value[c(start):c(end)])
+}
+
+func (arr Array[A]) Contains(a any) bool { return arr.First(Cat[A](ToString, Is(P.S(a)))).IsOk() }
 
 func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
 func (arr Array[A]) Reverse() Array[A] {
@@ -113,6 +138,26 @@ func Each[A any](fn func(A)) func(Array[A]) {
 	}
 }
 
+func ForSafe[A, B any](fn func(A)) Option[func(B) B] {
+	var b B
+	switch any(b).(type) {
+	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr })
+	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr })
+	}
+	return None[func(B) B]()
+}
+
+func For[B, A any](fn func(A)) func(B) B {
+	var b B
+	switch any(b).(type) {
+	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr }).Must()
+	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr }).Must()
+	}
+	panic("unsafe call to blume.Each; input type `B` did not match `Array[A]` or `[]A`; input type B must be array-like")
+}
+
+func Forn[B, A any](fn func(A)) func(B) { return Ignore(For[B, A](fn)) }
+
 // Join fuck it everything is just strings now
 func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(arr.Value)) }
 
@@ -122,14 +167,13 @@ func (arr Array[A]) Append(val A, rest ...A) Array[A] {
 	return ToArray(append(arr.Value, Prepend(val, rest)...))
 }
 
-func (arr Array[A]) JoinAfter(a Array[A]) Array[A] {
-	return ToArray(append(arr.Value, a.Value...))
-}
+// JoinAfter joins input after this array
+// [this, ...]
+func (this Array[A]) JoinAfter(input Array[A]) Array[A] { return Array[A]{ Value: append(this.Value, input.Value...) }}
 
-func (arr Array[A]) JoinBefore(a Array[A]) Array[A] {
-	arr.Value = append(a.Value, arr.Value...)
-	return arr
-}
+// JoinBefore joins input before this array
+// [..., this]
+func (this Array[A]) JoinBefore(input Array[A]) Array[A] { return Array[A]{ Value: append(input.Value, this.Value...) }}
 
 func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {
 	return ToArray(append(Prepend(val, rest), arr.Value...))

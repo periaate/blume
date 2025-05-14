@@ -248,6 +248,9 @@ func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 
 func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }
 
+func Run(name String, args ...String) Result[String] { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run() }
+func Runs(name String, args ...String) String { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run().Must() }
+
 func (c Cmd) Run() Result[String] {
 	cmd := exec.Command(c.Name.String())
 	cmd = c.opts(cmd)

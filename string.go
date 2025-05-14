@@ -2,6 +2,7 @@ package blume
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -76,6 +77,18 @@ func IsArray[A any](arg any) bool {
 	return kind == reflect.Array || kind == reflect.Slice
 }
 
+func IsSymlink(s S) Option[bool] {
+	stat := s.Stat()
+	if !stat.IsOk() { return None[bool]() }
+	return Some(stat.Value.Mode()&fs.ModeSymlink != 0)
+}
+
+func (s String)IsSymlink() Option[bool] {
+	stat := s.Stat()
+	if !stat.IsOk() { return None[bool]() }
+	return Some(stat.Value.Mode()&fs.ModeSymlink != 0)
+}
+
 type S = String
 type E = error
 
@@ -90,8 +103,6 @@ func GetDomain(val S) S {
 	return ReplaceRegex(`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val)
 }
 
-func (s String) Entries() Result[Array[String]]    { return Entries(s) }
-func Entries[S ~string](s S) Result[Array[String]] { return Dir(s).Read() }
 
 func (s String) Path(args ...String) String { return Path(Prepend(s, args)...) }
 
@@ -116,7 +127,10 @@ func (s String) Chdir() Result[String] {
 }
 
 func (s String) Base() String { return String(filepath.Base(string(s))) }
-func Base(s String) String    { return String(filepath.Base(string(s))) }
+func Base(s String) String { return String(filepath.Base(string(s))) }
+
+func (s String) Dir() String { return String(filepath.Dir(string(s)))+"/" }
+func Dir(s S) String { return String(filepath.Dir(string(s)))+"/" }
 
 func (s String) IsDir() bool { return fsio.IsDir(string(s)) }
 func IsDir(s String) bool    { return fsio.IsDir(string(s)) }

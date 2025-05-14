@@ -116,6 +116,7 @@ func (r Either[A, B]) Mustnt() B            { return Mustnt[A, B](r.Value, r.Oth
 func (r Either[A, B]) Or(def A) A           { return Or(def, r.Value, r.Other) }
 func (r Either[A, B]) OrDef() (def A)           { return Or(def, r.Value, r.Other) }
 func (r Either[A, B]) OrExit(args ...any) A { return OrExit(r, args...) }
+func (r Either[A, B]) OrExits() A { return OrExits(r) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }
