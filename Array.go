@@ -122,6 +122,7 @@ func (arr Array[A]) Reduce(fn func(A, A) A, initial A) A {
 }
 
 func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr.Value)) }
+func (arr Array[A]) AFlat(fn func(A) Array[A]) Array[A] { return ToArray(FlatMap(func(a A) []A { return fn(a).Value })(arr.Value)) }
 
 func (arr Array[A]) Each(fn func(A)) Array[A] {
 	for _, value := range arr.Value {

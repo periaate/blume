@@ -122,8 +122,8 @@ func (d String) Entries() Result[Array[String]] {
 	}
 }
 
-func (d String) FirstFS(pred Pred[string]) Option[String] {
-	if res, ok := fsio.First(string(d), pred); ok {
+func (d String) FirstFS(pred Pred[String]) Option[String] {
+	if res, ok := fsio.First(string(d), func(s string) bool { return pred(S(s))}); ok {
 		return Some(String(res))
 	}
 	return None[String]()

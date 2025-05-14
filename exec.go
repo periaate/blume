@@ -319,6 +319,6 @@ func (c Cmd) Start() Result[*exec.Cmd] {
 // }
 
 func Adopt(name String, args ...String) Result[int] {
-	return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv()).Exec()
+	return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv().Foreground(true)).Exec()
 }
 func Adopts(name String, args ...String) { Adopt(name, args...).Must() }

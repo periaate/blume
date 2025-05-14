@@ -53,6 +53,8 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	return def
 }
 
+func HasTo[A, B any](fn func(A) Result[B]) func(A) B { return func(a A) B { return fn(a).Must() } }
+
 func Must[A any](a A, handle ...any) A {
 	if len(handle) == 0 {
 		return a

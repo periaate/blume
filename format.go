@@ -53,7 +53,9 @@ func ColorBg(hex string) string {
 
 const Reset = "\033[0m"
 
+// doesn't seem to be working
 func Up(lines int) String { return String(fmt.Sprintf("\033[%dA", lines)) }
+// doesn't seem to be working
 func Clean() String       { return String(fmt.Sprint("\r\033[K")) }
 
 const P String = ""
