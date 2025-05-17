@@ -36,6 +36,11 @@ func TestEitherAuto(t *testing.T) {
 	assert.True(t, Either[S, bool]{}.Auto(o).IsOk())
 	assert.False(t, Either[S, bool]{}.Auto(n).IsOk())
 	assert.False(t, Either[S, bool]{}.Auto(e).IsOk())
+
+	assert.True(t, Either[S, bool]{}.Auto(v, true).IsOk())
+	assert.True(t, Either[S, bool]{}.Auto(v, Zero[error]()).IsOk())
+	assert.False(t, Either[S, bool]{}.Auto(v, false).IsOk())
+	assert.False(t, Either[S, bool]{}.Auto(v, P.Errorf()).IsOk())
 }
 
 func Zero[A any]() (def A) { return }

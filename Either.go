@@ -115,7 +115,7 @@ func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	if is_A {
 		switch {
 		case len(args) > 0: arg = Auto(val, args...)
-		default: return r.Pass(val) // alternatively panic
+		default: return r.Pass(val) // alternatively panic; illegal invariant
 		}
 	}
 	switch v := any(arg).(type) {
@@ -124,7 +124,7 @@ func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	case Either[A, error]: if v.IsOk() { return r.Pass(v.Value)
                          } else        { return r.Fail(v.Other) }
 	}
-	return Either[A, B]{}
+	return Either[A, B]{} // alternatively panic; illegal invariant
 }
 
 func Pass[A, B any](val A) (res Either[A, B])      { return res.Pass(val) }
