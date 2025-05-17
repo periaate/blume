@@ -55,6 +55,8 @@ func Buf(args ...any) *bytes.Buffer {
 	switch v := arg.(type) {
 	case string:
 		return bytes.NewBufferString(v)
+	case String:
+		return bytes.NewBufferString(string(v))
 	case []byte:
 		return bytes.NewBuffer(v)
 	case io.Reader:
@@ -66,8 +68,8 @@ func Buf(args ...any) *bytes.Buffer {
 	}
 }
 
-func LookupEnv(arg string) Option[String] {
-	r, ok := os.LookupEnv(arg)
+func LookupEnv(arg String) Option[String] {
+	r, ok := os.LookupEnv(arg.String())
 	if !ok {
 		return None[String]()
 	}
