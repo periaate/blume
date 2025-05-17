@@ -109,14 +109,16 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 	return
 }
 
-func (r Either[A, B]) Auto(arg A, args ...any) Either[A, B] {
-	v, _ := any(Auto(arg, args...)).(Either[A, any])
-	return r.From(v) 
-}
 
-
-func (r Either[A, B]) From(other Either[A, any]) Either[A, B] {
-	switch v := any(other).(type) {
+func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
+	val, is_A := arg.(A)
+	if is_A {
+		switch {
+		case len(args) > 0: arg = Auto(val, args...)
+		default: return r.Pass(val) // alternatively panic
+		}
+	}
+	switch v := any(arg).(type) {
 	case Either[A, bool] : if v.IsOk() { return r.Pass(v.Value)
                          } else        { return r.Fail()        }
 	case Either[A, error]: if v.IsOk() { return r.Pass(v.Value)
