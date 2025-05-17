@@ -106,6 +106,34 @@ func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 
 func (arr Array[A]) Then(fn func(Array[A]) Array[A]) Array[A] { return fn(arr) }
 
+func (arr Array[A]) V(f any) Array[A] {
+	switch fn := f.(type) {
+	case func(A)            : return arr.Each(fn)
+	case func(A) A          : return arr.Map(fn)
+	case func(A) Option[A]  : return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
+	case func(A) Result[A]  : return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
+	case func(A) []A        : return arr.Flat(fn)
+	case func(A) Array[A]   : return arr.AFlat(fn)
+	case func(...A)         : return arr.Each(func(a A) { fn(a) })
+	case func(...A) A       : return arr.Map(V2M(fn))
+	case func(...A) Option[A]: return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
+	case func(...A) Result[A]: return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
+	case func(...A) []A     : return arr.Flat(V2M(fn))
+	case func(...A) Array[A]: return arr.AFlat(V2M(fn))
+
+	case func(any)            : return arr.Each( func(a A)          { fn(a) })
+	case func(any) A          : return arr.Map(  func(a A) A        { return fn(a) })
+	case func(any) []A        : return arr.Flat( func(a A) []A      { return fn(a) })
+	case func(any) Array[A]   : return arr.AFlat(func(a A) Array[A] { return fn(a) })
+	case func(...any)         : return arr.Each (func(a A)          { fn(a) })
+	case func(...any) A       : return arr.Map  (func(a A) A        { return fn(a) })
+	case func(...any) []A     : return arr.Flat (func(a A) []A      { return fn(a) })
+	case func(...any) Array[A]: return arr.AFlat(func(a A) Array[A] { return fn(a) })
+
+	default                 : panic("Array[A].V(fn) called with illegal invariant of func(A) A")
+	}
+}
+
 func (arr Array[A]) Map(fn func(A) A) Array[A] {
 	res := make([]A, len(arr.Value))
 	for i, val := range arr.Value {
