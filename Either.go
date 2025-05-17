@@ -91,21 +91,36 @@ func Mustnt[A, B any](a A, handle any) B {
 
 func (r Either[A, B]) Pass(val A) Either[A, B] {
 	r.Value = val
-	var other B
-	switch any(other).(type) {
-	case bool:
-		r.Other = any(true).(B)
+	switch any(r).(type) {
+	case Either[A, bool]: r.Other = any(true).(B)
+	case Either[A, error]: var b B; r.Other = b
 	}
 	return r
 }
 
-func (r Either[A, B]) Fail(val ...any) Either[A, B] {
-	var other B
-	switch any(other).(type) {
-	case bool:
-		return Either[A, B]{}
-	case error:
-		return Either[A, B]{Other: Cast[B](P.S(val...)).Must()}
+func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
+	switch any(r).(type) {
+	case Either[A, bool]: return
+	case Either[A, error]:
+		res, ok := any(Err[A](val...)).(Either[A, B])
+		if !ok { panic("Either[A, error] could not be cast to Either[A, error]; impossible invariant") }
+		return res
+	}
+	return
+}
+
+func (r Either[A, B]) Auto(arg A, args ...any) Either[A, B] {
+	v, _ := any(Auto(arg, args...)).(Either[A, any])
+	return r.From(v) 
+}
+
+
+func (r Either[A, B]) From(other Either[A, any]) Either[A, B] {
+	switch v := any(other).(type) {
+	case Either[A, bool] : if v.IsOk() { return r.Pass(v.Value)
+                         } else        { return r.Fail()        }
+	case Either[A, error]: if v.IsOk() { return r.Pass(v.Value)
+                         } else        { return r.Fail(v.Other) }
 	}
 	return Either[A, B]{}
 }
