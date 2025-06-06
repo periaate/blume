@@ -146,3 +146,9 @@ func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
 func AllOk[A, B any](arr []Either[A, B]) bool {
 	return Reduce(func(acc bool, cur Either[A, B]) bool { return acc && cur.IsOk() }, true)(arr)
 }
+
+func (r Either[A, B]) Expect(pred Pred[A], args ...any) Either[A, B] {
+	if r.IsOk() && !pred(r.Value) { return r.Fail(args) }
+	return r
+}
+
