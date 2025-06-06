@@ -53,7 +53,7 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	return def
 }
 
-func HasTo[A, B any](fn func(A) Result[B]) func(A) B { return func(a A) B { return fn(a).Must() } }
+func HasTo[A, B, C any](fn func(A) Either[B, C]) func(A) B { return func(a A) B { return fn(a).Must() } }
 
 func Must[A any](a A, handle ...any) A {
 	if len(handle) == 0 {
@@ -109,7 +109,6 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 	return
 }
 
-
 func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	val, is_A := arg.(A)
 	if is_A {
@@ -142,34 +141,7 @@ func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: tr
 func Err[A any](msg ...any) Result[A] { return Result[A]{Other: P.Errorf(msg...)} }
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
 
-func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
-	switch IsOk(r) {
-	case true:
-		return value(r.Value)
-	default:
-		return other(r.Other)
-	}
-}
-
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
-
-func IsOk[A any](a A, handle ...any) bool {
-	if len(handle) == 0 {
-		handle = append(handle, a)
-	}
-	last := handle[len(handle)-1]
-	switch val := last.(type) {
-	case bool:
-		if val {
-			return true
-		}
-	default:
-		if val == nil {
-			return true
-		}
-	}
-	return false
-}
 
 func AllOk[A, B any](arr []Either[A, B]) bool {
 	return Reduce(func(acc bool, cur Either[A, B]) bool { return acc && cur.IsOk() }, true)(arr)

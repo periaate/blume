@@ -42,7 +42,7 @@ func (prev CmdOption) Cd(val String) CmdOption {
 			return cmd
 		}
 		cmd = prev(cmd)
-		cmd.Dir = val.String()
+		cmd.Dir = val.Path().String()
 		return cmd
 	}
 }
@@ -236,14 +236,8 @@ func (prev CmdOption) Stdin(r io.Reader) CmdOption {
 }
 
 func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
-	if len(opts) == 0 {
-		opts = append(opts, CmdOpt)
-	}
-	opt := Pipe(opts...)
-	return Cmd{
-		Name: name,
-		opts: opt,
-	}
+	if len(opts) == 0 { opts = append(opts, CmdOpt) }
+	return Cmd{ Name: name, opts: Pipe(opts...) }
 }
 
 func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }

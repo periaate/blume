@@ -153,6 +153,7 @@ func Pipes[A any](fns ...func(A) A) func([]A) []A { return Map(Pipe(fns...)) }
 // Cat concatenates two [FnA] functions into a single [FnA] function.
 func Cat[A, B, C any](a func(A) B, b func(B) C) func(A) C { return func(c A) C { return b(a(c)) } }
 func Catn[A, B any](a func(A) B, b func(B)) func(A) { return func(c A) { b(a(c)) } }
+func Catc[A, B any](a func() A, b func(A) B) func() B { return func() B { return b(a()) } }
 
 func PredAnd[A any](preds ...Pred[A]) Pred[A] {
 	return func(a A) bool {
@@ -173,6 +174,15 @@ func PredOr[A any](preds ...Pred[A]) Pred[A] {
 			}
 		}
 		return false
+	}
+}
+
+func LazyW[A, B any](fn func(A) B, input A) func() B {
+	var loaded bool
+	var value B
+	return func() B {
+		if !loaded { value, loaded = fn(input), true }
+		return value
 	}
 }
 

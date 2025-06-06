@@ -11,34 +11,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func IsNillable[A any](val A) bool {
-	switch any(val).(type) {
-	case error, uintptr, map[any]any, []any, chan any:
-		return true
-	default:
-		return false
-	}
-}
-
-func IsNil[A any](val A) bool {
-	switch value := any(val).(type) {
-	case error, uintptr, map[any]any, []any, chan any:
-		return value == nil
-	default:
-		return false
-	}
-}
-
-func Auto[A any](value A, handles ...any) Result[A] {
-	if IsOk(value, handles...) {
-		return Ok(value)
-	}
-	if IsNil(value) {
-		return Ok(value)
-	}
-	return Err[A](handles...)
-}
-
 func (s String) Stat() Result[os.FileInfo] { return Auto(os.Stat(s.String())) }
 func (s String) ModTime() Result[time.Time] {
 	r := s.Stat()

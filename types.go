@@ -9,17 +9,68 @@ import (
 type Pred[A any] = func(A) bool
 type Selector[A any] = func(A) [][]int
 
-func Opt[A any](a A, other any) Option[A] {
-	if IsOk(a, other) {
-		return Some(a)
+func IsNillable[A any](val A) bool {
+	switch any(val).(type) {
+	case error, uintptr, map[any]any, []any, chan any: return true
+	default: return false
 	}
+}
+
+func IsNil[A any](val A) bool {
+	switch value := any(val).(type) {
+	case error, uintptr, map[any]any, []any, chan any: return value == nil
+	default: return false
+	}
+}
+
+func IsOk[A any](a A, handle ...any) bool {
+	if len(handle) == 0 { handle = append(handle, a) }
+	switch val := handle[len(handle)-1].(type) {
+	case bool: return val
+	default  : return IsNil(val)
+	}
+}
+
+func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
+	switch IsOk(r) {
+	case true: return value(r.Value)
+	default:   return other(r.Other)
+	}
+}
+
+func Auto[V any](value V, handles ...any) Result[V] {
+	if IsOk(value, handles...) { return Ok(value) }
+	if IsNil(value) { return Ok(value) }
+	return Err[V](handles...)
+}
+
+func AutoRes[V any](value V, handles ...any) Result[V] {
+	if IsOk(value, handles...) { return Ok(value) }
+	if IsNil(value) { return Ok(value) }
+	return Err[V](handles...)
+}
+
+func AutoOpt[V any](value V, handles ...any) Option[V] {
+	if IsOk(value, handles...) { return Some(value) }
+	if IsNil(value) { return Some(value) }
+	return None[V]()
+}
+
+func From[V, E any](value V, handles ...any) (res E) {
+	switch any(res).(type) {
+	case Result[V]: return Cast[E](AutoRes(value, handles...)).OrDef()
+	case Option[V]: return Cast[E](AutoOpt(value, handles...)).OrDef()
+	default:        return
+	}
+}
+
+func Opt[A any](a A, other any) Option[A] {
+	if IsOk(a, other) { return Some(a) }
 	return None[A]()
 }
 
 func Res[A any](a A, other any) Result[A] {
-	if IsOk(a, other) {
-		return Ok(a)
-	}
+	if IsOk(a, other) { return Ok(a) }
 	return Err[A](other)
 }
 
@@ -48,30 +99,18 @@ func DAS(args ...string) Array[String]    { return ToArray(Map(StoS[string, Stri
 func isZero[A comparable](value A) bool { var def A; return value == def }
 
 func Buf(args ...any) *bytes.Buffer {
-	if len(args) == 0 {
-		return bytes.NewBuffer([]byte{})
-	}
+	if len(args) == 0 { return bytes.NewBuffer([]byte{}) }
 	arg := args[0]
 	switch v := arg.(type) {
-	case string:
-		return bytes.NewBufferString(v)
-	case String:
-		return bytes.NewBufferString(string(v))
-	case []byte:
-		return bytes.NewBuffer(v)
+	case string: return bytes.NewBufferString(v)
+	case String: return bytes.NewBufferString(string(v))
+	case []byte: return bytes.NewBuffer(v)
 	case io.Reader:
 		buf := bytes.NewBuffer([]byte{})
 		io.Copy(buf, v)
 		return buf
-	default:
-		return bytes.NewBuffer([]byte{})
+	default: return bytes.NewBuffer([]byte{})
 	}
 }
 
-func LookupEnv(arg String) Option[String] {
-	r, ok := os.LookupEnv(arg.String())
-	if !ok {
-		return None[String]()
-	}
-	return Some(String(r))
-}
+func LookupEnv(arg String) (res Option[S]) { return From[string, Option[S]](os.LookupEnv(arg.String())) }
