@@ -10,15 +10,46 @@ type Either[A, B any] struct {
 
 func (r Either[A, B]) Unwrap() (A, B) { return r.Value, r.Other }
 
-func (r Either[A, B]) Then(fn func(A) A) (res Either[A, B]) {
-	if r.IsOk() { return res.Pass(fn(r.Value)) }
+func (r Either[A, B]) Map(fn any, args ...any) (res Either[A, B]) {
+	if !r.IsOk() { return r }
+	if f, ok := fn.(func(A) A); ok { return res.Pass(f(r.Value)) }
+	Function(fn).Call(args...)
 	return r
 }
 
-func (r Either[A, B]) Else(fn func(B) B) (res Either[A, B]) {
-	if !r.IsOk() { return res.Fail(fn(r.Other)) }
+func (r Either[A, B]) Then(fn any, args ...any) (res Either[A, B]) {
+	if !r.IsOk() { return r }
+	switch {
+	case len(args) > 0: Function(fn).Call(args...)
+	default: switch f := fn.(type) {
+	case func(A) A: return res.Pass(f(r.Value))
+	case func(Either[A, B]) Either[A, B]: return f(r)
+	case func(A): f(r.Value)
+	}}
 	return r
 }
+
+func (r Either[A, B]) Else(fn any, args ...any) (res Either[A, B]) {
+	if !r.IsOk() { return r }
+	switch {
+	case len(args) > 0: Function(fn).Call(args...)
+	default: switch f := fn.(type) {
+	case func(A) B: return res.Fail(f(r.Value))
+	case func(Either[A, B]) Either[A, B]: return f(r)
+	case func(B): f(r.Other)
+	}}
+	return r
+}
+
+// func (r Either[A, B]) Then(fn func(A) A) (res Either[A, B]) {
+// 	if r.IsOk() { return res.Pass(fn(r.Value)) }
+// 	return r
+// }
+//
+// func (r Either[A, B]) Else(fn func(B) B) (res Either[A, B]) {
+// 	if !r.IsOk() { return res.Fail(fn(r.Other)) }
+// 	return r
+// }
 
 func NotNil[A any](inp *A) Option[A] {
 	if inp == nil { return None[A]() }
@@ -35,7 +66,7 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 			}
 			return def
 		case error:
-			if val == nil {
+			if val != nil {
 				return in
 			}
 			return def
@@ -66,6 +97,9 @@ func Must[A any](a A, handle ...any) A {
 			return a
 		}
 		panic("must called with false bool")
+	case error:
+		if val == nil { return a }
+		panic("must called with non-nil error")
 	default:
 		if val == nil {
 			return a
@@ -93,7 +127,7 @@ func (r Either[A, B]) Pass(val A) Either[A, B] {
 	r.Value = val
 	switch any(r).(type) {
 	case Either[A, bool]: r.Other = any(true).(B)
-	case Either[A, error]: var b B; r.Other = b
+	case Either[A, error]: return Either[A, B]{Value: val}
 	}
 	return r
 }
@@ -132,7 +166,7 @@ func Fail[A, B any](val ...any) (res Either[A, B]) { return res.Fail(val...) }
 func (r Either[A, B]) Must() A              { return Must(r.Value, r.Other) }
 func (r Either[A, B]) Mustnt() B            { return Mustnt[A, B](r.Value, r.Other) }
 func (r Either[A, B]) Or(def A) A           { return Or(def, r.Value, r.Other) }
-func (r Either[A, B]) OrDef() (def A)           { return Or(def, r.Value, r.Other) }
+func (r Either[A, B]) OrDef() A             { return r.Value }
 func (r Either[A, B]) OrExit(args ...any) A { return OrExit(r, args...) }
 func (r Either[A, B]) OrExits() A { return OrExits(r) }
 
@@ -142,6 +176,9 @@ func Err[A any](msg ...any) Result[A] { return Result[A]{Other: P.Errorf(msg...)
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
 
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
+func (e Either[A, B]) IsSome() bool { return IsOk(e.Other) }
+func (e Either[A, B]) IsNone() Bool { return Bool(!IsOk(e.Other)) }
+func (e Either[A, B]) IsErr() bool { return !IsOk(e.Other) }
 
 func AllOk[A, B any](arr []Either[A, B]) bool {
 	return Reduce(func(acc bool, cur Either[A, B]) bool { return acc && cur.IsOk() }, true)(arr)

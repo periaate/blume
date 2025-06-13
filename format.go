@@ -72,7 +72,7 @@ func (f String) F(format String, args ...any) String {
 }
 
 func (f String) SelfF(format String, args ...any) String {
-	return String(fmt.Sprintf(format.String(), Prepend[any](f, args)...))
+	return String(fmt.Sprintf(format.String(), Prepend[any](args, f)...))
 }
 func (f String) W() String { return f + String(" ") }
 

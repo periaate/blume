@@ -16,9 +16,13 @@ func PublicIP() Result[S] { return S("https://api.ipify.org").Request() }
 
 func Wd() Result[S] {
 	s, err := os.Getwd()
-	return Auto(S(s), err)
+	if err != nil { Err[S](err) }
+	res := S(s).Path()
+	res.Println(res.IsDir(), res.EnsureSuffix("/"))
+	return Ok(res)
 }
 
-func Username() Result[S] { return Exec("whoami", CmdOpt.AdoptEnv()).Run() }
-func Hostname() Result[S] { return Exec("hostname", CmdOpt.AdoptEnv()).Run() }
+func Username() Result[S] { return Exec("whoami", CmdOpt.AdoptEnv()).Run().Then(TrimSpace[S]) }
+func Hostname() Result[S] { return Exec("hostname", CmdOpt.AdoptEnv()).Run().Then(TrimSpace[S]) }
+func Os()       Result[S] { return Exec("uname", CmdOpt.AdoptEnv().Args("-sor")).Run().Then(TrimSpace[S]) }
 

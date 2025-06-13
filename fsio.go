@@ -157,11 +157,12 @@ func Reads(filepath String) String { return Read(filepath).Must() }
 func (s S) And(fns ...func(S) bool) bool { return PredAnd(fns...)(s) }
 
 func Path(sar ...S) String {
+	var fp S
 	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fps := filepath.Join(SS[S, string](sar)...)
-	absFp, _ := filepath.Abs(fps)
-	fp := S(T(!IsZero(absFp), absFp, fps))
-	if fp.IsDir() { fp.EnsureSuffix("/") }
+	absFp, err := filepath.Abs(fps)
+	if err != nil { fp = S(fps) } else { fp = S(absFp) }
+	if fp.IsDir() { fp = fp.EnsureSuffix("/") }
 	return fp
 }
 

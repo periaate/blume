@@ -92,6 +92,8 @@ func (s String)IsSymlink() Option[bool] {
 type S = String
 type E = error
 
+func (s S) Repeat(n int) S { return S(strings.Repeat(s.String(), n)) }
+
 func (f String) Errorf(args ...any) error { return fmt.Errorf("%s", f.S(args...)) }
 
 func IsURL[S ~string](val S) bool {
@@ -104,7 +106,7 @@ func GetDomain(val S) S {
 }
 
 
-func (s String) Path(args ...String) String { return Path(Prepend(s, args)...) }
+func (s String) Path(args ...String) String { return Path(Prepend(args, s)...) }
 
 func Exists(s String) bool { return fsio.Exists(string(s)) }
 func Chdir(s String) Result[String] {
@@ -135,7 +137,7 @@ func Dir(s S) String { return String(filepath.Dir(string(s)))+"/" }
 func (s String) IsDir() bool { return fsio.IsDir(string(s)) }
 func IsDir(s String) bool    { return fsio.IsDir(string(s)) }
 
-func (s String) Or(Default string) String {
+func (s String) Or(Default String) String {
 	if s == "" {
 		return String(Default)
 	}

@@ -31,7 +31,7 @@ func V2M[A, B any](fn func(...A) B) func(A) B { return func(arg A) B { return fn
 // 	}
 // }
 
-func If[A any](ok bool, a A, b A) A {
+func If[A any, B ~bool](ok B, a A, b A) A {
 	if ok {
 		return a
 	} else {

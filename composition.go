@@ -113,13 +113,13 @@ type Delimiter struct {
 	End   String
 }
 
-func EmbedDelims(sar []String, delims ...Delimiter) (Tree[S], error) {
+func EmbedDelims(sar []String, delims ...Delimiter) Tree[S] {
 	car := make([]Tree[S], len(sar))
 	for i, s := range sar {
 		car[i].This = s
 	}
 	res, _ := embeds(car, delims)
-	return res, nil
+	return res
 }
 
 func embeds(car []Tree[S], delims []Delimiter) (res Tree[S], v int) {

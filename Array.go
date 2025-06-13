@@ -16,7 +16,14 @@ import (
 // 	return String(b.String())
 // }
 
-func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
+// Prepend prepends the arguments before the array.
+// [..., arr]
+func Prepend[A any](arr []A, args ...A) []A { return append(args, arr...) }
+
+// Append appends the arguments after the array.
+// [arr, ...]
+// Just use `append` in most cases.
+func Append[A any](arr []A, args ...A) []A { return append(arr, args...) }
 
 type Array[A any] struct{ Value []A }
 
@@ -90,6 +97,16 @@ func (arr Array[A]) Filter(fn Pred[A]) Array[A] {
 	for _, val := range arr.Value {
 		if fn(val) {
 			res = append(res, val)
+		}
+	}
+	return Array[A]{Value: res}
+}
+
+func (arr Array[A]) FilterMap(fn func(A) Option[A]) Array[A] {
+	res := []A{}
+	for _, val := range arr.Value {
+		if val := fn(val); val.IsOk() {
+			res = append(res, val.Value)
 		}
 	}
 	return Array[A]{Value: res}
@@ -192,9 +209,6 @@ func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(ar
 
 func Sprint[A any](a A) String { return S(fmt.Sprint(a)) }
 
-func (arr Array[A]) Append(val A, rest ...A) Array[A] {
-	return ToArray(append(arr.Value, Prepend(val, rest)...))
-}
 
 // JoinAfter joins input after this array
 // [this, ...]
@@ -204,17 +218,22 @@ func (this Array[A]) JoinAfter(input Array[A]) Array[A] { return Array[A]{ Value
 // [..., this]
 func (this Array[A]) JoinBefore(input Array[A]) Array[A] { return Array[A]{ Value: append(input.Value, this.Value...) }}
 
-func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {
-	return ToArray(append(Prepend(val, rest), arr.Value...))
-}
+// Append appends the arguments after the array.
+// [this, ...] -> Array[A]
+func (arr Array[A]) Append(args ...A) Array[A] { return Array[A]{Value: append(arr.Value, args...)} }
 
-func (arr Array[A]) Appends(val A, rest ...A) []A {
-	return append(arr.Value, Prepend(val, rest)...)
-}
+// Appends appends the arguments before the array, returning a slice.
+// [this, ...] -> []A
+func (arr Array[A]) Appends(args ...A) []A { return arr.Append(args...).Value }
 
-func (arr Array[A]) Prepends(val A, rest ...A) []A {
-	return append(Prepend(val, rest), arr.Value...)
-}
+// Prepend args before Array
+// [..., this] -> Array[A]
+func (arr Array[A]) Prepend(args ...A) Array[A] { return Array[A]{Value: append(args, arr.Value...)} }
+
+// Prepend prepends the arguments before the array.
+// [..., this] -> []A
+func (arr Array[A]) Prepends(args ...A) []A { return arr.Prepend(args...).Value }
+
 
 func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
 	arr_1 := []A{}

@@ -7,7 +7,11 @@ import (
 )
 
 type Pred[A any] = func(A) bool
-type Selector[A any] = func(A) [][]int
+type Selector[A any] func(A) [][]int
+
+func (s Selector[A]) Pred(input A) bool {
+	return len(s(input)) > 0 
+}
 
 func IsNillable[A any](val A) bool {
 	switch any(val).(type) {
@@ -16,18 +20,13 @@ func IsNillable[A any](val A) bool {
 	}
 }
 
-func IsNil[A any](val A) bool {
-	switch value := any(val).(type) {
-	case error, uintptr, map[any]any, []any, chan any: return value == nil
-	default: return false
-	}
-}
+func IsNil(val any) bool { return val == nil }
 
 func IsOk[A any](a A, handle ...any) bool {
 	if len(handle) == 0 { handle = append(handle, a) }
 	switch val := handle[len(handle)-1].(type) {
 	case bool: return val
-	default  : return IsNil(val)
+	default  : return val == nil
 	}
 }
 

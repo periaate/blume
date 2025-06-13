@@ -20,13 +20,13 @@ func All[A any](fns ...Pred[A]) Pred[[]A] {
 	}
 }
 
-// Any returns true if any argument passes the [Predicate].
-func Any[A any](fns ...Pred[A]) Pred[[]A] {
-	fn := PredOr(fns...)
-	return func(args []A) bool {
-		return slices.ContainsFunc(args, fn)
-	}
-}
+// // Any returns true if any argument passes the [Predicate].
+// func Any[A any](fns ...Pred[A]) Pred[[]A] {
+// 	fn := PredOr(fns...)
+// 	return func(args []A) bool {
+// 		return slices.ContainsFunc(args, fn)
+// 	}
+// }
 
 // Filter returns a slice of arguments that pass the [Predicate].
 func Filter[A any](fns ...Pred[A]) func([]A) []A {
