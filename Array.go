@@ -170,7 +170,7 @@ func For[T2, T1 any](fn func(T1)) func(T2) T2 {
 	panic("unsafe call to blume.Each; input type `B` did not match `Array[T]` or `[]A`; input type B must be array-like")
 }
 
-func (arr Array[T]) Join(sep S) S { return Join(sep)(Map[T](Sprint)(arr)) }
+func (arr Array[T]) Join(sep S) S { return Join(sep)(Map[T, S](P.S)(arr)) }
 
 func Sprint[T any](a T) String { return S(fmt.Sprint(a)) }
 

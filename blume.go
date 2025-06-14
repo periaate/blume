@@ -22,14 +22,6 @@ func All[T any](fns ...Pred[T]) Pred[[]T] {
 	}
 }
 
-// // Any returns true if any argument passes the [Predicate].
-// func Any[T any](fns ...Pred[T]) Pred[[]T] {
-// 	fn := PredOr(fns...)
-// 	return func(args []T) bool {
-// 		return slices.ContainsFunc(args, fn)
-// 	}
-// }
-
 // Filter returns a slice of arguments that pass the [Predicate].
 func Filter[T any](fns ...Pred[T]) func(Array[T]) Array[T] {
 	fn := PredAnd(fns...)
@@ -43,9 +35,9 @@ func Filter[T any](fns ...Pred[T]) func(Array[T]) Array[T] {
 	}
 }
 
-func FilterMap[T any, Arr Array[T]](fn func(T) Option[T]) func(Arr) Arr {
-	return func(arr Arr) Arr {
-		res := []T{}
+func FilterMap[I, O any](fn func(I) Option[O]) func(A[I]) A[O] {
+	return func(arr A[I]) A[O] {
+		res := []O{}
 		for _, val := range arr {
 			if val := fn(val); val.IsOk() {
 				res = append(res, val.Value)
@@ -55,20 +47,31 @@ func FilterMap[T any, Arr Array[T]](fn func(T) Option[T]) func(Arr) Arr {
 	}
 }
 
-type Flatter[T any] = func(T) Option[T]
-type Mapper[T any]  = func(T) T
-type Shout[T any]   = func(T)
-type Pred[T any]    = func(T) bool
+type Flatter[T1, T2 any] = func(T1) Option[T2]
+type Mapper[T1, T2 any]  = func(T1) T2
+type Var[T any]          = func(...any) T
+type Say                 = func(...any)
+type TVar[T1, T2 any]    = func(T1, ...any) T2
+type Shout[T any]        = func(T)
+type Pred[T any]         = func(T) bool
 
-func Over[T any, Fn func(T, ...any) T | func(T) | func(T) T | func(T) Option[T] | func(T) bool](arg Fn) (res func(Array[T]) Array[T]) {
+func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | Var[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func(Array[I]) Array[O]) {
 	switch fn := any(arg).(type) {
-	case Shout[T]      : return Each(fn)
-	case func(...any) T: return Each(func(t T) { fn(t) })
-	case Mapper[T]     : return Map[T, T](fn)
-	case Flatter[T]    : return FilterMap(fn)
-	case Pred[T]       : return Filter(fn)
-	default            : return
+	case Shout[I]          : return As(res, Each(fn))
+	case func(...any)      : return As(res, Each(func(t I) { fn(t) }))
+	case func(I, ...any) O : return Map[I, O](func(t I) O { return fn(t) })
+	case func(...any) O    : return Map[I, O](func(t I) O { return fn(t) })
+	case Mapper[I, O]      : return Map[I, O](fn)
+	case Flatter[I, O]     : return FilterMap(fn)
+	case Pred[I]           : return As(res, Filter(fn))
+	default                : return
 	}
+}
+
+func As[target any](_ target, arg any) target {
+	fn, ok := arg.(target)
+	if !ok { panic("as called wit invalid function") }
+	return fn
 }
 
 func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
@@ -81,7 +84,7 @@ func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
 }
 
 // Map applies the function to each argument and returns the results.
-func Map[I, O any, Fn func(I) O | func(...I) O](arg Fn) func(Array[I]) Array[O] {
+func Map[I, O any, Fn Mapper[I, O] | TVar[I, O]](arg Fn) func(Array[I]) Array[O] {
 	var fn func(I) O
 	switch fun := any(arg).(type) {
 	case func(I) O   : fn = fun
