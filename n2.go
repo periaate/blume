@@ -15,7 +15,7 @@ type IORW interface { IOR; IOW }
 
 type Buffer struct { io.ReadWriter }
 
-func (b Buffer) CopyContents(p []byte) Result[int] { return Auto(b.Read(p)) }
+func (b Buffer) CopyContents(p []byte) (res Result[int]) { return res.Auto(b.Read(p)) }
 func (b Buffer) WriteContents(p any) Result[int] {
 	n, err := b.Write(Buf(p).Bytes())
 	if err != nil { return Err[int](err) }

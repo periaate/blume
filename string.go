@@ -12,20 +12,12 @@ import (
 	"github.com/periaate/blume/fsio"
 )
 
-func Join(arg String) func(args []String) String {
-	return func(args []String) String { return S(strings.Join(SD(args), arg.String())) }
-}
-
-func Joins[S ~string](arr Array[S], arg string) S {
-	return S(strings.Join(Map(StoD[S])(arr), arg))
-}
+func Join(sep String) func(args []any) String { return func(args []any) String { return A[any](args).Join(sep) } }
 
 type String string
 
 func (s S) In(a Array[S]) bool { return a.First(Is(s)).IsOk() }
 
-func (s String) Map(args ...func(String) String) String  { return Pipe(args...)(s) }
-func (s String) Maps(args ...func(string) string) String { return String(Pipe(args...)(s.String())) }
 func (s String) Has(args ...Selector[String]) bool       { return Has(args...)(s) }
 func (s String) Del(args ...Selector[String]) String     { return String(Del(args...)(s)) }
 func (s String) Rep(args ...any) String                  { return String(Rep[string](args...)(string(s))) }
@@ -64,9 +56,17 @@ func (s String) ReplaceRegex(pat S, rep S) String {
 func (s String) Shift(count int) String { return Shift(count)(s) }
 func (s String) Pop(count int) String   { return Pop(count)(s) }
 
-func (s String) SplitRegex(pat S) Array[String]                { return ToArray(SplitRegex(pat)(s)) }
+func (s String) SplitRegex(pat S) Array[String]                { return SplitRegex(pat)(s) }
 func (s String) SplitsRegex(pat S) []String                    { return SplitRegex(pat)(s) }
-func (s String) Split(keep bool, pats ...String) Array[String] { return ToArray(Split(s, false, pats...)) }
+func (s String) Split(keep bool, pats ...String) Array[String] { return Split(s, false, pats...) }
+func (s String) SplitSpace(keep bool) Array[String] { return SplitSpace(false)(s) }
+func SplitSpace(keep bool) func(S) Array[String] {
+	vals := []S{}
+	for _, r := range []rune{'\t', '\n', '\v', '\f', '\r', ' ', 0x85, 0xA0} {
+		vals = append(vals, S(r))
+	}
+	return func(s S) Array[String] { return Split(s, false, vals...) }
+}
 func (s String) Splits(keep bool, pats ...String) []String     { return Split(s, keep, pats...) }
 
 func IsArray[A any](arg any) bool {
@@ -146,12 +146,12 @@ func (s String) Or(Default String) String {
 func (s String) Len() int       { return len(string(s)) }
 func (s String) String() string { return string(s) }
 
-func (s String) Read() Result[String] {
+func (s String) Read() (res Result[String]) {
 	bar, err := os.ReadFile(string(s.Path()))
-	return Auto(S(bar), err)
+	return res.Auto(S(bar), err)
 }
 
-func (s String) Open() Result[*os.File] { return Auto(os.Open(string(s))) }
+func (s String) Open() (res Result[*os.File]) { return res.Auto(os.Open(string(s))) }
 
 func (s String) Colorize(colorCode int) String { return String(color.Colorize(colorCode, string(s))) }
 func (s String) ToUpper() String               { return String(strings.ToUpper(string(s))) }

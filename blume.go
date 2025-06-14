@@ -49,22 +49,42 @@ func FilterMap[I, O any](fn func(I) Option[O]) func(A[I]) A[O] {
 
 type Flatter[T1, T2 any] = func(T1) Option[T2]
 type Mapper[T1, T2 any]  = func(T1) T2
-type Var[T any]          = func(...any) T
+type TTVar[T1, T2 any]   = func(...T1) T2
+type AVar[T any]         = func(...any) T
 type Say                 = func(...any)
 type TVar[T1, T2 any]    = func(T1, ...any) T2
 type Shout[T any]        = func(T)
 type Pred[T any]         = func(T) bool
 
-func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | Var[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func(Array[I]) Array[O]) {
+func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func(Array[I]) Array[O]) {
 	switch fn := any(arg).(type) {
-	case Shout[I]          : return As(res, Each(fn))
-	case func(...any)      : return As(res, Each(func(t I) { fn(t) }))
-	case func(I, ...any) O : return Map[I, O](func(t I) O { return fn(t) })
-	case func(...any) O    : return Map[I, O](func(t I) O { return fn(t) })
-	case Mapper[I, O]      : return Map[I, O](fn)
-	case Flatter[I, O]     : return FilterMap(fn)
-	case Pred[I]           : return As(res, Filter(fn))
-	default                : return
+	case Say     : return As(res, Each(func(t I) { fn(t) }))
+	case Shout[I]: return As(res, Each(fn))
+
+	case Pred   [I]   : return As(res, Filter(fn))
+	case Flatter[I, O]: return FilterMap(fn)
+
+	case TVar  [I, O]: return Map[I, O](func(t I) O { return fn(t) })
+	case AVar  [O]   : return Map[I, O](func(t I) O { return fn(t) })
+	case TTVar [I, O]: return Map [I, O](func(t I) O { return fn(t) })
+	case Mapper[I, O]: return Map  [I, O](fn)
+	default          : return
+	}
+}
+
+func OverCoax[I, O any](arg any) (res func(Array[I]) Array[O]) {
+	switch fn := arg.(type) {
+	case Say           : return As(res, Each(func(t I) { fn(t) }))
+	case Shout[I]      : return As(res, Each(fn))
+
+	case Pred[I]       : return As(res, Filter(fn))
+	case Flatter[I, O] : return FilterMap(fn)
+
+	case TVar[I, O]    : return Map[I, O](func(t I) O { return fn(t) })
+	case AVar[O]       : return Map[I, O](func(t I) O { return fn(t) })
+	case TTVar[I, O]   : return Map[I, O](func(t I) O { return fn(t) })
+	case Mapper[I, O]  : return Map[I, O](fn)
+	default            : return
 	}
 }
 
@@ -83,24 +103,26 @@ func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
 	}
 }
 
+type MapFn[I, O any] interface { Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] }
+
 // Map applies the function to each argument and returns the results.
-func Map[I, O any, Fn Mapper[I, O] | TVar[I, O]](arg Fn) func(Array[I]) Array[O] {
+func Map[I, O any, Fn MapFn[I, O]](arg Fn) func(Array[I]) Array[O] {
 	var fn func(I) O
 	switch fun := any(arg).(type) {
-	case func(I) O   : fn = fun
-	case func(...I) O: fn = V2M(fun) }
+	case TVar[I, O]    : fn = func(t I) O { return fun(t) }
+	case AVar[O]       : fn = func(t I) O { return fun(t) }
+	case TTVar[I, O]   : fn = func(t I) O { return fun(t) }
+	case Mapper[I, O]  : fn = fun }
 
 	return func(args Array[I]) (res Array[O]) {
 		res = make([]O, 0, len(args))
-		for _, arg := range args {
-			res = append(res, fn(arg))
-		}
+		for _, arg := range args { res = append(res, fn(arg)) }
 		return res
 	}
 }
 
-func FlatMap[T, B any](fn func(T) []B) func([]T) []B {
-	return func(args []T) (res []B) {
+func FlatMap[I, O any](fn func(I) Array[O]) func(Array[I]) Array[O] {
+	return func(args Array[I]) (res Array[O]) {
 		for _, arg := range args {
 			res = append(res, fn(arg)...)
 		}
@@ -321,7 +343,7 @@ func Memo[K comparable, V any](fn func(K) V) func(K) V {
 
 func Negate[T any](fn Pred[T]) Pred[T] { return func(a T) bool { return !fn(a) } }
 
-func Limit[T ~string | ~[]any](Max int) func([]T) []T {
+func limit[T ~string | ~[]any](Max int) func([]T) []T {
 	return func(args []T) (res []T) {
 		for _, a := range args {
 			if len(a) <= Max {
@@ -356,7 +378,7 @@ func Includes[K comparable](inclusive bool) func(args ...K) func([]K) bool {
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
 func HasPrefix(args ...S) func(S) bool {
 	return func(str S) bool {
-		l := Limit[S](len(str))(args)
+		l := limit[S](len(str))(args)
 		for _, arg := range l {
 			if string(str[:len(arg)]) == string(arg) {
 				return true
@@ -369,7 +391,7 @@ func HasPrefix(args ...S) func(S) bool {
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
 func HasSuffix(args ...S) func(S) bool {
 	return func(str S) bool {
-		l := Limit[S](len(str))(args)
+		l := limit[S](len(str))(args)
 		for _, arg := range l {
 			if string(str[len(str)-len(arg):]) == string(arg) {
 				return true
@@ -559,24 +581,14 @@ func Split(str String, keep bool, match ...String) (res []String) {
 	return res
 }
 
-func Vals[K comparable, V any](m map[K]V) Array[V] {
-	if m == nil {
-		return Arr[V]()
-	}
-	arr := []V{}
-	for _, v := range m {
-		arr = append(arr, v)
-	}
-	return ToArray(arr)
+func Vals[K comparable, V any](m map[K]V) (res Array[V]) {
+	if m == nil { return }
+	for _, v := range m {res = append(res, v)}
+	return
 }
 
-func Keys[K comparable, V any](m map[K]V) Array[K] {
-	if m == nil {
-		return Arr[K]()
-	}
-	arr := []K{}
-	for k := range m {
-		arr = append(arr, k)
-	}
-	return ToArray(arr)
+func Keys[K comparable, V any](m map[K]V) (res Array[K]) {
+	if m == nil { return }
+	for k := range m {res = append(res, k)}
+	return
 }

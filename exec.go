@@ -123,6 +123,12 @@ func (prev CmdOption) UserFacing() CmdOption {
 	}
 }
 
+func SD(s []S) []string {
+	res := make([]string, 0, len(s))
+	for _, el := range s { res = append(res, string(el)) }
+	return res
+}
+
 func (prev CmdOption) Args(args ...String) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
@@ -235,9 +241,11 @@ func (prev CmdOption) Stdin(r io.Reader) CmdOption {
 	}
 }
 
+func Any[T any](a []T) (res []any) { for _, v := range a { res = append(res, any(v)) }; return }
+
 func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 	if len(opts) == 0 { opts = append(opts, CmdOpt) }
-	return Cmd{ Name: name, opts: Pipe(opts...) }
+	return Cmd{ Name: name, opts: Pipe[CmdOption](Any(opts)...) }
 }
 
 func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }

@@ -22,7 +22,7 @@ func (b Bytes) S() S               { return String(b) }
 func (b Bytes) String() string     { return string(b) }
 
 
-func Request[A any](method, url S, a A) (res Result[Bytes]) {
+func RequestHttp[A any](method, url S, a A) (res Result[Bytes]) {
 	buf := Buf()
 	if err := json.NewEncoder(buf).Encode(a); err != nil { return res.Fail(err) }
 	req, err := http.NewRequest(method.String(), url.String(), buf)

@@ -19,21 +19,16 @@ func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
 func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
 
 func ToAuto[A, B any](fn func(A) (B, error)) func(A) Result[B] {
-	return func(a A) Result[B] { return Auto(fn(a)) }
-}
-func ToAutos[A, B any](fn func(A) (B, error)) func(A) B {
-	return func(a A) B { return Auto(fn(a)).Must() }
+	return func(a A) (res Result[B]) { return res.Auto(fn(a)) }
 }
 
-func (s String) ParseDuration() Result[time.Duration] {
+func (s String) ParseDuration() (res Result[time.Duration]) {
 	var value time.Duration
 	for _, v := range s.Split(false, " ") {
-		var res time.Duration
-		res, err := time.ParseDuration(v.String())
-		if err != nil {
-			return Auto(value, err)
-		}
-		value += res
+		var dur time.Duration
+		dur, err := time.ParseDuration(v.String())
+		if err != nil { return res.Auto(value, err) }
+		value += dur
 	}
 
 	return Ok(value)
@@ -45,7 +40,7 @@ func Parse[N Integer | Float](s string, args ...any) Option[N] {
 	var a N
 	var (
 		bitSize int
-		base    = Cast[int](ToArray(args).Get(0).Or(10)).Or(10)
+		base    = Cast[int](A[any](args).Get(0).Or(10)).Or(10)
 	)
 
 	switch any(a).(type) {

@@ -64,9 +64,9 @@ func (f String) N() String { return f + "\n" }
 func (f String) R() String { return f + "\r" }
 func (f String) T() String { return f + "\t" }
 
-func (f String) Up(lines ...int) String { return f + String(Up(ToArray(lines).Get(0).Or(1))) }
+func (f String) Up(lines ...int) String { return f + String(Up(A[int](lines).Get(0).Or(1))) }
 func (f String) Clean() String          { return f + String(Clean()) }
-func (f String) S(args ...any) String   { return f + ToArray(args).Join(" ") }
+func (f String) S(args ...any) String   { return f + Join(" ")(args) }
 func (f String) F(format String, args ...any) String {
 	return f + String(fmt.Sprintf(format.String(), args...))
 }

@@ -24,7 +24,7 @@ func Input[S ~string](from ...string) Array[String] {
 		}
 	}
 
-	return ToArray(res)
+	return res
 }
 
 func AllArgs(n ...int) Array[String] { return Args(n...).JoinAfter(Piped(os.Stdin).OrDef()) }
@@ -38,8 +38,9 @@ func Args(n ...int) Array[String] {
 		return DAS(res...)
 	}
 	if len(res) < n[0] {
-		return Arr[String]()
+		return []S{}
 	}
+		
 	return DAS(res[n[0]:]...)
 }
 
@@ -56,12 +57,12 @@ func Piped(input ...*os.File) Option[Array[String]] {
 	if len(input) == 0 { f = os.Stdin } else { f = input[0] }
 
 	if !has.Pipe(f) { return None[Array[String]]() }
-	return Some(ToArray(Lines(f)))
+	return Some(Lines(f))
 }
 
 func Stringify(s string) String { return String(s) }
 
-func Lines[B any](bar B) []String {
+func Lines[B any](bar B) A[S] {
 	scanner := bufio.NewScanner(Buf(any(bar)))
 	res := []String{}
 	for scanner.Scan() {
@@ -114,9 +115,9 @@ func Muxes(src, pat S, muxs ...*http.ServeMux) *http.ServeMux {
 func Entries(s S) Result[Array[String]] { return s.Entries() }
 func (d String) Entries() Result[Array[String]] {
 	if res, err := fsio.ReadDir(string(d)); err == nil {
-		return Ok(ToArray(Map(func(file fsio.Entry) String {
+		return Ok(Map[fsio.Entry, S](func(file fsio.Entry) String {
 			return String(file.Path())
-		})(res)))
+		})(res))
 	} else {
 		return Err[Array[String]](err.Error())
 	}
@@ -131,7 +132,7 @@ func (d String) FirstFS(pred Pred[String]) Option[String] {
 
 func (d S) FindFS(pred Pred[string]) Option[Array[String]] {
 	if res := fsio.Find(string(d), pred); len(res) > 0 {
-		return Some(ToArray(Map(Stringify)(res)))
+		return Some(Map[string, S](Stringify)(res))
 	}
 	return None[Array[String]]()
 }
@@ -158,7 +159,7 @@ func (s S) And(fns ...func(S) bool) bool { return PredAnd(fns...)(s) }
 
 func Path(sar ...S) String {
 	var fp S
-	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
+	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fps := filepath.Join(SS[S, string](sar)...)
 	absFp, err := filepath.Abs(fps)
 	if err != nil { fp = S(fps) } else { fp = S(absFp) }
@@ -168,7 +169,7 @@ func Path(sar ...S) String {
 
 // LPath resolves symlinks
 func LPath(sar ...S) String {
-	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
+	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fp := filepath.Join(SS[S, string](sar)...)
 	if IsSymlink(S(fp)).Value {
 		evaluated, err := filepath.EvalSymlinks(fp)
@@ -185,7 +186,7 @@ func LPath(sar ...S) String {
 }
 
 func Paths(v String, sar ...String) String {
-	sar = Map(Replace("~", S(Must(os.UserHomeDir()))))(sar)
+	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
 	fp := filepath.Join(SS[S, string](sar)...)
 	absFp, err := filepath.Abs(fp)
 	if err == nil {

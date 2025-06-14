@@ -1,20 +1,11 @@
 package blume
 
 import (
-	"fmt"
 	"math/rand"
+	"strings"
 )
 
-// func Join(elems []String, sep String) String {
-// 	b := Buf()
-// 	b.Grow(n)
-// 	b.WriteString(string(elems[0]))
-// 	for _, s := range elems[1:] {
-// 		b.WriteString(string(sep))
-// 		b.WriteString(string(s))
-// 	}
-// 	return String(b.String())
-// }
+func Arr[T any](args ...T) A[T] { return args }
 
 // Prepend prepends the arguments before the array.
 // [..., arr]
@@ -25,8 +16,7 @@ func Prepend[T any](arr []T, args ...T) []T { return append(args, arr...) }
 // Just use `append` in most cases.
 func Append[T any](arr []T, args ...T) []T { return append(arr, args...) }
 
-// type Array[T any] struct{ Value []T }
-type Array[T any] []T // Redefined
+type Array[T any] []T
 
 
 func (a Array[T]) Pattern(selector Selector[Array[T]], actor func(Array[T], [][]int) Array[T]) Array[T] {
@@ -43,29 +33,12 @@ func (a Array[T]) Shuffle() Array[T] {
 	return Array[T](args)
 }
 
-
-type Length int
-
-func (l Length) Is(i int) bool { return int(l) == i }
-func (l Length) Gt(i int) bool { return int(l) > i }
-func (l Length) Lt(i int) bool { return int(l) < i }
-func (l Length) Ge(i int) bool { return int(l) >= i }
-func (l Length) Le(i int) bool { return int(l) <= i }
-func (l Length) Eq(i int) bool { return int(l) == i }
-func (l Length) Ne(i int) bool { return int(l) != i }
-
-func (arr Array[T]) Len() Length { return Length(len(arr)) }
+func (arr Array[T]) Len() int { return len(arr) }
 
 func (arr Array[T]) Get(i int) (res Option[T]) {
-	if i < 0 {
-		i = len(arr) + i
-	}
-	if i < 0 {
-		return res.Fail()
-	}
-	if i >= len(arr) {
-		return res.Fail()
-	}
+	if i < 0         { i = len(arr) + i }
+	if i < 0         { return res.Fail() }
+	if i >= len(arr) { return res.Fail() }
 	return res.Pass(arr[i])
 }
 
@@ -91,89 +64,20 @@ func (arr Array[T]) Reverse() Array[T] {
 	return Array[T](r)
 }
 
-func Arr[T any](args ...T) Array[T] { return args }
-func ToArray[T any](a []T) Array[T] { return a }
-
-func (arr Array[T]) Filter(fn Pred[T]) Array[T] {
-	res := []T{}
-	for _, val := range arr {
-		if fn(val) {
-			res = append(res, val)
-		}
-	}
-	return res
-}
-
-func (arr Array[T]) FilterMap(fn func(T) Option[T]) Array[T] {
-	res := []T{}
-	for _, val := range arr {
-		if val := fn(val); val.IsOk() {
-			res = append(res, val.Value)
-		}
-	}
-	return res
-}
-
-func (arr Array[T]) First(fn Pred[T]) (res Option[T]) {
-	for _, val := range arr {
-		if fn(val) {
-			return res.Pass(val)
-		}
-	}
-	return res.Fail()
-}
-
+func (arr Array[T]) Filter(fn Pred[T]) Array[T] { return Filter(fn)(arr) }
+func (arr Array[T]) FilterMap(fn func(T) Option[T]) Array[T] { return FilterMap(fn)(arr) }
+func (arr Array[T]) First(fn Pred[T]) (res Option[T]) { return First(fn)(arr) }
 func (arr Array[T]) Then(fn func(Array[T]) Array[T]) Array[T] { return fn(arr) }
+func (arr Array[T]) Map(fn func(T) T) Array[T] { return Map[T, T](fn)(arr) }
+func (arr Array[T]) Each(fn any) Array[T] { OverCoax[T, T](fn)(arr); return arr }
 
-func (arr Array[T]) Map(fn func(T) T) Array[T] {
-	res := make([]T, len(arr))
-	for i, val := range arr {
-		res[i] = fn(val)
-	}
-	return res
-}
-
-func (arr Array[T]) Reduce(fn func(T, T) T, initial T) T {
+func (arr Array[T]) Join(sep S) S {
+	collect := make([]string, 0, len(arr))
 	for _, val := range arr {
-		initial = fn(initial, val)
+		collect = append(collect, string(P.S(val)))
 	}
-	return initial
+	return S(strings.Join(collect, string(sep)))
 }
-
-func (arr Array[T]) Flat(fn func(T) []T) Array[T] { return Array[T](FlatMap(fn)(arr)) }
-func (arr Array[T]) AFlat(fn func(T) Array[T]) Array[T] { return Array[T](FlatMap(func(a T) []T { return fn(a) })(arr)) }
-
-func (arr Array[T]) Each(fn func(T)) Array[T] {
-	for _, value := range arr {
-		fn(value)
-	}
-	return arr
-}
-
-
-
-func ForSafe[T1, T2 any](fn func(T1)) Option[func(T2) T2] {
-	var b T2
-	switch any(b).(type) {
-	case Array[T1]: return Cast[func(T2) T2](func(arr Array[T1]) Array[T1] { for _, value := range arr { fn(value) }; return arr })
-	case []T1: return Cast[func(T2) T2](func(arr []T1) []T1 { for _, value := range arr { fn(value) }; return arr })
-	}
-	return None[func(T2) T2]()
-}
-
-func For[T2, T1 any](fn func(T1)) func(T2) T2 {
-	var b T2
-	switch any(b).(type) {
-	case Array[T1]: return Cast[func(T2) T2](func(arr Array[T1]) Array[T1] { for _, value := range arr { fn(value) }; return arr }).Must()
-	case []T1: return Cast[func(T2) T2](func(arr []T1) []T1 { for _, value := range arr { fn(value) }; return arr }).Must()
-	}
-	panic("unsafe call to blume.Each; input type `B` did not match `Array[T]` or `[]A`; input type B must be array-like")
-}
-
-func (arr Array[T]) Join(sep S) S { return Join(sep)(Map[T, S](P.S)(arr)) }
-
-func Sprint[T any](a T) String { return S(fmt.Sprint(a)) }
-
 
 // JoinAfter joins input after this array
 // [this, ...]
@@ -187,17 +91,9 @@ func (this Array[T]) JoinBefore(input Array[T]) Array[T] { return  append(input,
 // [this, ...] -> Array[T]
 func (arr Array[T]) Append(args ...T) Array[T] { return append(arr, args...) }
 
-// Appends appends the arguments before the array, returning a slice.
-// [this, ...] -> []T
-func (arr Array[T]) Appends(args ...T) []T { return arr.Append(args...) }
-
 // Prepend args before Array
 // [..., this] -> Array[T]
 func (arr Array[T]) Prepend(args ...T) Array[T] { return append(args, arr...) }
-
-// Prepend prepends the arguments before the array.
-// [..., this] -> []T
-func (arr Array[T]) Prepends(args ...T) []T { return arr.Prepend(args...) }
 
 
 func (arr Array[T]) Split(fn Pred[T]) (HasNot Array[T], Has Array[T]) {
@@ -216,12 +112,8 @@ func (arr Array[T]) Split(fn Pred[T]) (HasNot Array[T], Has Array[T]) {
 }
 
 func (arr Array[T]) From(n int) Array[T] {
-	if n <= 0 || len(arr) == 0 {
-		return arr
-	}
-	if len(arr) > n {
-		arr = arr[n:]
-	}
+	if n <= 0 || len(arr) == 0 { return arr }
+	if len(arr) > n            { arr = arr[n:] }
 	return arr
 }
 
@@ -349,14 +241,4 @@ func Pairs[T any](arr Array[T]) (res Array[Array[T]]) {
 	}
 	return res
 }
-
-func ArrayFlat[T any](arr Array[Array[T]]) Array[T] {
-	res := Arr[T]()
-	for _, a := range arr {
-		res = res.JoinAfter(a)
-	}
-	return res
-}
-
-
 

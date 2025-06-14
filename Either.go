@@ -143,14 +143,15 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 	return
 }
 
+
 func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
-	val, is_A := arg.(A)
-	if is_A {
-		switch {
-		case len(args) > 0: arg = Auto(val, args...)
-		default: return r.Pass(val) // alternatively panic; illegal invariant
-		}
+	val := Arr(args...).Get(-1)
+	if val.IsOk() {
+		switch v := val.Value.(type) {
+		case bool:  if v        { return r.Pass(Cast[A](arg).Must()) } else { return r.Fail()  }
+		case error: if v == nil { return r.Pass(Cast[A](arg).Must()) } else { return r.Fail(v) } }
 	}
+
 	switch v := any(arg).(type) {
 	case Either[A, bool] : if v.IsOk() { return r.Pass(v.Value)
                          } else        { return r.Fail()        }

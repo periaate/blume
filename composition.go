@@ -45,68 +45,68 @@ func (t Tree[A]) prettyPrintWithIndent(indent int) String {
 	return result
 }
 
-type Composer func(Tree[String]) Tree[String]
-
-var Parser Composer = func(tree Tree[S]) Tree[S] { return tree }
-
-func (parser Composer) Closure(start, end String) Composer {
-	return func(tree Tree[String]) Tree[String] {
-		tree = parser(tree)
-		return tree
-	}
-}
-
-func (parser Composer) Literal(start, end String) Composer {
-	return func(tree Tree[String]) Tree[String] {
-		tree = parser(tree)
-		return tree
-	}
-}
-
-func (parser Composer) Define(value, match String) Composer {
-	return func(tree Tree[String]) Tree[String] {
-		tree = parser(tree)
-		return tree
-	}
-}
-
-// Closure defines embedded closures.
-// usage : `Closure("(", ")")`
-// input : `ab(10+(3*10))`
-// output: `[ab [10+ [3*10]]]`
-func Closure(delims ...S) func([]String) Result[Tree[String]] {
-	return func(input []S) Result[Tree[S]] {
-		delim := make([]Delimiter, 0, len(delims)%2)
-		for i := 0; i+1 < len(delims); i += 2 {
-			delim = append(delim, Delimiter{delims[i], delims[i+1]})
-		}
-		return Auto(EmbedDelims(input, delim...))
-	}
-}
-
-// Literal defines string literals.
-// escapes flag is used to define how escaped values are interpreted.
-// false means that escapes are ignored.
-// "this \"wouldn't\" work" -> ["this ", wouldn't, " work"], but [[this \"would\" work]] -> ["this \"would\" work"]
-// true means that escapes are valued, i.e.,   "this \"would\" work"
-// usage : `Literal("[[", "]]", false)`
-// input : `["abc", "..", "[[Hello", ",", "World", "!]]", "..", "dfg"]`
-// output: `["abc", "..", "Hello, World!", "..", "dfg"]`
-func Literal(start, end String, escapes bool) func([]String) []String {
-	return func(input []S) []S {
-		return input
-	}
-}
-
-// Define builtin functions or operators, inputs are handled accordingly.
-// usage : `Define("ADD", "+")`
-// input : `["1+2", "+", "3+4"]`
-// output: `["1", "ADD", "2", "ADD", "3", "ADD", "4"]`
-func Define(value, match String) func([]String) []String {
-	return func(input []String) []S {
-		return input
-	}
-}
+// type Composer func(Tree[String]) Tree[String]
+//
+// var Parser Composer = func(tree Tree[S]) Tree[S] { return tree }
+//
+// func (parser Composer) Closure(start, end String) Composer {
+// 	return func(tree Tree[String]) Tree[String] {
+// 		tree = parser(tree)
+// 		return tree
+// 	}
+// }
+//
+// func (parser Composer) Literal(start, end String) Composer {
+// 	return func(tree Tree[String]) Tree[String] {
+// 		tree = parser(tree)
+// 		return tree
+// 	}
+// }
+//
+// func (parser Composer) Define(value, match String) Composer {
+// 	return func(tree Tree[String]) Tree[String] {
+// 		tree = parser(tree)
+// 		return tree
+// 	}
+// }
+//
+// // Closure defines embedded closures.
+// // usage : `Closure("(", ")")`
+// // input : `ab(10+(3*10))`
+// // output: `[ab [10+ [3*10]]]`
+// func Closure(delims ...S) func([]String) (res Result[Tree[String]]) {
+// 	return func(input []S) Result[Tree[S]] {
+// 		delim := make([]Delimiter, 0, len(delims)%2)
+// 		for i := 0; i+1 < len(delims); i += 2 {
+// 			delim = append(delim, Delimiter{delims[i], delims[i+1]})
+// 		}
+// 		return Auto[](EmbedDelims(input, delim...))
+// 	}
+// }
+//
+// // Literal defines string literals.
+// // escapes flag is used to define how escaped values are interpreted.
+// // false means that escapes are ignored.
+// // "this \"wouldn't\" work" -> ["this ", wouldn't, " work"], but [[this \"would\" work]] -> ["this \"would\" work"]
+// // true means that escapes are valued, i.e.,   "this \"would\" work"
+// // usage : `Literal("[[", "]]", false)`
+// // input : `["abc", "..", "[[Hello", ",", "World", "!]]", "..", "dfg"]`
+// // output: `["abc", "..", "Hello, World!", "..", "dfg"]`
+// func Literal(start, end String, escapes bool) func([]String) []String {
+// 	return func(input []S) []S {
+// 		return input
+// 	}
+// }
+//
+// // Define builtin functions or operators, inputs are handled accordingly.
+// // usage : `Define("ADD", "+")`
+// // input : `["1+2", "+", "3+4"]`
+// // output: `["1", "ADD", "2", "ADD", "3", "ADD", "4"]`
+// func Define(value, match String) func([]String) []String {
+// 	return func(input []String) []S {
+// 		return input
+// 	}
+// }
 
 type Delimiter struct {
 	Start String
