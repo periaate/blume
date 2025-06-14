@@ -99,7 +99,7 @@ func Must[A any](a A, handle ...any) A {
 		panic("must called with false bool")
 	case error:
 		if val == nil { return a }
-		panic("must called with non-nil error")
+		panic(val)
 	default:
 		if val == nil {
 			return a
@@ -148,8 +148,16 @@ func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	val := Arr(args...).Get(-1)
 	if val.IsOk() {
 		switch v := val.Value.(type) {
-		case bool:  if v        { return r.Pass(Cast[A](arg).Must()) } else { return r.Fail()  }
-		case error: if v == nil { return r.Pass(Cast[A](arg).Must()) } else { return r.Fail(v) } }
+		case bool:  if v        {
+			value, ok := arg.(A)
+			if !ok { return r.Fail() }
+			return r.Pass(value)
+		} else { return r.Fail()  }
+		case error: if v == nil {
+			value, ok := arg.(A)
+			if !ok { return r.Fail() }
+			return r.Pass(value)
+		} else { return r.Fail(v) } }
 	}
 
 	switch v := any(arg).(type) {

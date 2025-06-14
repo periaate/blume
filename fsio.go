@@ -35,13 +35,13 @@ func Args(n ...int) Array[String] {
 		res = os.Args[1:]
 	}
 	if len(n) == 0 {
-		return DAS(res...)
+		return Into[A[S]](res).Value
 	}
 	if len(res) < n[0] {
 		return []S{}
 	}
 		
-	return DAS(res[n[0]:]...)
+	return Into[A[S]](res[n[0]:]).Value
 }
 
 func Arg(n int) Option[String] {
@@ -160,7 +160,7 @@ func (s S) And(fns ...func(S) bool) bool { return PredAnd(fns...)(s) }
 func Path(sar ...S) String {
 	var fp S
 	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fps := filepath.Join(SS[S, string](sar)...)
+	fps := filepath.Join(Into[[]string](sar).Value...)
 	absFp, err := filepath.Abs(fps)
 	if err != nil { fp = S(fps) } else { fp = S(absFp) }
 	if fp.IsDir() { fp = fp.EnsureSuffix("/") }
@@ -170,7 +170,7 @@ func Path(sar ...S) String {
 // LPath resolves symlinks
 func LPath(sar ...S) String {
 	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fp := filepath.Join(SS[S, string](sar)...)
+	fp := filepath.Join(From[[]S, []string](sar).Value...)
 	if IsSymlink(S(fp)).Value {
 		evaluated, err := filepath.EvalSymlinks(fp)
 		if err != nil {
@@ -187,7 +187,7 @@ func LPath(sar ...S) String {
 
 func Paths(v String, sar ...String) String {
 	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fp := filepath.Join(SS[S, string](sar)...)
+	fp := filepath.Join(From[[]S, []string](sar).Value...)
 	absFp, err := filepath.Abs(fp)
 	if err == nil {
 		return String(absFp)
@@ -195,17 +195,10 @@ func Paths(v String, sar ...String) String {
 	return String(fp)
 }
 
-func R[A any](val A, err error) Result[A] {
-	if IsOk(val, err) {
-		return Ok(val)
-	} else {
-		return Err[A](err.Error())
-	}
+func AppendTo(path S) (res Result[*os.File]) {
+	return res.Auto(os.OpenFile(path.Path().String(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644))
 }
 
-func AppendTo[S ~string](path S) Result[*os.File] {
-	return R(os.OpenFile(string(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644))
-}
 func AppendLog[A any](f *os.File) (*os.File, func(a A) A) {
 	mut := sync.Mutex{}
 	return f,

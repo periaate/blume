@@ -5,14 +5,21 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/periaate/blume/color"
 	"github.com/periaate/blume/fsio"
 )
 
-func Join(sep String) func(args []any) String { return func(args []any) String { return A[any](args).Join(sep) } }
+func Join(sep String) func(args []any) String {
+	return func(args []any) String {
+		res := []string{}
+		for _, arg := range args {
+			res = append(res, fmt.Sprint(arg))
+		}
+		return String(strings.Join(res, string(sep)))
+	}
+}
 
 type String string
 
@@ -68,14 +75,6 @@ func SplitSpace(keep bool) func(S) Array[String] {
 	return func(s S) Array[String] { return Split(s, false, vals...) }
 }
 func (s String) Splits(keep bool, pats ...String) []String     { return Split(s, keep, pats...) }
-
-func IsArray[A any](arg any) bool {
-	if arg == nil {
-		return false
-	}
-	kind := reflect.TypeOf(arg).Kind()
-	return kind == reflect.Array || kind == reflect.Slice
-}
 
 func IsSymlink(s S) Option[bool] {
 	stat := s.Stat()

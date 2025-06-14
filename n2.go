@@ -82,7 +82,7 @@ type Func struct {
 	reflect.Type
 }
 
-func (fn Func) Call(args ...any) []reflect.Value { return fn.Value.Call(Map(reflect.ValueOf)(args)) }
+func (fn Func) Call(args ...any) []reflect.Value { return fn.Value.Call(Map[any, reflect.Value](reflect.ValueOf)(args)) }
 
 func (f Func) Matches(t any) bool { return Function(t).AssignableTo(f.Type) }
 

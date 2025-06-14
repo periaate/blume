@@ -11,8 +11,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func (s String) Stat() Result[os.FileInfo] { return Auto(os.Stat(s.String())) }
-func (s String) ModTime() Result[time.Time] {
+func (s String) Stat() (res Result[os.FileInfo]) { return res.Auto(os.Stat(s.String())) }
+func (s String) ModTime() (res Result[time.Time]) {
 	r := s.Stat()
 	if !r.IsOk() {
 		return Err[time.Time](r.Other)
@@ -28,14 +28,14 @@ func (s String) ModMilli() Result[int64] {
 	return Ok(r.Value.ModTime().UnixMilli())
 }
 
-func (p String) MkdirAll(n os.FileMode) Result[String] {
+func (p String) MkdirAll(n os.FileMode) (res Result[String]) {
 	if p.Path().Exists() && p.Path().IsDir() {
 		return Ok(p)
 	}
-	return Auto(p, os.MkdirAll(p.String(), n))
+	return res.Auto(p, os.MkdirAll(p.String(), n))
 }
-func (p String) WriteFile(bytes []byte, n os.FileMode) Result[String] {
-	return Auto(p, os.WriteFile(p.String(), bytes, n))
+func (p String) WriteFile(bytes []byte, n os.FileMode) (res Result[String]) {
+	return res.Auto(p, os.WriteFile(p.String(), bytes, n))
 }
 
 // SplitRegex keeps matches
@@ -73,7 +73,7 @@ func (s S) Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) S {
 }
 
 func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
-	rw := Auto(rfsnotify.NewWatcher()).Must()
+	rw := R(rfsnotify.NewWatcher()).Must()
 	f := Is(ops...)
 	go func() {
 		for {
@@ -93,13 +93,13 @@ func Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) func(S) {
 				panic("AddRecursive return non nil error: " + err.Error())
 			}
 		} else {
-			Auto(rw.Add(s.String())).Must()
+			R(rw.Add(s.String())).Must()
 		}
 	}
 }
 
-func (s String) Serve(handler ...http.Handler) Result[any] {
-	return Auto[any](nil, http.ListenAndServe(s.String(), ToArray(handler).Get(0).Or(nil)))
+func (s String) Serve(handler ...http.Handler) (res Result[any]) {
+	return res.Auto(nil, http.ListenAndServe(s.String(), Arr(handler...).Get(0).Value))
 }
 
 func DebounceMap[K comparable](callback func(K), dur time.Duration) func(K) {

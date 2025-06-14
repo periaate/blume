@@ -39,7 +39,7 @@ func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
 
 type EitherT[T any] interface { Result[T] | Option[T] }
 
-func Auto[I, O any](value I, handles ...any) O { return From[I, O](value, handles...).Value }
+func Auto[O, I any](value I, handles ...any) O { return From[I, O](value, handles...).Value }
 
 type typeIs int
 const TypeIs typeIs = 10
@@ -66,9 +66,84 @@ func (typeIs) String(v any) (ok bool) { _, ok = v.(string); return }
 
 func (typeIs) SameAs(a, b any) (ok bool) { return reflect.TypeOf(a).String() == reflect.TypeOf(a).String() }
 
+type TypeV struct {
+	reflect.Type
+}
+
+func T(v any) TypeV { return TypeV{reflect.TypeOf(v)} }
+func TA[T any]() TypeV { var t T; return TypeV{reflect.TypeOf(t)} }
+
+func (t TypeV) IsArray() bool { return t.Kind() == reflect.Array }
+func (t TypeV) IsFunc() bool  { return t.Kind() == reflect.Func }
+
+// func typeOf(v any) reflect.Type { return reflect.TypeOf(v) }
+type typeOf func(v any) reflect.Type
+var TypeOf = reflect.TypeOf
+
+func (t TypeV) Inputs(arg any) (res Result[A[TypeV]]) {
+	if !t.IsFunc() { return res.Fail("Args must be called on a type with kind Func") }
+	r := A[TypeV]{}
+	for i := range t.NumIn() {
+		r = append(r, TypeV{t.In(i)})
+	}
+	return res.Pass(r)
+}
+
+func (t TypeV) Outputs(arg any) (res Result[A[TypeV]]) {
+	if !t.IsFunc() { return res.Fail("Args must be called on a type with kind Func") }
+	r := A[TypeV]{}
+	for i := range t.NumOut() {
+		r = append(r, TypeV{t.Out(i)})
+	}
+	return res.Pass(r)
+}
+
+func IsArray(arg any) bool { return T(arg).IsArray() }
+func IsFunc(arg any) bool  { return T(arg).IsFunc() }
+func TypeOfEl(arg any) (res Option[reflect.Type]) {
+	if !IsArray(arg) { return res.Fail() }
+	return res.Pass(reflect.TypeOf(arg).Elem())
+}
+
+func Into[Target any](arg any) (res Option[Target]) {
+	var t Target
+	target := reflect.TypeOf(t)
+
+	input := T(arg)
+	if input.AssignableTo(target) || input.ConvertibleTo(target) { return Cast[Target](reflect.ValueOf(arg).Convert(target).Interface()) }
+	if input.Kind() == target.Kind() && input.Kind() == reflect.Slice {
+		te := target.Elem()
+		if !(input.Elem().AssignableTo(te) || input.Elem().ConvertibleTo(te)) { return res.Fail() }
+		r := reflect.MakeSlice(target, 0, 0)
+		for _, value := range reflect.ValueOf(arg).Seq2() {
+			r = reflect.Append(r, value.Convert(te))
+		}
+
+		return Cast[Target](r.Interface())
+	}
+
+	return res.Fail()
+}
+
 func From[I, O any](value I, args ...any) (output Option[O]) {
 	if TypeIs.SameAs(value, output) { return Cast[O](value) }
 	if v := Cast[O](value); v.IsSome() { return v }
+
+	var t O
+	target := reflect.TypeOf(t)
+
+	input := T(value)
+	if input.AssignableTo(target) || input.ConvertibleTo(target) { return Cast[O](reflect.ValueOf(value).Convert(target).Interface()) }
+	if input.Kind() == target.Kind() && input.Kind() == reflect.Slice {
+		te := target.Elem()
+		if !(input.Elem().AssignableTo(te) || input.Elem().ConvertibleTo(te)) { return output.Fail() }
+		r := reflect.MakeSlice(target, 0, 0)
+		for _, value := range reflect.ValueOf(value).Seq2() {
+			r = reflect.Append(r, value.Convert(te))
+		}
+
+		return Cast[O](r.Interface())
+	}
 
 	var try any = value
 
@@ -93,9 +168,15 @@ func From[I, O any](value I, args ...any) (output Option[O]) {
 	return Cast[O](try)
 }
 
-func Cast[T any](a any) Option[T] {
+func R[A any](val A, err ...any) (res Result[A]) { return res.Auto(val, err) }
+func O[A any](val A, err ...any) (res Result[A]) { return res.Auto(val, err) }
+
+func Cast[T any](a any) (res Option[T]) {
 	value, ok := a.(T)
-	return Auto[T, Option[T]](value, ok)
+	if !ok { return }
+	res.Other = ok
+	res.Value = value
+	return
 }
 
 

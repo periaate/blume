@@ -71,15 +71,15 @@ func Pattern[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
 
 func JoinWith(delim S) func(arr A[S], sel [][]int) A[S] {
 	return func(arr A[S], sel [][]int) A[S] {
-		res := []S{}
+		res := A[S]{}
 		var last int
 		for _, selection := range sel {
 			res = append(res, arr[last:selection[0]]...)
-			res = append(res, ToArray(arr[selection[0]:selection[1]+1]).Join(delim))
+			res = append(res, arr[selection[0]:selection[1]+1].Join(delim))
 			last = selection[1] + 1
 		}
 		res = append(res, arr[last:]...)
-		return ToArray(res)
+		return res
 	}
 }
 

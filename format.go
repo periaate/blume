@@ -118,7 +118,7 @@ func (f String) InProgress(args ...any) String {
 }
 
 func (f String) Checkbox(done bool, args ...any) String {
-	return T(done,
+	return If(done,
 		f.Color(color.Success, symbols.CheckboxDone),
 		f.Color(color.Warning, symbols.CheckboxEmpty),
 	).S(args...)
