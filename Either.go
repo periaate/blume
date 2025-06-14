@@ -1,5 +1,7 @@
 package blume
 
+import "fmt"
+
 type Option[A any] = Either[A, bool]
 type Result[A any] = Either[A, error]
 
@@ -41,21 +43,6 @@ func (r Either[A, B]) Else(fn any, args ...any) (res Either[A, B]) {
 	return r
 }
 
-// func (r Either[A, B]) Then(fn func(A) A) (res Either[A, B]) {
-// 	if r.IsOk() { return res.Pass(fn(r.Value)) }
-// 	return r
-// }
-//
-// func (r Either[A, B]) Else(fn func(B) B) (res Either[A, B]) {
-// 	if !r.IsOk() { return res.Fail(fn(r.Other)) }
-// 	return r
-// }
-
-func NotNil[A any](inp *A) Option[A] {
-	if inp == nil { return None[A]() }
-	return Some(*inp)
-}
-
 func Or[A any](def A, in A, handle ...any) (res A) {
 	if len(handle) != 0 {
 		last := handle[len(handle)-1]
@@ -76,15 +63,13 @@ func Or[A any](def A, in A, handle ...any) (res A) {
 	}
 	anyin := any(in)
 	switch inv := anyin.(type) {
-	case String, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, bool:
+	case string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr, float32, float64, bool:
 		if isZero(inv) {
 			return in
 		}
 	}
 	return def
 }
-
-func HasTo[A, B, C any](fn func(A) Either[B, C]) func(A) B { return func(a A) B { return fn(a).Must() } }
 
 func Must[A any](a A, handle ...any) A {
 	if len(handle) == 0 {
@@ -104,22 +89,7 @@ func Must[A any](a A, handle ...any) A {
 		if val == nil {
 			return a
 		}
-		panic(P.S("must called with nil value").S(handle...))
-	}
-}
-
-func Mustnt[A, B any](a A, handle any) B {
-	switch val := handle.(type) {
-	case bool:
-		if !val {
-			return any(val).(B)
-		}
-		panic("mustnt called with true bool")
-	default:
-		if val != nil {
-			return any(val).(B)
-		}
-		panic(P.S("mustnt called with non nil value").S(handle))
+		panic(val)
 	}
 }
 
@@ -143,9 +113,8 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 	return
 }
 
-
 func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
-	val := Arr(args...).Get(-1)
+	val := Get[any](-1)(args)
 	if val.IsOk() {
 		switch v := val.Value.(type) {
 		case bool:  if v        {
@@ -173,15 +142,14 @@ func Pass[A, B any](val A) (res Either[A, B])      { return res.Pass(val) }
 func Fail[A, B any](val ...any) (res Either[A, B]) { return res.Fail(val...) }
 
 func (r Either[A, B]) Must() A              { return Must(r.Value, r.Other) }
-func (r Either[A, B]) Mustnt() B            { return Mustnt[A, B](r.Value, r.Other) }
 func (r Either[A, B]) Or(def A) A           { return Or(def, r.Value, r.Other) }
-func (r Either[A, B]) OrDef() A             { return r.Value }
+func (r Either[A, B]) OrDef() (def A)       { return }
 func (r Either[A, B]) OrExit(args ...any) A { return OrExit(r, args...) }
 func (r Either[A, B]) OrExits() A { return OrExits(r) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }
 func Some[A any](value A) Option[A]   { return Option[A]{Value: value, Other: true} }
-func Err[A any](msg ...any) Result[A] { return Result[A]{Other: P.Errorf(msg...)} }
+func Err[A any](msg ...any) Result[A] { return Result[A]{Other: fmt.Errorf("%s", msg...)} }
 func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
 
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }

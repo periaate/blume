@@ -47,6 +47,7 @@ func FilterMap[I, O any](fn func(I) Option[O]) func(A[I]) A[O] {
 	}
 }
 
+type MapFn[I, O any] interface { Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] }
 type Flatter[T1, T2 any] = func(T1) Option[T2]
 type Mapper[T1, T2 any]  = func(T1) T2
 type TTVar[T1, T2 any]   = func(...T1) T2
@@ -103,7 +104,6 @@ func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
 	}
 }
 
-type MapFn[I, O any] interface { Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] }
 
 // Map applies the function to each argument and returns the results.
 func Map[I, O any, Fn MapFn[I, O]](arg Fn) func(Array[I]) Array[O] {
@@ -355,8 +355,8 @@ func limit[T ~string | ~[]any](Max int) func([]T) []T {
 }
 
 // Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains(args ...S) func(S) bool {
-	return func(str S) bool {
+func Contains(args ...string) func(string) bool {
+	return func(str string) bool {
 		for _, s := range args {
 			if strings.Contains(string(str), string(s)) {
 				return true
@@ -376,9 +376,9 @@ func Includes[K comparable](inclusive bool) func(args ...K) func([]K) bool {
 }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix(args ...S) func(S) bool {
-	return func(str S) bool {
-		l := limit[S](len(str))(args)
+func HasPrefix(args ...string) func(string) bool {
+	return func(str string) bool {
+		l := limit[string](len(str))(args)
 		for _, arg := range l {
 			if string(str[:len(arg)]) == string(arg) {
 				return true
@@ -389,9 +389,9 @@ func HasPrefix(args ...S) func(S) bool {
 }
 
 // HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix(args ...S) func(S) bool {
-	return func(str S) bool {
-		l := limit[S](len(str))(args)
+func HasSuffix(args ...string) func(string) bool {
+	return func(str string) bool {
+		l := limit[string](len(str))(args)
 		for _, arg := range l {
 			if string(str[len(str)-len(arg):]) == string(arg) {
 				return true
@@ -402,8 +402,8 @@ func HasSuffix(args ...S) func(S) bool {
 }
 
 // ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
-func ReplacePrefix(pats ...S) func(S) S {
-	return func(str S) S {
+func ReplacePrefix(pats ...string) func(string) string {
+	return func(str string) string {
 		if len(pats)%2 != 0 {
 			return str
 		}
@@ -414,7 +414,7 @@ func ReplacePrefix(pats ...S) func(S) S {
 			}
 
 			if string(p) == string(str[:len(p)]) {
-				return S(string(pats[i+1]) + string(str[len(p):]))
+				return string(string(pats[i+1]) + string(str[len(p):]))
 			}
 		}
 
@@ -423,8 +423,8 @@ func ReplacePrefix(pats ...S) func(S) S {
 }
 
 // ReplaceSuffix replaces the suffix of a string if it matches any of the given patterns.
-func ReplaceSuffix(pats ...S) func(S) S {
-	return func(str S) S {
+func ReplaceSuffix(pats ...string) func(string) string {
+	return func(str string) string {
 		if len(pats)%2 != 0 {
 			return str
 		}
@@ -438,7 +438,7 @@ func ReplaceSuffix(pats ...S) func(S) S {
 				// blumefmt incorrectly inlines this
 				a := string(str[:len(str)-len(p)])
 				b := string(pats[i+1])
-				return S(a + b)
+				return string(a + b)
 			}
 		}
 
@@ -447,104 +447,43 @@ func ReplaceSuffix(pats ...S) func(S) S {
 }
 
 // Replace replaces any found substrings with the patterns given.
-func Replace(pats ...S) func(S) S {
-	return func(str S) S {
+func Replace(pats ...string) func(string) string {
+	return func(str string) string {
 		if len(pats)%2 != 0 {
 			return str
 		}
 		for i := 0; i < len(pats); i += 2 {
-			str = S(strings.ReplaceAll(string(str), string(pats[i]), string(pats[i+1])))
+			str = string(strings.ReplaceAll(string(str), string(pats[i]), string(pats[i+1])))
 		}
 		return str
 	}
 }
 
 // ReplaceRegex replaces substrings matching a regex pattern.
-func MatchRegex(pats ...S) func(S) bool {
-	funcs := make([]func(S) bool, len(pats))
+func MatchRegex(pats ...string) func(string) bool {
+	funcs := make([]func(string) bool, len(pats))
 	for i, pat := range pats {
 		matcher, err := regexp.Compile(string(pat))
 		if err != nil {
-			return func(_ S) (_ bool) { return }
+			return func(_ string) (_ bool) { return }
 		}
-		funcs[i] = func(s S) bool { return matcher.MatchString(string(s)) }
+		funcs[i] = func(s string) bool { return matcher.Match([]byte(s)) }
 	}
 	return PredOr(funcs...)
 }
 
 // ReplaceRegex replaces substrings matching a regex pattern.
-func ReplaceRegex(pat String, rep String) func(S) S {
-	matcher, err := regexp.Compile(pat.String())
+func ReplaceRegex(pat string, rep string) func(string) string {
+	matcher, err := regexp.Compile(pat)
 	if err != nil {
-		return func(_ S) (_ S) { return }
+		return func(_ string) (_ string) { return }
 	}
-	return func(s S) S { return S(matcher.ReplaceAll([]byte(string(s)), []byte(rep))) }
+	return func(s string) string { return string(matcher.ReplaceAll([]byte(string(s)), []byte(rep))) }
 }
 
-// Shift removes the first `count` characters from a string.
-func Shift(count int) func(S) S {
-	return func(a S) (res S) {
-		if len(a) < count {
-			return
-		}
-		return S(string(a[count:]))
-	}
-}
-
-// Pop removes all but the first `count` characters from a string.
-func Pop(count int) func(S) S {
-	return func(a S) (res S) {
-		if len(a) < count {
-			return
-		}
-		return S(string(a[:count]))
-	}
-}
-
-func Splits(keep bool, match ...String) func(String) []String {
-	return func(str String) (res []S) {
-		if len(match) == 0 || len(str) == 0 {
-			return []S{str}
-		}
-
-		sort.SliceStable(match, func(i, j int) bool {
-			return len(match[i]) > len(match[j])
-		})
-
-		var lastI int
-		for i := 0; i < len(str); i++ {
-			for _, pattern := range match {
-				switch {
-				case i+len(pattern) > len(str):
-					continue
-				case str[i:i+len(pattern)] != pattern:
-					continue
-				case len(str[lastI:i]) != 0:
-					res = append(res, str[lastI:i])
-				}
-
-				lastI = i + len(pattern)
-				if len(pattern) != 0 {
-					if keep {
-						res = append(res, str[i:len(pattern)+i])
-					}
-					i += len(pattern) - 1
-				}
-				break
-			}
-		}
-
-		if len(str[lastI:]) != 0 {
-			res = append(res, str[lastI:])
-		}
-
-		return res
-	}
-}
-
-func Split(str String, keep bool, match ...String) (res []String) {
+func Split(str string, keep bool, match ...string) (res []string) {
 	if len(match) == 0 || len(str) == 0 {
-		return []String{str}
+		return []string{str}
 	}
 
 	sort.SliceStable(match, func(i, j int) bool {

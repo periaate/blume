@@ -5,71 +5,16 @@ import (
 	"time"
 )
 
-func (s String) ToInt() Option[int]         { return ToInt(s) }
-func (s String) ToInt8() Option[int8]       { return ToInt8(s) }
-func (s String) ToInt16() Option[int16]     { return ToInt16(s) }
-func (s String) ToInt32() Option[int32]     { return ToInt32(s) }
-func (s String) ToInt64() Option[int64]     { return ToInt64(s) }
-func (s String) ToUint() Option[uint]       { return ToUint(s) }
-func (s String) ToUint8() Option[uint8]     { return ToUint8(s) }
-func (s String) ToUint16() Option[uint16]   { return ToUint16(s) }
-func (s String) ToUint32() Option[uint32]   { return ToUint32(s) }
-func (s String) ToUint64() Option[uint64]   { return ToUint64(s) }
-func (s String) ToFloat32() Option[float32] { return ToFloat32(s) }
-func (s String) ToFloat64() Option[float64] { return ToFloat64(s) }
-
-func ToAuto[A, B any](fn func(A) (B, error)) func(A) Result[B] {
-	return func(a A) (res Result[B]) { return res.Auto(fn(a)) }
-}
-
-func (s String) ParseDuration() (res Result[time.Duration]) {
+func ParseDuration(s string) (res Result[time.Duration]) {
 	var value time.Duration
-	for _, v := range s.Split(false, " ") {
+	for _, v := range Split(s, false, " ") {
 		var dur time.Duration
-		dur, err := time.ParseDuration(v.String())
+		dur, err := time.ParseDuration(v)
 		if err != nil { return res.Auto(value, err) }
 		value += dur
 	}
 
 	return Ok(value)
-}
-
-func (s String) ParsesDuration() time.Duration { return s.ParseDuration().Must() }
-
-func Parse[N Integer | Float](s string, args ...any) Option[N] {
-	var a N
-	var (
-		bitSize int
-		base    = Cast[int](A[any](args).Get(0).Or(10)).Or(10)
-	)
-
-	switch any(a).(type) {
-	case int8, uint8:
-		bitSize = 8
-	case int16, uint16:
-		bitSize = 16
-	case int32, uint32, float32:
-		bitSize = 32
-	case int64, uint64, float64:
-		bitSize = 64
-	default:
-		return None[N]()
-	}
-	var value any
-	var err error
-
-	switch any(a).(type) {
-	case int, int8, int16, int32, int64:
-		value, err = strconv.ParseInt(s, base, bitSize)
-	case uint, uint8, uint16, uint32, uint64:
-		value, err = strconv.ParseUint(s, base, bitSize)
-	case float32, float64:
-		value, err = strconv.ParseFloat(s, bitSize)
-	}
-	if err == nil {
-		return Cast[N](value)
-	}
-	return None[N]()
 }
 
 func ToInt[S ~string](s S) Option[int] {

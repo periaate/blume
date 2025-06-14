@@ -7,6 +7,52 @@ import (
 	"reflect"
 )
 
+type Tree[A any] struct {
+	Val A
+	Arr []Tree[A]
+}
+
+type Delimiter struct {
+	Start string
+	End   string
+}
+
+func EmbedDelims(sar []string, delims ...Delimiter) Tree[string] {
+	car := make([]Tree[S], len(sar))
+	for i, s := range sar { car[i].Val = s }
+	res, _ := embeds(car, delims)
+	return res
+}
+
+func embeds(car []Tree[S], delims []Delimiter) (res Tree[string], v int) {
+	for i := 0; len(car) > i; i++ {
+		v := car[i]
+		matched := false
+		for _, delim := range delims {
+			switch v.Val {
+			case delim.Start:
+				r, k := embeds(car[i+1:], delims)
+				i += k
+				res.Arr = append(res.Arr, r)
+				matched = true
+			case delim.End:
+				return res, i + 1
+			}
+			if matched {
+				break
+			}
+		}
+		if !matched {
+			res.Arr = append(res.Arr, v)
+		}
+	}
+
+	return res, 0
+}
+
+func Thunk[A, B any](val A) func(_ B) A { return func(_ B) A { return val } }
+func If[A any](ok bool, a A, b A) A { if ok { return a } else { return b } }
+
 type Selector[A any] func(A) [][]int
 
 func (s Selector[A]) Pred(input A) bool {
@@ -147,23 +193,23 @@ func From[I, O any](value I, args ...any) (output Option[O]) {
 
 	var try any = value
 
-	switch r := any(output).(type) {
-	case Result[I]     : try = r.Auto(value, args...)
-	case Option[I]     : try = r.Auto(value, args...)
-	case string, String: try = P.S(value)
-	case int    : switch v := any(value).(type) { case string: try = S(v).ToInt    ().Must(); case String: try = v.ToInt    ().Must() }
-	case int8   : switch v := any(value).(type) { case string: try = S(v).ToInt8   ().Must(); case String: try = v.ToInt8   ().Must() }
-	case int16  : switch v := any(value).(type) { case string: try = S(v).ToInt16  ().Must(); case String: try = v.ToInt16  ().Must() }
-	case int32  : switch v := any(value).(type) { case string: try = S(v).ToInt32  ().Must(); case String: try = v.ToInt32  ().Must() }
-	case int64  : switch v := any(value).(type) { case string: try = S(v).ToInt64  ().Must(); case String: try = v.ToInt64  ().Must() }
-	case uint   : switch v := any(value).(type) { case string: try = S(v).ToUint   ().Must(); case String: try = v.ToUint   ().Must() }
-	case uint8  : switch v := any(value).(type) { case string: try = S(v).ToUint8  ().Must(); case String: try = v.ToUint8  ().Must() }
-	case uint16 : switch v := any(value).(type) { case string: try = S(v).ToUint16 ().Must(); case String: try = v.ToUint16 ().Must() }
-	case uint32 : switch v := any(value).(type) { case string: try = S(v).ToUint32 ().Must(); case String: try = v.ToUint32 ().Must() }
-	case uint64 : switch v := any(value).(type) { case string: try = S(v).ToUint64 ().Must(); case String: try = v.ToUint64 ().Must() }
-	case float32: switch v := any(value).(type) { case string: try = S(v).ToFloat32().Must(); case String: try = v.ToFloat32().Must() }
-	case float64: switch v := any(value).(type) { case string: try = S(v).ToFloat64().Must(); case String: try = v.ToFloat64().Must() }
-	}
+	// switch r := any(output).(type) {
+	// case Result[I]     : try = r.Auto(value, args...)
+	// case Option[I]     : try = r.Auto(value, args...)
+	// case string: try = P.S(value)
+	// case int    : switch v := any(value).(type) { case string: try = S(v).ToInt    ().Must(); case String: try = v.ToInt    ().Must() }
+	// case int8   : switch v := any(value).(type) { case string: try = S(v).ToInt8   ().Must(); case String: try = v.ToInt8   ().Must() }
+	// case int16  : switch v := any(value).(type) { case string: try = S(v).ToInt16  ().Must(); case String: try = v.ToInt16  ().Must() }
+	// case int32  : switch v := any(value).(type) { case string: try = S(v).ToInt32  ().Must(); case String: try = v.ToInt32  ().Must() }
+	// case int64  : switch v := any(value).(type) { case string: try = S(v).ToInt64  ().Must(); case String: try = v.ToInt64  ().Must() }
+	// case uint   : switch v := any(value).(type) { case string: try = S(v).ToUint   ().Must(); case String: try = v.ToUint   ().Must() }
+	// case uint8  : switch v := any(value).(type) { case string: try = S(v).ToUint8  ().Must(); case String: try = v.ToUint8  ().Must() }
+	// case uint16 : switch v := any(value).(type) { case string: try = S(v).ToUint16 ().Must(); case String: try = v.ToUint16 ().Must() }
+	// case uint32 : switch v := any(value).(type) { case string: try = S(v).ToUint32 ().Must(); case String: try = v.ToUint32 ().Must() }
+	// case uint64 : switch v := any(value).(type) { case string: try = S(v).ToUint64 ().Must(); case String: try = v.ToUint64 ().Must() }
+	// case float32: switch v := any(value).(type) { case string: try = S(v).ToFloat32().Must(); case String: try = v.ToFloat32().Must() }
+	// case float64: switch v := any(value).(type) { case string: try = S(v).ToFloat64().Must(); case String: try = v.ToFloat64().Must() }
+	// }
 
 	return Cast[O](try)
 }
@@ -191,7 +237,6 @@ func Buf(args ...any) *bytes.Buffer {
 	arg := args[0]
 	switch v := arg.(type) {
 	case string: return bytes.NewBufferString(v)
-	case String: return bytes.NewBufferString(string(v))
 	case []byte: return bytes.NewBuffer(v)
 	case io.Reader:
 		buf := bytes.NewBuffer([]byte{})
@@ -201,4 +246,4 @@ func Buf(args ...any) *bytes.Buffer {
 	}
 }
 
-func LookupEnv(arg String) (res Option[S]) { return From[string, S](os.LookupEnv(arg.String())) }
+func LookupEnv(arg string) (res Option[string]) { return From[string, S](os.LookupEnv(arg)) }

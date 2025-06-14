@@ -16,7 +16,7 @@ const (
 )
 
 type Cmd struct {
-	Name String
+	Name string
 	opts CmdOption
 }
 
@@ -25,29 +25,29 @@ type CmdOption func(*exec.Cmd) *exec.Cmd
 var CmdOpt CmdOption = func(cmd *exec.Cmd) *exec.Cmd { return cmd }
 
 // Cwd [Deprecated] use [Cd] instead
-func (prev CmdOption) Cwd(val String) CmdOption {
+func (prev CmdOption) Cwd(val string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
 		cmd = prev(cmd)
-		cmd.Dir = val.String()
+		cmd.Dir = val
 		return cmd
 	}
 }
 
-func (prev CmdOption) Cd(val String) CmdOption {
+func (prev CmdOption) Cd(val string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
 		}
 		cmd = prev(cmd)
-		cmd.Dir = val.Path().String()
+		cmd.Dir = Path(val)
 		return cmd
 	}
 }
 
-func (prev CmdOption) Env(key, val String) CmdOption {
+func (prev CmdOption) Env(key, val string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
@@ -129,7 +129,7 @@ func SD(s []S) []string {
 	return res
 }
 
-func (prev CmdOption) Args(args ...String) CmdOption {
+func (prev CmdOption) Args(args ...string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
 		if cmd == nil {
 			return cmd
@@ -196,7 +196,7 @@ func Signal(signals ...os.Signal) func(func(os.Signal) error) {
 				defer wg.Done()
 				if fn != nil {
 					if err := fn(sig); err != nil {
-						Error.Println(err)
+						// Error.Println(err)
 					}
 				}
 			}()
@@ -243,26 +243,26 @@ func (prev CmdOption) Stdin(r io.Reader) CmdOption {
 
 func Any[T any](a []T) (res []any) { for _, v := range a { res = append(res, any(v)) }; return }
 
-func Exec(name String, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
+func Exec(name string, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
 	if len(opts) == 0 { opts = append(opts, CmdOpt) }
 	return Cmd{ Name: name, opts: Pipe[CmdOption](Any(opts)...) }
 }
 
-func Execs(name String, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }
+func Execs(name string, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }
 
-func Run(name String, args ...String) Result[String] { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run() }
-func Runs(name String, args ...String) String { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run().Must() }
+func Run(name string, args ...string) Result[string] { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run() }
+func Runs(name string, args ...string) string { return Exec(name, CmdOpt.AdoptEnv().Args(args...)).Run().Must() }
 
-func (c Cmd) Run() Result[String] {
-	cmd := exec.Command(c.Name.String())
+func (c Cmd) Run() Result[string] {
+	cmd := exec.Command(c.Name)
 	cmd = c.opts(cmd)
 	out, err := cmd.Output()
-	if err != nil { return Err[String](err) }
-	return Ok(String(out))
+	if err != nil { return Err[string](err) }
+	return Ok(string(out))
 }
 
 func (c Cmd) Exec() Result[int] {
-	cmd := exec.Command(c.Name.String())
+	cmd := exec.Command(c.Name)
 	cmd = c.opts(cmd)
 	if err := cmd.Start(); err != nil { return Err[int](err) }
 	if cmd.Wait() == nil { return Ok(0) }
@@ -270,7 +270,7 @@ func (c Cmd) Exec() Result[int] {
 }
 
 func (c Cmd) Start() Result[*exec.Cmd] {
-	cmd := exec.Command(c.Name.String())
+	cmd := exec.Command(c.Name)
 	cmd = c.opts(cmd)
 	err := cmd.Start()
 	if err != nil { return Err[*exec.Cmd](err) }
@@ -278,10 +278,10 @@ func (c Cmd) Start() Result[*exec.Cmd] {
 }
 
 // func Exec[S ~string](name S, args ...S) *Command {
-// 	return &Command{String(name), Map(StoS[S, String])(args), false}
+// 	return &Command{string(name), Map(StoS[S, string])(args), false}
 // }
 //
-// func (c *Command) Append(args ...String) *Command {
+// func (c *Command) Append(args ...string) *Command {
 // 	c.Args = append(c.Args, args...)
 // 	return c
 // }
@@ -292,7 +292,7 @@ func (c Cmd) Start() Result[*exec.Cmd] {
 // }
 //
 // func (c *Command) Create() *exec.Cmd {
-// 	cmd := exec.Command(c.Name.String(), Map(StoD[String])(c.Args)...)
+// 	cmd := exec.Command(c.Name, Map(StoD[string])(c.Args)...)
 //     cmd.Env = append(os.Environ(), "FORCE_COLOR=true")
 //     cmd.Env = append(cmd.Env, "CLICOLOR_FORCE=1")
 // 	if c.Adopt {
@@ -303,24 +303,24 @@ func (c Cmd) Start() Result[*exec.Cmd] {
 // 	return cmd
 // }
 //
-// func (c *Command) Run() Result[String] {
+// func (c *Command) Run() Result[string] {
 // 	bar, err := c.Create().Output()
-// 	if err != nil { return Err[String](err) }
-// 	return Ok(String(bar))
+// 	if err != nil { return Err[string](err) }
+// 	return Ok(string(bar))
 // }
 //
-// func Run[S ~string](name S, args ...S) Result[String] {
+// func Run[S ~string](name S, args ...S) Result[string] {
 // 	bar, err := Exec(name, args...).Create().Output()
-// 	if err != nil { return Err[String](err) }
-// 	return Ok(String(bar).TrimSpace())
+// 	if err != nil { return Err[string](err) }
+// 	return Ok(string(bar).TrimSpace())
 // }
 //
-// func Runs[S ~string](name S, args ...S) String {
+// func Runs[S ~string](name S, args ...S) string {
 // 	bar, _ := Exec(name, args...).Create().Output()
-// 	return String(bar).TrimSpace()
+// 	return string(bar).TrimSpace()
 // }
 
-func Adopt(name String, args ...String) Result[int] {
+func Adopt(name string, args ...string) Result[int] {
 	return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv().Foreground(true)).Exec()
 }
-func Adopts(name String, args ...String) { Adopt(name, args...).Must() }
+func Adopts(name string, args ...string) { Adopt(name, args...).Must() }

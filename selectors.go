@@ -69,13 +69,13 @@ func Pattern[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
 	}
 }
 
-func JoinWith(delim S) func(arr A[S], sel [][]int) A[S] {
-	return func(arr A[S], sel [][]int) A[S] {
-		res := A[S]{}
+func JoinWith(delim string) func(arr []string, sel [][]int) []string {
+	return func(arr []string, sel [][]int) []string {
+		res := []string{}
 		var last int
 		for _, selection := range sel {
 			res = append(res, arr[last:selection[0]]...)
-			res = append(res, arr[selection[0]:selection[1]+1].Join(delim))
+			res = append(res, Join[string](delim)(arr[selection[0]:selection[1]+1]))
 			last = selection[1] + 1
 		}
 		res = append(res, arr[last:]...)
@@ -83,8 +83,8 @@ func JoinWith(delim S) func(arr A[S], sel [][]int) A[S] {
 	}
 }
 
-func Pre(prefixes ...String) Selector[String] {
-	return func(s String) (res [][]int) {
+func Pre(prefixes ...string) Selector[string] {
+	return func(s string) (res [][]int) {
 		for _, prefix := range prefixes {
 			if strings.HasPrefix(string(s), string(prefix)) {
 				return [][]int{{0, len(prefix)}}
@@ -94,8 +94,8 @@ func Pre(prefixes ...String) Selector[String] {
 	}
 }
 
-func Suf(suffixes ...String) Selector[String] {
-	return func(s String) (res [][]int) {
+func Suf(suffixes ...string) Selector[string] {
+	return func(s string) (res [][]int) {
 		for _, suffix := range suffixes {
 			if strings.HasSuffix(string(s), string(suffix)) {
 				return [][]int{{len(s) - len(suffix), len(s)}}
@@ -199,20 +199,20 @@ func ReplaceRanges[S ~string](tar S, rep S, ranges [][]int) S {
 	return tar
 }
 
-func Get[S ~string](selectors ...Selector[S]) func(input S) S {
-	return func(input S) S {
-		var result strings.Builder
-		for _, fn := range selectors {
-			ranges := fn(input)
-			for _, r := range ranges {
-				if len(r) >= 2 {
-					result.WriteString(string(input[r[0]:r[1]]))
-				}
-			}
-		}
-		return S(result.String())
-	}
-}
+// func Get[S ~string](selectors ...Selector[S]) func(input S) S {
+// 	return func(input S) S {
+// 		var result strings.Builder
+// 		for _, fn := range selectors {
+// 			ranges := fn(input)
+// 			for _, r := range ranges {
+// 				if len(r) >= 2 {
+// 					result.WriteString(string(input[r[0]:r[1]]))
+// 				}
+// 			}
+// 		}
+// 		return result
+// 	}
+// }
 
 func Nth[S ~string](n int, selectors ...Selector[S]) func(input S) S {
 	return func(input S) S {

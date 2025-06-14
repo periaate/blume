@@ -6,26 +6,22 @@ import (
 )
 
 // Exit the program with a console log
-func (f String) Exit(args ...any) { Exit(args...) }
+func Exit(args ...any) { fmt.Printf("%s\n", Join[any](" ")(args)); os.Exit(1) }
 
-// Exit the program with a console log
-func Exit(args ...any) { fmt.Printf("%s\n", Arr(args).Join(" ")); os.Exit(1) }
-
-func (f String) ExitWith(n int) { fmt.Print(f); os.Exit(n) }
-func ExitWith(n int, args ...any) { fmt.Printf("%s", Arr(args).Join(" ")); os.Exit(n) }
+func ExitWith(n int, args ...any) { fmt.Printf("%s", Join[any](" ")(args)); os.Exit(n) }
 
 func ExitsWith[A any](n int) func(arg A) A { return func(arg A) A { ExitWith(n, arg); return arg } }
 
 func OrExit[A, B any](either Either[A, B], args ...any) (res A) {
 	if !either.IsOk() {
-		Exit(P.Printf("%s [%v]", P.S(args...), either.Other))
+		Exit(fmt.Sprintf("%s [%v]", fmt.Sprint(args...), either.Other))
 	}
 	return either.Value
 }
 
 func OrExits[A, B any](either Either[A, B]) (res A) {
 	if !either.IsOk() {
-		Exit(P.Printf("%v", either.Other))
+		Exit(fmt.Sprintf("%v", either.Other))
 	}
 	return either.Value
 }
