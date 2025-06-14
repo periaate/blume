@@ -16,7 +16,7 @@ func Range(start, end Pred[S]) Selector[A[S]] {
 		r := [][]int{}
 		curr := []int{}
 		var started bool
-		for ind, value := range s.Value {
+		for ind, value := range s {
 			if started {
 				if !end(value) {
 					continue
@@ -41,7 +41,7 @@ func RangeSel(start, end Selector[S]) Selector[A[S]] {
 		r := [][]int{}
 		curr := []int{}
 		var started bool
-		for ind, value := range s.Value {
+		for ind, value := range s {
 			if started {
 				if len(end(value)) == 0 {
 					continue
@@ -74,11 +74,11 @@ func JoinWith(delim S) func(arr A[S], sel [][]int) A[S] {
 		res := []S{}
 		var last int
 		for _, selection := range sel {
-			res = append(res, arr.Value[last:selection[0]]...)
-			res = append(res, ToArray(arr.Value[selection[0]:selection[1]+1]).Join(delim))
+			res = append(res, arr[last:selection[0]]...)
+			res = append(res, ToArray(arr[selection[0]:selection[1]+1]).Join(delim))
 			last = selection[1] + 1
 		}
-		res = append(res, arr.Value[last:]...)
+		res = append(res, arr[last:]...)
 		return ToArray(res)
 	}
 }

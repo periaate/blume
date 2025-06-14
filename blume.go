@@ -1,6 +1,8 @@
 package blume
 
 import (
+	"fmt"
+	"reflect"
 	"regexp"
 	"slices"
 	"sort"
@@ -8,9 +10,9 @@ import (
 )
 
 // All returns true if all arguments pass the [Predicate].
-func All[A any](fns ...Pred[A]) Pred[[]A] {
+func All[T any](fns ...Pred[T]) Pred[[]T] {
 	fn := PredAnd(fns...)
-	return func(args []A) bool {
+	return func(args []T) bool {
 		for _, arg := range args {
 			if !fn(arg) {
 				return false
@@ -21,18 +23,17 @@ func All[A any](fns ...Pred[A]) Pred[[]A] {
 }
 
 // // Any returns true if any argument passes the [Predicate].
-// func Any[A any](fns ...Pred[A]) Pred[[]A] {
+// func Any[T any](fns ...Pred[T]) Pred[[]T] {
 // 	fn := PredOr(fns...)
-// 	return func(args []A) bool {
+// 	return func(args []T) bool {
 // 		return slices.ContainsFunc(args, fn)
 // 	}
 // }
 
 // Filter returns a slice of arguments that pass the [Predicate].
-func Filter[A any](fns ...Pred[A]) func([]A) []A {
+func Filter[T any](fns ...Pred[T]) func(Array[T]) Array[T] {
 	fn := PredAnd(fns...)
-	return func(args []A) (res []A) {
-		res = make([]A, 0, len(args))
+	return func(args Array[T]) (res Array[T]) {
 		for _, arg := range args {
 			if fn(arg) {
 				res = append(res, arg)
@@ -42,10 +43,52 @@ func Filter[A any](fns ...Pred[A]) func([]A) []A {
 	}
 }
 
+func FilterMap[T any, Arr Array[T]](fn func(T) Option[T]) func(Arr) Arr {
+	return func(arr Arr) Arr {
+		res := []T{}
+		for _, val := range arr {
+			if val := fn(val); val.IsOk() {
+				res = append(res, val.Value)
+			}
+		}
+		return res
+	}
+}
+
+type Flatter[T any] = func(T) Option[T]
+type Mapper[T any]  = func(T) T
+type Shout[T any]   = func(T)
+type Pred[T any]    = func(T) bool
+
+func Over[T any, Fn func(T, ...any) T | func(T) | func(T) T | func(T) Option[T] | func(T) bool](arg Fn) (res func(Array[T]) Array[T]) {
+	switch fn := any(arg).(type) {
+	case Shout[T]      : return Each(fn)
+	case func(...any) T: return Each(func(t T) { fn(t) })
+	case Mapper[T]     : return Map[T, T](fn)
+	case Flatter[T]    : return FilterMap(fn)
+	case Pred[T]       : return Filter(fn)
+	default            : return
+	}
+}
+
+func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
+	return func(arr Arr) Arr {
+		for _, value := range arr {
+			fn(value)
+		}
+		return arr
+	}
+}
+
 // Map applies the function to each argument and returns the results.
-func Map[A, B any](fn func(A) B) func([]A) []B {
-	return func(args []A) (res []B) {
-		res = make([]B, 0, len(args))
+func Map[I, O any, Fn func(I) O | func(...I) O](arg Fn) func(Array[I]) Array[O] {
+	var fn func(I) O
+	switch fun := any(arg).(type) {
+	case func(I) O   : fn = fun
+	case func(...I) O: fn = V2M(fun) }
+
+	return func(args Array[I]) (res Array[O]) {
+		res = make([]O, 0, len(args))
 		for _, arg := range args {
 			res = append(res, fn(arg))
 		}
@@ -53,20 +96,8 @@ func Map[A, B any](fn func(A) B) func([]A) []B {
 	}
 }
 
-func AMap[A, B any](fn func(A) B) func(Array[A]) Array[B] {
-	return func(args Array[A]) Array[B] {
-		res := make([]B, 0, len(args.Value))
-		for _, arg := range args.Value {
-			res = append(res, fn(arg))
-		}
-		return ToArray(res)
-	}
-}
-
-func Maps[A, B any](fn func(A) B) func([]A) Array[B] { return Cat(Map(fn), ToArray) }
-
-func FlatMap[A, B any](fn func(A) []B) func([]A) []B {
-	return func(args []A) (res []B) {
+func FlatMap[T, B any](fn func(T) []B) func([]T) []B {
+	return func(args []T) (res []B) {
 		for _, arg := range args {
 			res = append(res, fn(arg)...)
 		}
@@ -75,8 +106,8 @@ func FlatMap[A, B any](fn func(A) []B) func([]A) []B {
 }
 
 // Reduce applies the function to each argument and returns the result.
-func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
-	return func(args []A) B {
+func Reduce[T any, B any](fn func(B, T) B, init B) func([]T) B {
+	return func(args []T) B {
 		res := init
 		for _, arg := range args {
 			res = fn(res, arg)
@@ -85,10 +116,10 @@ func Reduce[A any, B any](fn func(B, A) B, init B) func([]A) B {
 	}
 }
 
-func Fold[A any, B any](fn func(B, A) B, init ...B) func([]A) B {
+func Fold[T any, B any](fn func(B, T) B, init ...B) func([]T) B {
 	var in B
 	if len(init) > 0 { in = init[0] }
-	return func(args []A) B {
+	return func(args []T) B {
 		res := in
 		for _, arg := range args {
 			res = fn(res, arg)
@@ -98,19 +129,17 @@ func Fold[A any, B any](fn func(B, A) B, init ...B) func([]A) B {
 }
 
 // Not negates a [Predicate].
-func Not[A any](fn Pred[A]) Pred[A] { return func(t A) bool { return !fn(t) } }
+func Not[T any](fn Pred[T]) Pred[T] { return func(t T) bool { return !fn(t) } }
 
 func IsZero[K comparable](a K) bool {
 	var def K
 	return a == def
 }
 
-func IsEvery[C comparable](args ...C) func(C) bool { return PredAnd(Map(V2M[C](Is))(args)...) }
-
 // Is returns a [Predicate] that checks if the argument is in the list.
-func Is[C comparable](A ...C) func(C) bool {
-	in := make(map[C]bool, len(A))
-	for _, a := range A {
+func Is[C comparable](T ...C) func(C) bool {
+	in := make(map[C]bool, len(T))
+	for _, a := range T {
 		in[a] = true
 	}
 	return func(c C) bool {
@@ -120,43 +149,121 @@ func Is[C comparable](A ...C) func(C) bool {
 }
 
 // First returns the first value which passes the [Predicate].
-func First[A any](fns ...Pred[A]) func([]A) Option[A] {
+func First[T any](fns ...Pred[T]) func([]T) Option[T] {
 	fn := PredOr(fns...)
-	return func(args []A) Option[A] {
+	return func(args []T) Option[T] {
 		for _, arg := range args {
 			if fn(arg) {
 				return Some(arg)
 			}
 		}
-		return None[A]()
+		return None[T]()
 	}
 }
 
-func StrIs[A, B ~string](vals ...A) func(B) bool {
-	is := Is(vals...)
-	return func(b B) bool { return is(A(b)) }
-}
+// Pipe runs a value through a pipeline or composes functions.
+//
+// If the first argument is a value, it executes a pipeline:
+// T1, (T1) -> T2, (T2) -> T3, ..., (Tn-1) -> Tn
+// and returns the final value: Tn
+//
+// If the first argument is a function, it composes a pipeline:
+// (T1) -> T2, (T2) -> T3, ..., (Tn-1) -> Tn
+// into a final function: (T1) -> Tn
+func Pipe[Output any](values ...any) Output {
+	// If no arguments are provided, return the zero value of the output type.
+	var zero Output
+	if len(values) == 0 {
+		return zero
+	}
 
-// Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipe[A any](fns ...func(A) A) func(A) A {
-	return func(a A) A {
-		for _, fn := range fns {
-			a = fn(a)
+	first := reflect.ValueOf(values[0])
+
+	if first.Kind() != reflect.Func {
+		if len(values) == 1 {
+			// Only a single value was passed, return it.
+			return first.Interface().(Output)
 		}
-		return a
+
+		result := first
+		for i := 1; i < len(values); i++ {
+			fn := reflect.ValueOf(values[i])
+
+			if fn.Kind() != reflect.Func {
+				panic("Pipe Error: For value processing, all subsequent arguments must be functions.")
+			}
+			outputs := fn.Call([]reflect.Value{result})
+
+			if len(outputs) == 0 {
+				if i < len(values)-1 {
+					panic("Pipe Error: A function in the middle of the pipeline returned no value, breaking the chain.")
+				}
+				return zero
+			}
+			result = outputs[0]
+		}
+		return result.Interface().(Output)
 	}
+
+	funcs := make([]reflect.Value, len(values))
+	for i, v := range values {
+		fn := reflect.ValueOf(v)
+		if fn.Kind() != reflect.Func {
+			panic("Pipe Error: For function composition, all arguments must be functions.")
+		}
+		funcs[i] = fn
+	}
+
+	for i := range len(funcs)-1 {
+		if funcs[i].Type().NumOut() != funcs[i+1].Type().NumIn() {
+			panic(fmt.Sprintf(
+				"Pipe Error: Arity mismatch between function %d (returns %d values) and function %d (expects %d values).",
+				i, funcs[i].Type().NumOut(), i+1, funcs[i+1].Type().NumIn(),
+			))
+		}
+
+		for j := range funcs[i].Type().NumOut() {
+			if funcs[i].Type().Out(j) != funcs[i+1].Type().In(j) {
+				panic(fmt.Sprintf(
+					"Pipe Error: Type mismatch between output %d of function %d (%s) and input %d of function %d (%s).",
+					j, i, funcs[i].Type().Out(j), j, i+1, funcs[i+1].Type().In(j),
+				))
+			}
+		}
+	}
+
+	firstFuncType := funcs[0].Type()
+	lastFuncType := funcs[len(funcs)-1].Type()
+
+	inTypes := make([]reflect.Type, firstFuncType.NumIn())
+	for i := range firstFuncType.NumIn() {
+		inTypes[i] = firstFuncType.In(i)
+	}
+
+	outTypes := make([]reflect.Type, lastFuncType.NumOut())
+	for i := range lastFuncType.NumOut() {
+		outTypes[i] = lastFuncType.Out(i)
+	}
+
+	composedFuncType := reflect.FuncOf(inTypes, outTypes, firstFuncType.IsVariadic())
+
+	composedFuncImpl := func(args []reflect.Value) []reflect.Value {
+		var currentResult = args
+		for _, fn := range funcs {
+			currentResult = fn.Call(currentResult)
+		}
+		return currentResult
+	}
+
+	composedFunc := reflect.MakeFunc(composedFuncType, composedFuncImpl)
+
+	return composedFunc.Interface().(Output)
 }
 
-// Pipe combines variadic [Transformer]s into a single [Transformer].
-func Pipes[A any](fns ...func(A) A) func([]A) []A { return Map(Pipe(fns...)) }
+func Cat[T, B, C any](a func(T) B, b func(B) C) func(T) C { return func(c T) C { return b(a(c)) } }
 
-// Cat concatenates two [FnA] functions into a single [FnA] function.
-func Cat[A, B, C any](a func(A) B, b func(B) C) func(A) C { return func(c A) C { return b(a(c)) } }
-func Catn[A, B any](a func(A) B, b func(B)) func(A) { return func(c A) { b(a(c)) } }
-func Catc[A, B any](a func() A, b func(A) B) func() B { return func() B { return b(a()) } }
-
-func PredAnd[A any](preds ...Pred[A]) Pred[A] {
-	return func(a A) bool {
+func PredAnd[T any](preds ...Pred[T]) Pred[T] {
+	return func(a T) bool {
 		for _, pred := range preds {
 			if !pred(a) {
 				return false
@@ -166,8 +273,8 @@ func PredAnd[A any](preds ...Pred[A]) Pred[A] {
 	}
 }
 
-func PredOr[A any](preds ...Pred[A]) Pred[A] {
-	return func(a A) bool {
+func PredOr[T any](preds ...Pred[T]) Pred[T] {
+	return func(a T) bool {
 		for _, pred := range preds {
 			if pred(a) {
 				return true
@@ -177,7 +284,7 @@ func PredOr[A any](preds ...Pred[A]) Pred[A] {
 	}
 }
 
-func LazyW[A, B any](fn func(A) B, input A) func() B {
+func LazyW[T, B any](fn func(T) B, input T) func() B {
 	var loaded bool
 	var value B
 	return func() B {
@@ -186,10 +293,10 @@ func LazyW[A, B any](fn func(A) B, input A) func() B {
 	}
 }
 
-func Lazy[A any](fn func() A) func() A {
+func Lazy[T any](fn func() T) func() T {
 	var loaded bool
-	var value A
-	return func() A {
+	var value T
+	return func() T {
 		if !loaded {
 			value, loaded = fn(), true
 		}
@@ -209,10 +316,10 @@ func Memo[K comparable, V any](fn func(K) V) func(K) V {
 	}
 }
 
-func Negate[A any](fn Pred[A]) Pred[A] { return func(a A) bool { return !fn(a) } }
+func Negate[T any](fn Pred[T]) Pred[T] { return func(a T) bool { return !fn(a) } }
 
-func Limit[A ~string | ~[]any](Max int) func([]A) []A {
-	return func(args []A) (res []A) {
+func Limit[T ~string | ~[]any](Max int) func([]T) []T {
+	return func(args []T) (res []T) {
 		for _, a := range args {
 			if len(a) <= Max {
 				res = append(res, a)
@@ -237,7 +344,8 @@ func Contains(args ...S) func(S) bool {
 func Includes[K comparable](inclusive bool) func(args ...K) func([]K) bool {
 	return func(args ...K) func([]K) bool {
 		var pred Pred[K]
-		if inclusive { pred = Is(args...) } else { pred = IsEvery(args...) }
+		// if inclusive { pred = Is(args...) } else { pred = IsEvery(args...) }
+		pred = Is(args...)
 		return func(arr []K) bool { return slices.ContainsFunc(arr, pred) }
 	}
 }

@@ -13,8 +13,8 @@ func (t Tree[A]) Traverse(f func(A)) {
 	f(t.This)
 
 	// Recursively apply to all children
-	for i := range t.Value {
-		t.Value[i].Traverse(f)
+	for i := range t.Array {
+		t.Array[i].Traverse(f)
 	}
 }
 
@@ -38,7 +38,7 @@ func (t Tree[A]) prettyPrintWithIndent(indent int) String {
 	}
 
 	// Add all children with increased indentation
-	for _, val := range t.Value {
+	for _, val := range t.Array {
 		result += val.prettyPrintWithIndent(indent + 1)
 	}
 

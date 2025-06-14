@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-type Pred[A any] = func(A) bool
 type Selector[A any] func(A) [][]int
 
 func (s Selector[A]) Pred(input A) bool {

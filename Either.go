@@ -177,7 +177,7 @@ func Ok[A any](value A) Result[A]     { return Result[A]{Value: value} }
 
 func (e Either[A, B]) IsOk() bool { return IsOk(e.Other) }
 func (e Either[A, B]) IsSome() bool { return IsOk(e.Other) }
-func (e Either[A, B]) IsNone() Bool { return Bool(!IsOk(e.Other)) }
+func (e Either[A, B]) IsNone() bool { return !IsOk(e.Other) }
 func (e Either[A, B]) IsErr() bool { return !IsOk(e.Other) }
 
 func AllOk[A, B any](arr []Either[A, B]) bool {

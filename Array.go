@@ -18,27 +18,29 @@ import (
 
 // Prepend prepends the arguments before the array.
 // [..., arr]
-func Prepend[A any](arr []A, args ...A) []A { return append(args, arr...) }
+func Prepend[T any](arr []T, args ...T) []T { return append(args, arr...) }
 
 // Append appends the arguments after the array.
 // [arr, ...]
 // Just use `append` in most cases.
-func Append[A any](arr []A, args ...A) []A { return append(arr, args...) }
+func Append[T any](arr []T, args ...T) []T { return append(arr, args...) }
 
-type Array[A any] struct{ Value []A }
+// type Array[T any] struct{ Value []T }
+type Array[T any] []T // Redefined
 
-func (a Array[A]) Pattern(selector Selector[Array[A]], actor func(Array[A], [][]int) Array[A]) Array[A] {
+
+func (a Array[T]) Pattern(selector Selector[Array[T]], actor func(Array[T], [][]int) Array[T]) Array[T] {
 	return Pattern(selector, actor)(a)
 }
 
-func (a Array[A]) Shuffle() Array[A] {
-	args := a.Value
+func (a Array[T]) Shuffle() Array[T] {
+	args := a
 	rand.Shuffle(len(args), func(i, j int) {
 		temp := args[j]
 		args[j] = args[i]
 		args[i] = temp
 	})
-	return ToArray(args)
+	return Array[T](args)
 }
 
 
@@ -52,68 +54,68 @@ func (l Length) Le(i int) bool { return int(l) <= i }
 func (l Length) Eq(i int) bool { return int(l) == i }
 func (l Length) Ne(i int) bool { return int(l) != i }
 
-func (arr Array[A]) Len() Length { return Length(len(arr.Value)) }
+func (arr Array[T]) Len() Length { return Length(len(arr)) }
 
-func (arr Array[A]) Get(i int) (res Option[A]) {
+func (arr Array[T]) Get(i int) (res Option[T]) {
 	if i < 0 {
-		i = len(arr.Value) + i
+		i = len(arr) + i
 	}
 	if i < 0 {
 		return res.Fail()
 	}
-	if i >= len(arr.Value) {
+	if i >= len(arr) {
 		return res.Fail()
 	}
-	return res.Pass(arr.Value[i])
+	return res.Pass(arr[i])
 }
 
-func (arr Array[A]) Slice(start int, ends ...int) (res Array[A]) {
-	l := len(arr.Value)
+func (arr Array[T]) Slice(start int, ends ...int) (res Array[T]) {
+	l := len(arr)
 	if l == 0 { return }
-	c := Clamp(0, len(arr.Value))
+	c := Clamp(0, len(arr))
 	if start < 0 { start = l+start }
-	if len(ends) == 0 { return ToArray(arr.Value[c(start):]) }
-	end := ToArray(ends).Gets(0)
+	if len(ends) == 0 { return Array[T](arr[c(start):]) }
+	end := Array[int](ends).Gets(0)
 	if end   < 0 { end   = l+end }
-	return ToArray(arr.Value[c(start):c(end)])
+	return arr[c(start):c(end)]
 }
 
-func (arr Array[A]) Contains(a any) bool { return arr.First(Cat[A](ToString, Is(P.S(a)))).IsOk() }
+func (arr Array[T]) Contains(a any) bool { return arr.First(Cat[T](ToString, Is(P.S(a)))).IsOk() }
 
-func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
-func (arr Array[A]) Reverse() Array[A] {
-	r := make([]A, 0, len(arr.Value))
-	for i := len(arr.Value); i > 0; i-- {
-		r = append(r, arr.Value[i-1])
+func (arr Array[T]) Gets(i int) T { return arr.Get(i).Must() }
+func (arr Array[T]) Reverse() Array[T] {
+	r := make([]T, 0, len(arr))
+	for i := len(arr); i > 0; i-- {
+		r = append(r, arr[i-1])
 	}
-	return ToArray(r)
+	return Array[T](r)
 }
 
-func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
-func ToArray[A any](a []A) Array[A] { return Array[A]{a} }
+func Arr[T any](args ...T) Array[T] { return args }
+func ToArray[T any](a []T) Array[T] { return a }
 
-func (arr Array[A]) Filter(fn Pred[A]) Array[A] {
-	res := []A{}
-	for _, val := range arr.Value {
+func (arr Array[T]) Filter(fn Pred[T]) Array[T] {
+	res := []T{}
+	for _, val := range arr {
 		if fn(val) {
 			res = append(res, val)
 		}
 	}
-	return Array[A]{Value: res}
+	return res
 }
 
-func (arr Array[A]) FilterMap(fn func(A) Option[A]) Array[A] {
-	res := []A{}
-	for _, val := range arr.Value {
+func (arr Array[T]) FilterMap(fn func(T) Option[T]) Array[T] {
+	res := []T{}
+	for _, val := range arr {
 		if val := fn(val); val.IsOk() {
 			res = append(res, val.Value)
 		}
 	}
-	return Array[A]{Value: res}
+	return res
 }
 
-func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
-	for _, val := range arr.Value {
+func (arr Array[T]) First(fn Pred[T]) (res Option[T]) {
+	for _, val := range arr {
 		if fn(val) {
 			return res.Pass(val)
 		}
@@ -121,170 +123,133 @@ func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 	return res.Fail()
 }
 
-func (arr Array[A]) Then(fn func(Array[A]) Array[A]) Array[A] { return fn(arr) }
+func (arr Array[T]) Then(fn func(Array[T]) Array[T]) Array[T] { return fn(arr) }
 
-func (arr Array[A]) V(f any) Array[A] {
-	switch fn := f.(type) {
-	case func(A)            : return arr.Each(fn)
-	case func(A) A          : return arr.Map(fn)
-	case func(A) Option[A]  : return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
-	case func(A) Result[A]  : return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
-	case func(A) []A        : return arr.Flat(fn)
-	case func(A) Array[A]   : return arr.AFlat(fn)
-	case func(...A)         : return arr.Each(func(a A) { fn(a) })
-	case func(...A) A       : return arr.Map(V2M(fn))
-	case func(...A) Option[A]: return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
-	case func(...A) Result[A]: return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
-	case func(...A) []A     : return arr.Flat(V2M(fn))
-	case func(...A) Array[A]: return arr.AFlat(V2M(fn))
-
-	case func(any)            : return arr.Each( func(a A)          { fn(a) })
-	case func(any) A          : return arr.Map(  func(a A) A        { return fn(a) })
-	case func(any) []A        : return arr.Flat( func(a A) []A      { return fn(a) })
-	case func(any) Array[A]   : return arr.AFlat(func(a A) Array[A] { return fn(a) })
-	case func(...any)         : return arr.Each (func(a A)          { fn(a) })
-	case func(...any) A       : return arr.Map  (func(a A) A        { return fn(a) })
-	case func(...any) []A     : return arr.Flat (func(a A) []A      { return fn(a) })
-	case func(...any) Array[A]: return arr.AFlat(func(a A) Array[A] { return fn(a) })
-
-	default                 : panic("Array[A].V(fn) called with illegal invariant of func(A) A")
-	}
-}
-
-func (arr Array[A]) Map(fn func(A) A) Array[A] {
-	res := make([]A, len(arr.Value))
-	for i, val := range arr.Value {
+func (arr Array[T]) Map(fn func(T) T) Array[T] {
+	res := make([]T, len(arr))
+	for i, val := range arr {
 		res[i] = fn(val)
 	}
-	return Array[A]{Value: res}
+	return res
 }
 
-func (arr Array[A]) Reduce(fn func(A, A) A, initial A) A {
-	for _, val := range arr.Value {
+func (arr Array[T]) Reduce(fn func(T, T) T, initial T) T {
+	for _, val := range arr {
 		initial = fn(initial, val)
 	}
 	return initial
 }
 
-func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr.Value)) }
-func (arr Array[A]) AFlat(fn func(A) Array[A]) Array[A] { return ToArray(FlatMap(func(a A) []A { return fn(a).Value })(arr.Value)) }
+func (arr Array[T]) Flat(fn func(T) []T) Array[T] { return Array[T](FlatMap(fn)(arr)) }
+func (arr Array[T]) AFlat(fn func(T) Array[T]) Array[T] { return Array[T](FlatMap(func(a T) []T { return fn(a) })(arr)) }
 
-func (arr Array[A]) Each(fn func(A)) Array[A] {
-	for _, value := range arr.Value {
+func (arr Array[T]) Each(fn func(T)) Array[T] {
+	for _, value := range arr {
 		fn(value)
 	}
 	return arr
 }
 
-func Each[A any](fn func(A)) func(Array[A]) {
-	return func(arr Array[A]) {
-		for _, value := range arr.Value {
-			fn(value)
-		}
-	}
-}
 
-func ForSafe[A, B any](fn func(A)) Option[func(B) B] {
-	var b B
+
+func ForSafe[T1, T2 any](fn func(T1)) Option[func(T2) T2] {
+	var b T2
 	switch any(b).(type) {
-	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr })
-	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr })
+	case Array[T1]: return Cast[func(T2) T2](func(arr Array[T1]) Array[T1] { for _, value := range arr { fn(value) }; return arr })
+	case []T1: return Cast[func(T2) T2](func(arr []T1) []T1 { for _, value := range arr { fn(value) }; return arr })
 	}
-	return None[func(B) B]()
+	return None[func(T2) T2]()
 }
 
-func For[B, A any](fn func(A)) func(B) B {
-	var b B
+func For[T2, T1 any](fn func(T1)) func(T2) T2 {
+	var b T2
 	switch any(b).(type) {
-	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr }).Must()
-	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr }).Must()
+	case Array[T1]: return Cast[func(T2) T2](func(arr Array[T1]) Array[T1] { for _, value := range arr { fn(value) }; return arr }).Must()
+	case []T1: return Cast[func(T2) T2](func(arr []T1) []T1 { for _, value := range arr { fn(value) }; return arr }).Must()
 	}
-	panic("unsafe call to blume.Each; input type `B` did not match `Array[A]` or `[]A`; input type B must be array-like")
+	panic("unsafe call to blume.Each; input type `B` did not match `Array[T]` or `[]A`; input type B must be array-like")
 }
 
-func Forn[B, A any](fn func(A)) func(B) { return Ignore(For[B, A](fn)) }
+func (arr Array[T]) Join(sep S) S { return Join(sep)(Map[T](Sprint)(arr)) }
 
-// Join fuck it everything is just strings now
-func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(arr.Value)) }
-
-func Sprint[A any](a A) String { return S(fmt.Sprint(a)) }
+func Sprint[T any](a T) String { return S(fmt.Sprint(a)) }
 
 
 // JoinAfter joins input after this array
 // [this, ...]
-func (this Array[A]) JoinAfter(input Array[A]) Array[A] { return Array[A]{ Value: append(this.Value, input.Value...) }}
+func (this Array[T]) JoinAfter(input Array[T]) Array[T] { return  append(this, input...) }
 
 // JoinBefore joins input before this array
 // [..., this]
-func (this Array[A]) JoinBefore(input Array[A]) Array[A] { return Array[A]{ Value: append(input.Value, this.Value...) }}
+func (this Array[T]) JoinBefore(input Array[T]) Array[T] { return  append(input, this...) }
 
 // Append appends the arguments after the array.
-// [this, ...] -> Array[A]
-func (arr Array[A]) Append(args ...A) Array[A] { return Array[A]{Value: append(arr.Value, args...)} }
+// [this, ...] -> Array[T]
+func (arr Array[T]) Append(args ...T) Array[T] { return append(arr, args...) }
 
 // Appends appends the arguments before the array, returning a slice.
-// [this, ...] -> []A
-func (arr Array[A]) Appends(args ...A) []A { return arr.Append(args...).Value }
+// [this, ...] -> []T
+func (arr Array[T]) Appends(args ...T) []T { return arr.Append(args...) }
 
 // Prepend args before Array
-// [..., this] -> Array[A]
-func (arr Array[A]) Prepend(args ...A) Array[A] { return Array[A]{Value: append(args, arr.Value...)} }
+// [..., this] -> Array[T]
+func (arr Array[T]) Prepend(args ...T) Array[T] { return append(args, arr...) }
 
 // Prepend prepends the arguments before the array.
-// [..., this] -> []A
-func (arr Array[A]) Prepends(args ...A) []A { return arr.Prepend(args...).Value }
+// [..., this] -> []T
+func (arr Array[T]) Prepends(args ...T) []T { return arr.Prepend(args...) }
 
 
-func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
-	arr_1 := []A{}
-	arr_2 := []A{}
-	for i, val := range arr.Value {
+func (arr Array[T]) Split(fn Pred[T]) (HasNot Array[T], Has Array[T]) {
+	arr_1 := []T{}
+	arr_2 := []T{}
+	for i, val := range arr {
 		if !fn(val) {
 			arr_1 = append(arr_1, val)
 			continue
 		}
-		arr_2 = arr.Value[i+1:]
+		arr_2 = arr[i+1:]
 		break
 	}
 
-	return ToArray(arr_1), ToArray(arr_2)
+	return Array[T](arr_1), arr_2
 }
 
-func (arr Array[A]) From(n int) Array[A] {
-	if n <= 0 || len(arr.Value) == 0 {
+func (arr Array[T]) From(n int) Array[T] {
+	if n <= 0 || len(arr) == 0 {
 		return arr
 	}
-	if len(arr.Value) > n {
-		arr.Value = arr.Value[n:]
+	if len(arr) > n {
+		arr = arr[n:]
 	}
 	return arr
 }
 
-func (arr Array[A]) Froms(n int) []A { return arr.From(n).Value }
+func (arr Array[T]) Froms(n int) []T { return arr.From(n) }
 
 func Flag(arr Array[String], flags ...String) (Array[String], bool) {
 	pred := Is(flags...)
-	new_arr := make([]String, 0, len(arr.Value))
-	for i, val := range arr.Value {
+	new_arr := make([]String, 0, len(arr))
+	for i, val := range arr {
 		if pred(val) {
-			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+			return Array[S](append(new_arr, arr[i+1:]...)), true
 		}
 		new_arr = append(new_arr, val)
 	}
 
-	return ToArray(new_arr), false
+	return Array[S](new_arr), false
 }
 
-func (arr Array[A]) Flag(fn Pred[A]) (Array[A], bool) {
-	new_arr := make([]A, 0, len(arr.Value))
-	for i, val := range arr.Value {
+func (arr Array[T]) Flag(fn Pred[T]) (Array[T], bool) {
+	new_arr := make([]T, 0, len(arr))
+	for i, val := range arr {
 		if fn(val) {
-			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+			return Array[T](append(new_arr, arr[i+1:]...)), true
 		}
 		new_arr = append(new_arr, val)
 	}
 
-	return ToArray(new_arr), false
+	return Array[T](new_arr), false
 }
 
 func Seen[K comparable]() func(K) bool {
@@ -299,61 +264,95 @@ func Seen[K comparable]() func(K) bool {
 	}
 }
 
-// TODO: add UniqueBy
-func Unique[K comparable](slice []K) []K { return Filter(Not(Seen[K]()))(slice) }
+func SeenBy[T any, K comparable](fn func(T) K) func(T) bool {
+	seen := make(map[K]any)
+	return func(val T) bool {
+		k := fn(val)
+		_, ok := seen[k]
+		if ok { return true }
+		seen[k] = nil
+		return false
+	}
+}
 
 // TODO: add UniqueBy
-func (arr Array[A]) Unique() Array[A] {
-	var a A
+func Unique[K comparable](slice Array[K]) Array[K] { return Filter(Not(Seen[K]()))(slice) }
+func UniqueBy[T any, K comparable](fn func(T) K, slice Array[T]) Array[T] { return Filter(Not(SeenBy(fn)))(slice) }
+
+// TODO: add UniqueBy
+func (arr Array[T]) Unique() Array[T] {
+	var a T
 	switch any(a).(type) {
-	case string    : return Cast[Array[A]](Cast[Array[string]]     (arr).Must().Filter(Not(Seen[string]())))    .Must()
-	case bool      : return Cast[Array[A]](Cast[Array[bool]]       (arr).Must().Filter(Not(Seen[bool]())))      .Must()
-	case int       : return Cast[Array[A]](Cast[Array[int]]        (arr).Must().Filter(Not(Seen[int]())))       .Must()
-	case uint      : return Cast[Array[A]](Cast[Array[uint]]       (arr).Must().Filter(Not(Seen[uint]())))      .Must()
-	case int8      : return Cast[Array[A]](Cast[Array[int8]]       (arr).Must().Filter(Not(Seen[int8]())))      .Must()
-	case uint8     : return Cast[Array[A]](Cast[Array[uint8]]      (arr).Must().Filter(Not(Seen[uint8]())))     .Must()
-	case int16     : return Cast[Array[A]](Cast[Array[int16]]      (arr).Must().Filter(Not(Seen[int16]())))     .Must()
-	case uint16    : return Cast[Array[A]](Cast[Array[uint16]]     (arr).Must().Filter(Not(Seen[uint16]())))    .Must()
-	case int32     : return Cast[Array[A]](Cast[Array[int32]]      (arr).Must().Filter(Not(Seen[int32]())))     .Must()
-	case uint32    : return Cast[Array[A]](Cast[Array[uint32]]     (arr).Must().Filter(Not(Seen[uint32]())))    .Must()
-	case int64     : return Cast[Array[A]](Cast[Array[int64]]      (arr).Must().Filter(Not(Seen[int64]())))     .Must()
-	case uint64    : return Cast[Array[A]](Cast[Array[uint64]]     (arr).Must().Filter(Not(Seen[uint64]())))    .Must()
-	case float32   : return Cast[Array[A]](Cast[Array[float32]]    (arr).Must().Filter(Not(Seen[float32]())))   .Must()
-	case float64   : return Cast[Array[A]](Cast[Array[float64]]    (arr).Must().Filter(Not(Seen[float64]())))   .Must()
-	case complex64 : return Cast[Array[A]](Cast[Array[complex64]]  (arr).Must().Filter(Not(Seen[complex64]()))) .Must()
-	case complex128: return Cast[Array[A]](Cast[Array[complex128]] (arr).Must().Filter(Not(Seen[complex128]()))).Must()
-	default        : return arr.Filter(Cat[A](ToString, Not(Seen[S]()))) // ¯\_(ツ)_/¯ it works, can't be bothered with reflection
+	case string    : return Cast[Array[T]](Cast[Array[string]]     (arr).Must().Filter(Not(Seen[string]())))    .Must()
+	case bool      : return Cast[Array[T]](Cast[Array[bool]]       (arr).Must().Filter(Not(Seen[bool]())))      .Must()
+	case int       : return Cast[Array[T]](Cast[Array[int]]        (arr).Must().Filter(Not(Seen[int]())))       .Must()
+	case uint      : return Cast[Array[T]](Cast[Array[uint]]       (arr).Must().Filter(Not(Seen[uint]())))      .Must()
+	case int8      : return Cast[Array[T]](Cast[Array[int8]]       (arr).Must().Filter(Not(Seen[int8]())))      .Must()
+	case uint8     : return Cast[Array[T]](Cast[Array[uint8]]      (arr).Must().Filter(Not(Seen[uint8]())))     .Must()
+	case int16     : return Cast[Array[T]](Cast[Array[int16]]      (arr).Must().Filter(Not(Seen[int16]())))     .Must()
+	case uint16    : return Cast[Array[T]](Cast[Array[uint16]]     (arr).Must().Filter(Not(Seen[uint16]())))    .Must()
+	case int32     : return Cast[Array[T]](Cast[Array[int32]]      (arr).Must().Filter(Not(Seen[int32]())))     .Must()
+	case uint32    : return Cast[Array[T]](Cast[Array[uint32]]     (arr).Must().Filter(Not(Seen[uint32]())))    .Must()
+	case int64     : return Cast[Array[T]](Cast[Array[int64]]      (arr).Must().Filter(Not(Seen[int64]())))     .Must()
+	case uint64    : return Cast[Array[T]](Cast[Array[uint64]]     (arr).Must().Filter(Not(Seen[uint64]())))    .Must()
+	case float32   : return Cast[Array[T]](Cast[Array[float32]]    (arr).Must().Filter(Not(Seen[float32]())))   .Must()
+	case float64   : return Cast[Array[T]](Cast[Array[float64]]    (arr).Must().Filter(Not(Seen[float64]())))   .Must()
+	case complex64 : return Cast[Array[T]](Cast[Array[complex64]]  (arr).Must().Filter(Not(Seen[complex64]()))) .Must()
+	case complex128: return Cast[Array[T]](Cast[Array[complex128]] (arr).Must().Filter(Not(Seen[complex128]()))).Must()
+	default        : return arr.Filter(Cat[T](ToString, Not(Seen[S]()))) // ¯\_(ツ)_/¯ it works, can't be bothered with reflection
 	}
 }
 
-func ToString[A any](a A) S { return P.S(a) }
+func (arr Array[T]) UniqueBy(fnAny any) Array[T] {
+	switch fn := any(fnAny).(type) {
+	case func(T) string    : return UniqueBy[T, string](fn, arr)
+	case func(T) bool      : return UniqueBy[T, bool](fn, arr)
+	case func(T) int       : return UniqueBy[T, int](fn, arr)
+	case func(T) uint      : return UniqueBy[T, uint](fn, arr)
+	case func(T) int8      : return UniqueBy[T, int8](fn, arr)
+	case func(T) uint8     : return UniqueBy[T, uint8](fn, arr)
+	case func(T) int16     : return UniqueBy[T, int16](fn, arr)
+	case func(T) uint16    : return UniqueBy[T, uint16](fn, arr)
+	case func(T) int32     : return UniqueBy[T, int32](fn, arr)
+	case func(T) uint32    : return UniqueBy[T, uint32](fn, arr)
+	case func(T) int64     : return UniqueBy[T, int64](fn, arr)
+	case func(T) uint64    : return UniqueBy[T, uint64](fn, arr)
+	case func(T) float32   : return UniqueBy[T, float32](fn, arr)
+	case func(T) float64   : return UniqueBy[T, float64](fn, arr)
+	case func(T) complex64 : return UniqueBy[T, complex64](fn, arr)
+	case func(T) complex128: return UniqueBy[T, complex128](fn, arr)
+	default                : return arr.Filter(Cat[T](ToString, Not(Seen[S]()))) // ¯\_(ツ)_/¯ it works, can't be bothered with reflection
+	}
+}
+
+func ToString[T any](a T) S { return P.S(a) }
 
 
-func Pair[A any](arr Array[A]) (res Result[Array[Array[A]]]) {
-	l := len(arr.Value)
+func Pair[T any](arr Array[T]) (res Result[Array[Array[T]]]) {
+	l := len(arr)
 	if l%2 != 0 { return res.Fail("pair called with an uneven array") }
-	arrs := make([]Array[A], 0, l/2)
+	arrs := make([]Array[T], 0, l/2)
 	for i := range l/2 {
 		n := i*2
-		arrs = append(arrs, Array[A]{ Value: []A{ arr.Value[n], arr.Value[n+1] } })
+		arrs = append(arrs, []T{ arr[n], arr[n+1] })
 	}
-	return res.Pass(Array[Array[A]]{Value: arrs})
+	return res.Pass(arrs)
 }
 
-func Pairs[A any](arr Array[A]) (res Array[Array[A]]) {
-	l := len(arr.Value)
+func Pairs[T any](arr Array[T]) (res Array[Array[T]]) {
+	l := len(arr)
 	if l%2 != 0 { Exit("pairs called with an uneven array") }
-	arrs := make([]Array[A], 0, l/2)
+	arrs := make([]Array[T], 0, l/2)
 	for i := range l/2 {
 		n := i*2
-		arrs = append(arrs, Array[A]{ Value: []A{ arr.Value[n], arr.Value[n+1] } })
+		arrs = append(arrs, []T{ arr[n], arr[n+1] })
 	}
-	return Array[Array[A]]{Value: arrs}
+	return res
 }
 
-func ArrayFlat[A any](arr Array[Array[A]]) Array[A] {
-	res := Arr[A]()
-	for _, a := range arr.Value {
+func ArrayFlat[T any](arr Array[Array[T]]) Array[T] {
+	res := Arr[T]()
+	for _, a := range arr {
 		res = res.JoinAfter(a)
 	}
 	return res
