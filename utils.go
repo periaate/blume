@@ -2,17 +2,9 @@ package blume
 
 import (
 	"fmt"
-	"go/format"
 	"iter"
 	"os"
 )
-
-/*
-type Indexable[Array, El] := {
-	Array: string -> El: rune | byte
-	Array: []El   -> El: any
-}
-*/
 
 type Iterable[El any | rune | byte, Arr string | []El] struct {
 	arr Arr
@@ -37,46 +29,6 @@ func Pop[T any]  (arr []T) (res T, out []T, ok bool) { if len(arr) > 0 { res, ou
 func (r Either[A, B]) From(args ...any) Either[A, B] { return Pipe[Either[A, B]](args...) }
 func (e Either[A, B]) Is(args ...any) bool { return false }
 
-func Get[El any | rune | byte, Arr string | []El](i int, arr Arr) (res Option[El]) {
-	if i < 0         { i = len(arr) + i }
-	if i < 0         { return res.Fail() }
-	if i >= len(arr) { return res.Fail() }
-
-	switch any(arr).(type) {
-	case string:
-		switch any(out).(type) {
-		case rune, string:
-		case byte:
-			return Pipe[Option[El]](
-				Cast[[]byte](arr),
-				Index[byte](i),
-				Cast[El],
-			)
-		default: return
-		}
-	default:
-	}
-
-	return res, true
-}
-
-// func Window[El any | rune | byte | string, Arr string | []El](index int, size int) func(input Arr) (res Arr, ok bool) {
-// 	return func(input Arr) (res Arr, ok bool) {
-// 		l := len(arr)
-// 		if l == 0 { return }
-// 		c := Clamp(0, len(arr))
-// 		if start < 0 { start = l+start }
-// 		if len(ends) == 0 { return Array[T](arr[c(start):]) }
-// 		end := ends[0]
-// 		if end < 0 { end = l+end }
-// 		return arr[c(start):c(end)]
-// 	}
-// }
-
-// type Op[T any, O any] func(T, T) O
-// func Le[Fn Op[T, O], T, O any](args ...any) Op[int, bool].Le
-
-// Pred[int] { return func(n int) bool { return n <= arg } }
 
 type Op[I, O any] interface {
 	func(I) func(I) O | func(I, I) O
@@ -182,58 +134,8 @@ func (itr *Iterable[El, Arr]) Step(n int) (res Option[El]) {
 	return res.Auto(itr.indexes(itr.arr, itr.idx)) 
 }
 
-func CanIndex[El any | rune, Arr string | ~[]El](idx int, input Arr) (res Option[bool]) {
-	var out El
-	switch inp := any(input).(type) {
-	case string:
-		switch any(out).(type) {
-		case rune:
-			if idx+1 >= len(inp) { return res.Fail() }
-			out, ok := any(inp[idx+1]).(El)
-			if !ok { return res.Fail() }
-			return res.Pass(out)
-		}
-	}
-
-	return res.Fail()
-}
-
-func Next[El any | rune, Arr string | ~[]El](idx int, input Arr) (res Option[El]) {
-	var out El
-	switch inp := any(input).(type) {
-	case string:
-		switch any(out).(type) {
-		case rune:
-			if idx+1 >= len(inp) { return res.Fail() }
-			out, ok := any(inp[idx+1]).(El)
-			if !ok { return res.Fail() }
-			return res.Pass(out)
-		}
-	}
-	res
-}
-
-
-// IsFormat checks whether the input string contains any printf directives.
-func IsFormat(str string) bool {
-	itr, ok := Iter[rune](str)
-	if !ok { return false }
-	for i, r := range itr.Iter() {
-		if r != '%' { return false }
-		itr.Peek(1).IsErr('%')
-		if i+1 < len(str) && str[i+1] == '%' {
-			i++
-			continue
-		}
-		return true
-	}
-	return false
-}
-
-type exit func(...any)
-
 // Exit the program with a console log
-var Exit exit = func(args ...any) {
+func Exit(args ...any) {
 	fmt.Printf("%s\n", Join(" ")(args))
 	os.Exit(1)
 }

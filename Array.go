@@ -24,9 +24,9 @@ func Append[T any](arr []T, args ...T) []T { return append(arr, args...) }
 type Array[T any] []T
 
 
-func (a Array[T]) Pattern(selector Selector[Array[T]], actor func(Array[T], [][]int) Array[T]) Array[T] {
-	return Pattern(selector, actor)(a)
-}
+// func (a Array[T]) Pattern(selector Selector[Array[T]], actor func(Array[T], [][]int) Array[T]) Array[T] {
+// 	return Pattern(selector, actor)(a)
+// }
 
 func (a Array[T]) Shuffle() Array[T] {
 	args := a

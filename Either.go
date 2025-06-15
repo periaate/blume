@@ -114,7 +114,7 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 }
 
 func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
-	val := Get[any](-1)(args)
+	val := Index[any](-1)(args)
 	if val.IsOk() {
 		switch v := val.Value.(type) {
 		case bool:  if v        {

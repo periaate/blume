@@ -1,6 +1,7 @@
 package blume
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -26,63 +27,51 @@ func Create(args ...string) (res Result[Buffer]) {
 	return res.Pass(Buffer{f})
 }
 
-type Func struct {
-	Takes int
-	Returns int
-	Variadic bool
-	Val any
+type Value struct {
 	reflect.Value
-	reflect.Type
-	IsOption bool
-	IsResult bool
-	Then *Func
+	Then *Value
 }
 
-func (fn Func) Call(args ...any) (res []reflect.Value, ok bool) {
-	inputs := Map[any, reflect.Value](reflect.ValueOf)(args)
-	if len(inputs) < 2 {
-		res = fn.Value.Call(inputs)
-		if fn.Then != nil { return fn.Then.Call(Any(res)...) }
-		return res, true
-	}
+func (val *Value) IsFunc  () bool { return val.Kind() == reflect.Func   }
+func (val *Value) IsBool  () bool { return val.Kind() == reflect.Bool   }
+func (val *Value) IsInt   () bool { return val.Kind() == reflect.Int    }
+func (val *Value) IsUint  () bool { return val.Kind() == reflect.Uint   }
+func (val *Value) IsUint8 () bool { return val.Kind() == reflect.Uint8  }
+func (val *Value) IsUint16() bool { return val.Kind() == reflect.Uint16 }
+func (val *Value) IsUint32() bool { return val.Kind() == reflect.Uint32 }
+func (val *Value) IsUint64() bool { return val.Kind() == reflect.Uint64 }
+func (val *Value) IsInt8  () bool { return val.Kind() == reflect.Int8   }
+func (val *Value) IsInt16 () bool { return val.Kind() == reflect.Int16  }
+func (val *Value) IsInt32 () bool { return val.Kind() == reflect.Int32  }
+func (val *Value) IsInt64 () bool { return val.Kind() == reflect.Int64  }
 
-	switch val := inputs[len(inputs)-1].Interface().(type) {
-	case error: if val != nil { return }; inputs = inputs[:len(inputs)-1]
-	case bool: if !val        { return }; inputs = inputs[:len(inputs)-1] }
+func (val *Value) Call(args ...any) (res []reflect.Value, err error) { return val.call(Map[any, reflect.Value](reflect.ValueOf)(args), false) }
 
-	res = fn.Value.Call(inputs)
-	if fn.Then != nil { return fn.Then.Call(Any(res)...) }
-	return res, true
-}
-
-var err_type reflect.Type
-
-func init() {
-	var err error
-	err_type = reflect.TypeOf(err)
-}
-
-func Function(fn any) (res Result[Func]) {
-	fun := Func{}
-	fnType := reflect.TypeOf(fn)
-	if fnType.Kind() != reflect.Func { return res.Fail("function must be a function type") }
-	var lastOut reflect.Type
-
-	if no := fnType.NumOut(); no >= 2 {
-		lastOut = fnType.Out(no-1)
-		switch {
-		case lastOut.AssignableTo(err_type): fun.IsResult = true
-		case lastOut.Kind() == reflect.Bool: fun.IsOption = true
+func (val *Value) call(inputs []reflect.Value, fromPrevious bool) (res []reflect.Value, err error) {
+	if val.Kind() != reflect.Func {
+		if val.Then == nil || !val.Then.IsFunc() {
+			err = fmt.Errorf("attempting to call a non-function [%s] as a function", val.String())
+			return
 		}
+		return val.Then.call([]reflect.Value{val.Value}, false)
 	}
 
-	fun.Takes = fnType.NumIn()
-	fun.Returns = fnType.NumOut()
-	fun.Variadic = fnType.IsVariadic()
-	fun.Val = fn
-	fun.Value = reflect.ValueOf(fn)
-	fun.Type = fnType
+	if len(inputs) < 2 {
+		res = val.Value.Call(inputs)
+		if val.Then != nil { return val.Then.call(res, true) }
+		return res, nil
+	}
 
-	return res.Pass(fun)
+	if fromPrevious {
+		switch inp := inputs[len(inputs)-1].Interface().(type) {
+		case error: if inp != nil { return nil, inp }; inputs = inputs[:len(inputs)-1]
+		case bool: if !inp        { return nil, fmt.Errorf("in call to [%s] the last argument [ok != true]", val.String()) }; inputs = inputs[:len(inputs)-1] }
+	}
+
+	res = val.Value.Call(inputs)
+	if val.Then != nil { return val.Then.call(res, true) }
+	return res, nil
 }
+
+func Function(input any) (res *Value) { return &Value{ Value: reflect.ValueOf(input) } }
 
