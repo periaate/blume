@@ -2,6 +2,8 @@ package blume
 
 import (
 	"fmt"
+	"go/format"
+	"iter"
 	"os"
 )
 
@@ -14,19 +16,48 @@ type Indexable[Array, El] := {
 
 type Iterable[El any | rune | byte, Arr string | []El] struct {
 	arr Arr
-	indexes func(src, idx int) (El, bool)
-	ranges  func(src, idx int) (Arr, bool)
+	indexes func(arr Arr, idx int) (El, bool)
+	ranges  func(arr Arr, src, idx int) (Arr, bool)
 	idx int
 	len int
 }
 
-func Get[T any](i int) func(arr []T) (res Option[T]) {
+func Index[T any](i int) func(arr []T) (res Option[T]) {
 	return func(arr []T) (res Option[T]) {
 		if i < 0         { i = len(arr) + i }
 		if i < 0         { return res.Fail() }
 		if i >= len(arr) { return res.Fail() }
 		return res.Pass(arr[i])
 	}
+}
+
+func Shift[T any](arr []T) (res T, out []T, ok bool) { if len(arr) > 0 { res, out, ok = arr[0],          arr[1:],        true }; return }
+func Pop[T any]  (arr []T) (res T, out []T, ok bool) { if len(arr) > 0 { res, out, ok = arr[len(arr)-1], arr[:len(arr)], true }; return }
+
+func (r Either[A, B]) From(args ...any) Either[A, B] { return Pipe[Either[A, B]](args...) }
+func (e Either[A, B]) Is(args ...any) bool { return false }
+
+func Get[El any | rune | byte, Arr string | []El](i int, arr Arr) (res Option[El]) {
+	if i < 0         { i = len(arr) + i }
+	if i < 0         { return res.Fail() }
+	if i >= len(arr) { return res.Fail() }
+
+	switch any(arr).(type) {
+	case string:
+		switch any(out).(type) {
+		case rune, string:
+		case byte:
+			return Pipe[Option[El]](
+				Cast[[]byte](arr),
+				Index[byte](i),
+				Cast[El],
+			)
+		default: return
+		}
+	default:
+	}
+
+	return res, true
 }
 
 // func Window[El any | rune | byte | string, Arr string | []El](index int, size int) func(input Arr) (res Arr, ok bool) {
@@ -69,6 +100,16 @@ func RangeV(len, src, tar int) (smaller, larger int, ok bool) {
 	return 
 }
 
+func (itr Iterable[El, Arr]) Iter() iter.Seq2[int, El] {
+	return func(yield func(int, El) bool) {
+		for i := range itr.len-itr.idx {
+			el, ok := itr.indexes(itr.arr, i)
+			if !ok { return }
+			if !yield(i+itr.idx, el) { break }
+		}
+	}
+}
+
 func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iterable[El, Arr], ok bool) {
 	res = Iterable[El, Arr]{
 		arr: input,
@@ -76,16 +117,17 @@ func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iter
 	}
 
 	var out El
-	switch inp := any(input).(type) {
+	switch any(input).(type) {
 	case string:
 		switch any(out).(type) {
 		case rune, string:
-			res.indexes = func(src, idx int) (el El, ok bool) {
-				i := src+idx
-				if i < len(inp) { el = any(inp[i]).(El) }
+			res.indexes = func(input Arr, idx int) (el El, ok bool) {
+				inp := any(input).(string)
+				if idx < len(inp) { el = any(inp[idx]).(El) }
 				return
 			}
-			res.ranges = func(src, size int) (ar Arr, ok bool) {
+			res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
+				inp := any(input).(string)
 				s, l, ok := RangeV(len(inp), src, size)
 				if !ok { return }
 				ar, ok = any(inp[s:l]).(Arr)
@@ -94,13 +136,14 @@ func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iter
 		case byte:
 			var bar []byte
 			if bar, ok = any(input).([]byte); !ok { return }
-			res.indexes = func(src, idx int) (el El, ok bool) {
-				i := src+idx
-				if i < len(inp) { el = any(bar[i]).(El) }
+			res.indexes = func(input Arr, idx int) (el El, ok bool) {
+				inp := any(input).(string)
+				if idx < len(inp) { el = any(bar[idx]).(El) }
 				return
 			}
-			res.ranges = func(src, size int) (ar Arr, ok bool) {
-				s, l, ok := RangeV(len(bar), src, size)
+			res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
+				inp := any(input).([]byte)
+				s, l, ok := RangeV(len(inp), src, size)
 				if !ok { return }
 				ar, ok = any(bar[s:l]).(Arr) 
 				return
@@ -111,28 +154,33 @@ func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iter
 	default:
 		var arr []El
 		if arr, ok = any(input).([]El); !ok { return }
-		res.indexes = func(src, idx int) (el El, ok bool) {
-			i := src+idx
-			if i < len(input) { el = arr[i] }
+		res.indexes = func(input Arr, idx int) (el El, ok bool) {
+			if idx < len(input) { el = arr[idx] }
+			return
+		}
+		res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
+			s, l, ok := RangeV(len(input), src, size)
+			if !ok { return }
+			ar, ok = any(arr[s:l]).(Arr) 
 			return
 		}
 	}
-	
+
 	return res, true
 }
 
-func (itr Iterable[El, Arr]) Window(n int) (res Option[Arr]) {
-	return
+func (itr *Iterable[El, Arr]) Window(n int) (res Option[Arr]) { return res.Auto(itr.ranges(itr.arr, itr.idx+n, n)) }
+func (itr *Iterable[El, Arr]) Peek(n int) (res Option[El]) { return res.Auto(itr.indexes(itr.arr, itr.idx+n)) }
+func (itr *Iterable[El, Arr]) Next() (res Option[El]) {
+	itr.idx+=1
+	return res.Auto(itr.indexes(itr.arr, itr.idx)) 
 }
 
-func (itr Iterable[El, Arr]) Peek(n int) (res Option[El]) {
-	return
+func (itr *Iterable[El, Arr]) Step(n int) (res Option[El]) {
+	if Pattern(Le[int], 0, itr.idx+n, itr.len) { return res.Fail() }
+	itr.idx+=n
+	return res.Auto(itr.indexes(itr.arr, itr.idx)) 
 }
-
-func (itr Iterable[El, Arr]) Step(n int) (res Option[El]) {
-	return
-}
-
 
 func CanIndex[El any | rune, Arr string | ~[]El](idx int, input Arr) (res Option[bool]) {
 	var out El
@@ -168,9 +216,11 @@ func Next[El any | rune, Arr string | ~[]El](idx int, input Arr) (res Option[El]
 
 // IsFormat checks whether the input string contains any printf directives.
 func IsFormat(str string) bool {
-	for i, r := range str {
+	itr, ok := Iter[rune](str)
+	if !ok { return false }
+	for i, r := range itr.Iter() {
 		if r != '%' { return false }
-		Next(i, str) == '%'
+		itr.Peek(1).IsErr('%')
 		if i+1 < len(str) && str[i+1] == '%' {
 			i++
 			continue

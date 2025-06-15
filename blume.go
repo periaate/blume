@@ -173,8 +173,8 @@ func Is[C comparable](T ...C) func(C) bool {
 	}
 }
 
-// First returns the first value which passes the [Predicate].
-func First[T any](fns ...Pred[T]) func([]T) Option[T] {
+// FindFirst returns the first value which passes the [Predicate].
+func FindFirst[T any](fns ...Pred[T]) func([]T) Option[T] {
 	fn := PredOr(fns...)
 	return func(args []T) Option[T] {
 		for _, arg := range args {
@@ -184,6 +184,16 @@ func First[T any](fns ...Pred[T]) func([]T) Option[T] {
 		}
 		return None[T]()
 	}
+}
+
+func ABC[Output any](values ...any) (res Output, ok bool){
+	cur,  values, ok := Shift(values)
+	if !ok { return }
+	next, values, ok := Shift(values)
+	if !ok { return }
+	
+	fc := Function(cur)
+	fn := Function(next)
 }
 
 // Pipe runs a value through a pipeline or composes functions.
@@ -239,13 +249,25 @@ func Pipe[Output any](values ...any) Output {
 		funcs[i] = fn
 	}
 
+	var err error
+	err_type := reflect.TypeOf(err)
+
 	for i := range len(funcs)-1 {
+		fi_out_count := funcs[i].Type().NumOut()
+		f1_out_count := funcs[i+1].Type().NumIn()
+
+		switch {
+		case fi_out_count <= 1:
+		case funcs[i].Type().Out(fi_out_count-1).AssignableTo(err_type):
+		case funcs[i].Type().Out(fi_out_count-1).Kind() == reflect.Bool:
+		}
+		
 		if funcs[i].Type().NumOut() != funcs[i+1].Type().NumIn() {
 			panic(fmt.Sprintf(
 				"Pipe Error: Arity mismatch between function %d (returns %d values) and function %d (expects %d values).",
 				i, funcs[i].Type().NumOut(), i+1, funcs[i+1].Type().NumIn(),
 			))
-		}
+		} 
 
 		for j := range funcs[i].Type().NumOut() {
 			if funcs[i].Type().Out(j) != funcs[i+1].Type().In(j) {

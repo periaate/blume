@@ -33,22 +33,56 @@ type Func struct {
 	Val any
 	reflect.Value
 	reflect.Type
+	IsOption bool
+	IsResult bool
+	Then *Func
 }
 
-func (fn Func) Call(args ...any) []reflect.Value { return fn.Value.Call(Map[any, reflect.Value](reflect.ValueOf)(args)) }
-
-func (f Func) Matches(t any) bool { return Function(t).AssignableTo(f.Type) }
-
-func Function(fn any) (res Func) {
-	fnType := reflect.TypeOf(fn)
-	if fnType.Kind() != reflect.Func { panic("function must be a function type") }
-	return Func{
-		Takes: fnType.NumIn(),
-		Returns: fnType.NumOut(),
-		Variadic: fnType.IsVariadic(),
-		Val: fn,
-		Value: reflect.ValueOf(fn),
-		Type: fnType,
+func (fn Func) Call(args ...any) (res []reflect.Value, ok bool) {
+	inputs := Map[any, reflect.Value](reflect.ValueOf)(args)
+	if len(inputs) < 2 {
+		res = fn.Value.Call(inputs)
+		if fn.Then != nil { return fn.Then.Call(Any(res)...) }
+		return res, true
 	}
+
+	switch val := inputs[len(inputs)-1].Interface().(type) {
+	case error: if val != nil { return }; inputs = inputs[:len(inputs)-1]
+	case bool: if !val        { return }; inputs = inputs[:len(inputs)-1] }
+
+	res = fn.Value.Call(inputs)
+	if fn.Then != nil { return fn.Then.Call(Any(res)...) }
+	return res, true
+}
+
+var err_type reflect.Type
+
+func init() {
+	var err error
+	err_type = reflect.TypeOf(err)
+}
+
+func Function(fn any) (res Result[Func]) {
+	fun := Func{}
+	fnType := reflect.TypeOf(fn)
+	if fnType.Kind() != reflect.Func { return res.Fail("function must be a function type") }
+	var lastOut reflect.Type
+
+	if no := fnType.NumOut(); no >= 2 {
+		lastOut = fnType.Out(no-1)
+		switch {
+		case lastOut.AssignableTo(err_type): fun.IsResult = true
+		case lastOut.Kind() == reflect.Bool: fun.IsOption = true
+		}
+	}
+
+	fun.Takes = fnType.NumIn()
+	fun.Returns = fnType.NumOut()
+	fun.Variadic = fnType.IsVariadic()
+	fun.Val = fn
+	fun.Value = reflect.ValueOf(fn)
+	fun.Type = fnType
+
+	return res.Pass(fun)
 }
 
