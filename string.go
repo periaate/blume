@@ -3,22 +3,23 @@ package blume
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains(args ...string) func(string) bool {
-	return func(str string) bool {
-		for _, s := range args {
-			if strings.Contains(string(str), string(s)) {
-				return true
-			}
-		}
-		return false
-	}
-}
+// // Contains returns a predicate that checks if the input string contains any of the given substrings.
+// func Contains(args ...string) func(string) bool {
+// 	return func(str string) bool {
+// 		for _, s := range args {
+// 			if strings.Contains(string(str), string(s)) {
+// 				return true
+// 			}
+// 		}
+// 		return false
+// 	}
+// }
 
 // HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
 func HasPrefix(args ...string) func(string) bool {

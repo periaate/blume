@@ -12,7 +12,7 @@ import (
 	"github.com/periaate/blume/pred/has"
 )
 
-func AllArgs(n ...int) []string { return append(Args(), Piped(os.Stdin).OrDef()...) }
+func AllArgs(n ...int) []string { return append(Args(n...), Piped(os.Stdin).Value...) }
 
 func Args(n ...int) (res []string) {
 	if len(os.Args) >= 1 { res = os.Args[1:] }

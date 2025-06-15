@@ -1,15 +1,11 @@
 package blume
 
-import (
-	"io"
-)
+import "io"
 
 type Reader func(p []byte) (n int, err error)
-
-func (r Reader) Read(p []byte) (n int, err error) { return r(p) }
-
 type Writer func(p []byte) (n int, err error)
 
+func (r Reader) Read(p []byte) (n int, err error) { return r(p) }
 func (w Writer) Write(p []byte) (n int, err error) { return w(p) }
 
 var _ io.Reader = Reader(nil)
@@ -55,23 +51,3 @@ func CopyTo(dst io.Writer) func(src Reader) Result[int64] {
 }
 
 func CopiesTo(dst io.Writer) func(src Reader) { return func(src Reader) { _, err := io.Copy(dst, src); if err != nil { panic(err) } } }
-
-// func CopyTo(src Reader) func(dst Writer) Result[int64] {
-// 	return func(dst Writer) Result[int64] { return Auto(io.Copy(dst, src)) }
-// }
-//
-// func CopiesTo(src Reader) func(dst Writer) { return func(dst Writer) { io.Copy(dst, src) } }
-
-// func (s S) Decode(v any) Result[S] {
-// 	buf := Buf(s)
-// 	err := json.NewDecoder(buf).Decode(v)
-// 	if err != nil { return Err[S](err) }
-// 	return Ok(S(buf.String()))
-// }
-//
-// func (s S) Encode(v any) Result[S] {
-// 	buf := Buf(s)
-// 	err := json.NewEncoder(buf).Encode(v)
-// 	if err != nil { return Err[S](err) }
-// 	return Ok(S(buf.String()))
-// }

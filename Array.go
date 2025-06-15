@@ -1,15 +1,28 @@
 package blume
 
 import (
+	"fmt"
 	"math/rand"
 	"slices"
 )
+
+func Logln(args ...any) { fmt.Println(args...) }
 
 // Prepend prepends the arguments before the array; [..., arr]; As opposed to `append`
 func Prepend[T any](arr []T, args ...T) []T { return append(args, arr...) }
 
 func Shuffle[T any](args []T) []T {
 	rand.Shuffle(len(args), func(i, j int) {
+		temp := args[j]
+		args[j] = args[i]
+		args[i] = temp
+	})
+	return args
+}
+
+func ShuffleBy[T any](seed int64, args []T) []T {
+	r := rand.New(rand.NewSource(seed))
+	r.Shuffle(len(args), func(i, j int) {
 		temp := args[j]
 		args[j] = args[i]
 		args[i] = temp

@@ -2,9 +2,23 @@ package blume
 
 import (
 	"regexp"
-	"slices"
 	"strings"
 )
+
+type Action int
+
+const (
+	Nothing Action = iota
+	Replaces
+	Deletes
+	Stops
+)
+
+type Match[I, O any] interface {
+	All(input I) [][]int
+	Next(input I) (from int, to int, found bool)
+	Found(input I) (value O, action Action)
+}
 
 type Selector[A any] func(A) [][]int
 
@@ -22,26 +36,33 @@ func Pre(prefixes ...string) Selector[string] {
 func Suf(suffixes ...string) Selector[string] {
 	return func(s string) (res [][]int) {
 		for _, suffix := range suffixes {
-			if strings.HasSuffix(s, suffix) { return [][]int{ {len(s) - len(suffix), len(s) }} }
+			if strings.HasSuffix(s, suffix) {
+				return [][]int{{len(s)-len(suffix), len(s)}}
+			}
 		}
 		return
 	}
 }
 
-func SelToPred[A any](selector Selector[A]) Pred[A] { return func(input A) bool { return len(selector(input)) > 0 } }
+// func StartsWith[I, O any]() (res Match[I, O ]) { return }
+// func EndsWith[I, O any]() (res Match[I, O ]) { return }
+// func Contains[I, O any]() (res Match[I, O ]) { return }
+// func IsExactly[I, O any]() (res Match[I, O ]) { return }
+// func PrecededBy[I, O any]() (res Match[I, O ]) { return }
+// func FollowedBy[I, O any]() (res Match[I, O ]) { return }
+// func PatternOf[I, O any]() (res Match[I, O ]) { return }
+
+func SelToPred[T any](selector Selector[T]) Pred[T] { return func(input T) bool { return len(selector(input)) > 0 } }
 
 func Rgx(pattern string) Selector[string] {
 	re := regexp.MustCompile(string(pattern))
 	return func(s string) (res [][]int) { return re.FindAllStringIndex(string(s), -1) }
 }
 
-func Has[A any](selectors ...Selector[A]) func(input A) bool {
-	pred := PredAnd(Map[Selector[A], Pred[A]](SelToPred[A])(selectors)...)
-	return func(input A) bool { return slices.ContainsFunc(input, pred) }
-}
+func Has[T any](selectors ...Selector[T]) func(input T) bool { return PredAnd(Map[Selector[T], Pred[T]](SelToPred[T])(selectors)...) }
 
-func Del[A ~string](selectors ...Selector[A]) func(input A) A {
-	return func(input A) A {
+func Del(selectors ...Selector[string]) func(input string) string {
+	return func(input string) string {
 		for _, fn := range selectors {
 			ranges := fn(input)
 			if len(ranges) == 0 { continue }
@@ -51,26 +72,26 @@ func Del[A ~string](selectors ...Selector[A]) func(input A) A {
 	}
 }
 
-func Rep[A ~string](pairs ...any) func(input A) A {
+func Rep(pairs ...any) func(input string) string {
 	replacers := []struct {
-		sel Selector[A]
-		rep A
+		sel Selector[string]
+		rep string
 	}{}
-	if len(pairs)%2 != 0 { panic("typeless generic function [Rep] needs to be given pairs of [`Selector[A]`, `A`].") }
+	if len(pairs)%2 != 0 { panic("typeless generic function [Rep] needs to be given pairs of [`Selector[string]`, `string`].") }
 	for i := 0; i < len(pairs); i += 2 {
-		sel, ok := pairs[i].(Selector[A])
+		sel, ok := pairs[i].(Selector[string])
 		if !ok { panic("typeless generic function [Rep] given invalid selector type.") }
 
-		rep, ok := pairs[i+1].(A)
+		rep, ok := pairs[i+1].(string)
 		if !ok { panic("typeless generic function [Rep] given invalid replacement type.") }
 
 		replacers = append(replacers, struct {
-			sel Selector[A]
-			rep A
+			sel Selector[string]
+			rep string
 		}{sel, rep})
 	}
 
-	return func(input A) A {
+	return func(input string) string {
 		for _, r := range replacers {
 			input = ReplaceRanges(input, r.rep, r.sel(input))
 		}
@@ -78,7 +99,7 @@ func Rep[A ~string](pairs ...any) func(input A) A {
 	}
 }
 
-func ReplaceRanges[S ~string](tar S, rep S, ranges [][]int) S {
+func ReplaceRanges(tar string, rep string, ranges [][]int) string {
 	if len(ranges) == 0 { return tar }
 	sortedRanges := make([][]int, len(ranges))
 	for i, r := range ranges {
