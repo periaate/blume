@@ -6,13 +6,12 @@ import (
 	"strings"
 )
 
-type A[T any] = Array[T]
 
 // Range returns a Selector which matches from the start, until the end.
 // TODO: what to do with recursive ranges
 // TODO: what to do with unfinished/incorrect ranges (starts, no end, end before start)
-func Range(start, end Pred[S]) Selector[A[S]] {
-	return func(s A[S]) [][]int {
+func Range(start, end Pred[string]) Selector[[]string] {
+	return func(s []string) [][]int {
 		r := [][]int{}
 		curr := []int{}
 		var started bool
@@ -36,8 +35,8 @@ func Range(start, end Pred[S]) Selector[A[S]] {
 	}
 }
 
-func RangeSel(start, end Selector[S]) Selector[A[S]] {
-	return func(s A[S]) [][]int {
+func RangeSel(start, end Selector[string]) Selector[[]string] {
+	return func(s []string) [][]int {
 		r := [][]int{}
 		curr := []int{}
 		var started bool
@@ -69,20 +68,6 @@ func SelPat[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
 	}
 }
 
-// func JoinWith(delim string) func(arr []string, sel [][]int) []string {
-// 	return func(arr []string, sel [][]int) []string {
-// 		res := []string{}
-// 		var last int
-// 		for _, selection := range sel {
-// 			res = append(res, arr[last:selection[0]]...)
-// 			res = append(res, Join(delim)(arr[selection[0]:selection[1]+1]))
-// 			last = selection[1] + 1
-// 		}
-// 		res = append(res, arr[last:]...)
-// 		return res
-// 	}
-// }
-//
 func Pre(prefixes ...string) Selector[string] {
 	return func(s string) (res [][]int) {
 		for _, prefix := range prefixes {
@@ -109,9 +94,9 @@ func SelToPred[A any](selector Selector[A]) Pred[A] {
 	return func(input A) bool { return len(selector(input)) > 0 }
 }
 
-func Rgx(pattern S) Selector[S] {
+func Rgx(pattern string) Selector[string] {
 	re := regexp.MustCompile(string(pattern))
-	return func(s S) (res [][]int) {
+	return func(s string) (res [][]int) {
 		return re.FindAllStringIndex(string(s), -1)
 	}
 }

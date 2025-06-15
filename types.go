@@ -21,13 +21,13 @@ type Delimiter struct {
 }
 
 func EmbedDelims(sar []string, delims ...Delimiter) Tree[string] {
-	car := make([]Tree[S], len(sar))
+	car := make([]Tree[string], len(sar))
 	for i, s := range sar { car[i].Val = s }
 	res, _ := embeds(car, delims)
 	return res
 }
 
-func embeds(car []Tree[S], delims []Delimiter) (res Tree[string], v int) {
+func embeds(car []Tree[string], delims []Delimiter) (res Tree[string], v int) {
 	for i := 0; len(car) > i; i++ {
 		v := car[i]
 		matched := false
@@ -51,31 +51,6 @@ func embeds(car []Tree[S], delims []Delimiter) (res Tree[string], v int) {
 	}
 
 	return res, 0
-}
-
-
-func IsNillable[A any](val A) bool {
-	switch any(val).(type) {
-	case error, uintptr, map[any]any, []any, chan any: return true
-	default: return false
-	}
-}
-
-func IsNil(val any) bool { return val == nil }
-
-func IsOk[A any](a A, handle ...any) bool {
-	if len(handle) == 0 { handle = append(handle, a) }
-	switch val := handle[len(handle)-1].(type) {
-	case bool: return val
-	default  : return val == nil
-	}
-}
-
-func Match[A, B, C any](r Either[A, B], value func(A) C, other func(B) C) C {
-	switch IsOk(r) {
-	case true: return value(r.Value)
-	default:   return other(r.Other)
-	}
 }
 
 func Into[Target any](arg any) (res Option[Target]) {
@@ -118,9 +93,6 @@ func Into[Target any](arg any) (res Option[Target]) {
 	return Cast[Target](try)
 }
 
-func R[A any](val A, err ...any) (res Result[A]) { return res.Auto(val, err) }
-func O[A any](val A, err ...any) (res Result[A]) { return res.Auto(val, err) }
-
 func Cast[T any](a any) (res Option[T]) {
 	value, ok := a.(T)
 	if !ok { return }
@@ -129,12 +101,11 @@ func Cast[T any](a any) (res Option[T]) {
 	return
 }
 
-
-func ItoI[A, B Numeric](value A) B   { return B(value) }
-func StoS[A, B ~string](value A) B   { return B(value) }
-func StoD[A ~string](value A) string { return string(value) }
-
-func isZero[A comparable](value A) bool { var def A; return value == def }
+// NewCast will work the same way as an option would do to us using reflection based function construction
+func NewCast[T any](a any) (res T, ok bool) {
+	res, ok = a.(T)
+	return
+}
 
 func Buf(args ...any) *bytes.Buffer {
 	if len(args) == 0 { return bytes.NewBuffer([]byte{}) }

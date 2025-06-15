@@ -2,51 +2,28 @@ package blume
 
 import (
 	"math/rand"
+	"slices"
 )
 
-// JoinAfter joins input after this array
-// [this, ...]
-func JoinAfter[T any](this []T) func(input []T) []T { return func(input []T) []T { return append(this, input...) } }
-
-// JoinBefore joins input before this array
-// [..., this]
-func JoinBefore[T any](this []T) func(input []T) []T { return func(input []T) []T { return append(input, this...) } }
-
-// Prepend prepends the arguments before the array.
-// [..., arr]
+// Prepend prepends the arguments before the array; [..., arr]; As opposed to `append`
 func Prepend[T any](arr []T, args ...T) []T { return append(args, arr...) }
 
-// Append appends the arguments after the array.
-// [arr, ...]
-// Just use `append` in most cases.
-func Append[T any](arr []T, args ...T) []T { return append(arr, args...) }
-
-type Array[T any] []T
-
-
-// func (a Array[T]) Pattern(selector Selector[Array[T]], actor func(Array[T], [][]int) Array[T]) Array[T] {
-// 	return Pattern(selector, actor)(a)
-// }
-
-func (a Array[T]) Shuffle() Array[T] {
-	args := a
+func Shuffle[T any](args []T) []T {
 	rand.Shuffle(len(args), func(i, j int) {
 		temp := args[j]
 		args[j] = args[i]
 		args[i] = temp
 	})
-	return Array[T](args)
+	return args
 }
 
-func (arr Array[T]) Len() int { return len(arr) }
-
-func Reverse[T any](arr []T) Array[T] {
-	r := make([]T, 0, len(arr))
-	for i := len(arr); i > 0; i-- {
-		r = append(r, arr[i-1])
-	}
-	return Array[T](r)
+// Reverse reverses a slice in-place and returns itself. Meant for pipelines.
+func Reverse[T any](arr []T) []T {
+	slices.Reverse(arr)
+	return arr
 }
+
+// Generalize slice pattern matching into an overloaded pattern matching setup.
 
 func ArrSplit[T any](fn Pred[T]) func(arr []T) (HasNot []T, Has []T) {
 	return func(arr []T) (HasNot []T, Has []T) {
@@ -61,15 +38,7 @@ func ArrSplit[T any](fn Pred[T]) func(arr []T) (HasNot []T, Has []T) {
 			break
 		}
 
-		return Array[T](arr_1), arr_2
-	}
-}
-
-func ArrFrom[T any](n int) func(arr []T) []T {
-	return func(arr []T) []T {
-		if n <= 0 || len(arr) == 0 { return arr }
-		if len(arr) > n            { arr = arr[n:] }
-		return arr
+		return arr_1, arr_2
 	}
 }
 
@@ -78,41 +47,29 @@ func Flag(arr []string, flags ...string) ([]string, bool) {
 	new_arr := make([]string, 0, len(arr))
 	for i, val := range arr {
 		if pred(val) {
-			return []S(append(new_arr, arr[i+1:]...)), true
+			return append(new_arr, arr[i+1:]...), true
 		}
 		new_arr = append(new_arr, val)
 	}
 
-	return []S(new_arr), false
+	return new_arr, false
 }
 
 func Seen[K comparable]() func(K) bool {
 	seen := make(map[K]any)
 	return func(k K) bool {
-		_, ok := seen[k]
-		if ok {
-			return true
-		}
+		if _, ok := seen[k]; ok { return true }
 		seen[k] = nil
 		return false
 	}
 }
 
-func SeenBy[T any, K comparable](fn func(T) K) func(T) bool {
-	seen := make(map[K]any)
-	return func(val T) bool {
-		k := fn(val)
-		_, ok := seen[k]
-		if ok { return true }
-		seen[k] = nil
-		return false
-	}
-}
+func SeenBy[T any, K comparable](fn func(T) K) func(T) bool { return Cat(fn, Seen[K]()) }
 
 func Unique[K comparable](slice []K) []K { return Filter(Not(Seen[K]()))(slice) }
 func UniqueBy[T any, K comparable](fn func(T) K, slice []T) []T { return Filter(Not(SeenBy(fn)))(slice) }
 
-func Pair[T any](arr []T) (res Result[Array[[]T]]) {
+func Pair[T any](arr []T) (res Result[[][]T]) {
 	l := len(arr)
 	if l%2 != 0 { return res.Fail("pair called with an uneven array") }
 	arrs := make([][]T, 0, l/2)

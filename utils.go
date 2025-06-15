@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"reflect"
 )
 
-type Iterable[El any | rune | byte, Arr string | []El] struct {
+type iterator[A, T any] interface {
+	indexes(idx int) (T, bool)
+	ranges(src, idx int) (A, bool)
+	step() (T, bool)
+}
+
+type Iterator[El any | rune | byte, Arr string | []El] struct {
 	arr Arr
-	indexes func(arr Arr, idx int) (El, bool)
-	ranges  func(arr Arr, src, idx int) (Arr, bool)
+	indexes func(idx int) (El, bool)
+	ranges  func(src, idx int) (Arr, bool)
 	idx int
-	len int
 }
 
 func Index[T any](i int) func(arr []T) (res Option[T]) {
@@ -52,86 +58,124 @@ func RangeV(len, src, tar int) (smaller, larger int, ok bool) {
 	return 
 }
 
-func (itr Iterable[El, Arr]) Iter() iter.Seq2[int, El] {
+func (itr Iterator[El, Arr]) Iter() iter.Seq2[int, El] {
 	return func(yield func(int, El) bool) {
-		for i := range itr.len-itr.idx {
-			el, ok := itr.indexes(itr.arr, i)
+		for i := range len(itr.arr)-itr.idx {
+			el, ok := itr.indexes(i)
 			if !ok { return }
 			if !yield(i+itr.idx, el) { break }
 		}
 	}
 }
 
-func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iterable[El, Arr], ok bool) {
-	res = Iterable[El, Arr]{
-		arr: input,
-		len: len(input),
-	}
+// Iter creates an Iterator for any iterable primitive type pairing.
+func Iter[El any | rune | byte | string, Arr string | []El](input Arr) (res Iterator[El, Arr], err error) {
+	res = Iterator[El, Arr]{ arr: input }
+	var ok bool
+	type genIndexes func(idx int) (El, bool)
+	type genRanges func(src int, idx int) (Arr, bool)
 
 	var out El
-	switch any(input).(type) {
+	switch value := any(input).(type) {
 	case string:
 		switch any(out).(type) {
-		case rune, string:
-			res.indexes = func(input Arr, idx int) (el El, ok bool) {
-				inp := any(input).(string)
-				if idx < len(inp) { el = any(inp[idx]).(El) }
+		case rune:
+			input := []rune(value)
+			res.indexes, ok = any(func(idx int) (el rune, ok bool) {
+				if idx < len(input) { el = input[idx] }
+				return
+			}).(genIndexes)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->rune failed when casting Iterator.indexes from concrete type to generic type; this error case is impossible")
 				return
 			}
-			res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
-				inp := any(input).(string)
-				s, l, ok := RangeV(len(inp), src, size)
+
+			res.ranges, ok = any(func(src, size int) (ar string, ok bool) {
+				s, l, ok := RangeV(len(input), src, size)
 				if !ok { return }
-				ar, ok = any(inp[s:l]).(Arr)
+				return string(input[s:l]), true
+			}).(genRanges)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->rune failed when casting Iterator.ranges from concrete type to generic type; this error case is impossible")
+				return
+			}
+		case string:
+			input := []rune(value)
+			res.indexes, ok = any(func(idx int) (el string, ok bool) {
+				if idx < len(input) { el = string(input[idx]) }
+				return
+			}).(genIndexes)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->string failed when casting Iterator.indexes from concrete type to generic type; this error case is impossible")
+				return
+			}
+
+			res.ranges, ok = any(func(src, size int) (ar string, ok bool) {
+				s, l, ok := RangeV(len(input), src, size)
+				if !ok { return }
+				return string(input[s:l]), true
+			}).(genRanges)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->string failed when casting Iterator.ranges from concrete type to generic type; this error case is impossible")
 				return
 			}
 		case byte:
-			var bar []byte
-			if bar, ok = any(input).([]byte); !ok { return }
-			res.indexes = func(input Arr, idx int) (el El, ok bool) {
-				inp := any(input).(string)
-				if idx < len(inp) { el = any(bar[idx]).(El) }
+			res.indexes, ok = any(func(idx int) (el byte, ok bool) {
+				if idx < len(input) { el = value[idx] }
+				return
+			}).(genIndexes)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->byte failed when casting Iterator.indexes from concrete type to generic type; this error case is impossible")
 				return
 			}
-			res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
-				inp := any(input).([]byte)
-				s, l, ok := RangeV(len(inp), src, size)
+
+			res.ranges, ok = any(func(src, size int) (ar string, ok bool) {
+				s, l, ok := RangeV(len(value), src, size)
 				if !ok { return }
-				ar, ok = any(bar[s:l]).(Arr) 
+				return string(value[s:l]), true
+			}).(genRanges)
+			if !ok {
+				err = fmt.Errorf("creating an Iterator for string->byte failed when casting Iterator.ranges from concrete type to generic type; this error case is impossible")
 				return
 			}
-			res.len = len(bar)
-		default: return
+		default: return res, fmt.Errorf("illegal invariant of string: Element type must be either rune, string, or byte")
 		}
-	default:
-		var arr []El
-		if arr, ok = any(input).([]El); !ok { return }
-		res.indexes = func(input Arr, idx int) (el El, ok bool) {
-			if idx < len(input) { el = arr[idx] }
+	case []El:
+		name := reflect.TypeOf(out).Name()
+		res.indexes, ok = any(func(idx int) (el El, ok bool) {
+			if idx < len(input) { el = value[idx] }
+			return
+		}).(genIndexes)
+		if !ok {
+			err = fmt.Errorf("creating an Iterator for []%s->%s failed when casting Iterator.indexes from concrete type to generic type; this error case is impossible", name)
 			return
 		}
-		res.ranges = func(input Arr, src, size int) (ar Arr, ok bool) {
-			s, l, ok := RangeV(len(input), src, size)
+		res.ranges, ok = any(func(src, size int) (ar []El, ok bool) {
+			s, l, ok := RangeV(len(value), src, size)
 			if !ok { return }
-			ar, ok = any(arr[s:l]).(Arr) 
+			return value[s:l], true
+		}).(genRanges)
+		if !ok {
+			err = fmt.Errorf("creating an Iterator for []%s->%s failed when casting Iterator.ranges from concrete type to generic type; this error case is impossible", name)
 			return
 		}
+	default: return res, fmt.Errorf("impossible or illegal invariant; is neither string nor slice type")
 	}
 
-	return res, true
+	return res, nil
 }
 
-func (itr *Iterable[El, Arr]) Window(n int) (res Option[Arr]) { return res.Auto(itr.ranges(itr.arr, itr.idx+n, n)) }
-func (itr *Iterable[El, Arr]) Peek(n int) (res Option[El]) { return res.Auto(itr.indexes(itr.arr, itr.idx+n)) }
-func (itr *Iterable[El, Arr]) Next() (res Option[El]) {
+func (itr *Iterator[El, Arr]) Window(n int) (res Option[Arr]) { return res.Auto(itr.ranges(itr.idx+n, n)) }
+func (itr *Iterator[El, Arr]) Peek(n int) (res Option[El]) { return res.Auto(itr.indexes(itr.idx+n)) }
+func (itr *Iterator[El, Arr]) Next() (res Option[El]) {
 	itr.idx+=1
-	return res.Auto(itr.indexes(itr.arr, itr.idx)) 
+	return res.Auto(itr.indexes(itr.idx))
 }
 
-func (itr *Iterable[El, Arr]) Step(n int) (res Option[El]) {
-	if Pattern(Le[int], 0, itr.idx+n, itr.len) { return res.Fail() }
+func (itr *Iterator[El, Arr]) Step(n int) (res Option[El]) {
+	if Pattern(Le[int], 0, itr.idx+n, len(itr.arr)) { return res.Fail() }
 	itr.idx+=n
-	return res.Auto(itr.indexes(itr.arr, itr.idx)) 
+	return res.Auto(itr.indexes(itr.idx)) 
 }
 
 // Exit the program with a console log
