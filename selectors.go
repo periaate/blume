@@ -61,7 +61,7 @@ func RangeSel(start, end Selector[S]) Selector[A[S]] {
 	}
 }
 
-func Pattern[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
+func SelPat[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
 	return func(value A) A {
 		selected := selector(value)
 		result := actor(value, selected)
@@ -69,20 +69,20 @@ func Pattern[A any](selector Selector[A], actor func(A, [][]int) A) func(A) A {
 	}
 }
 
-func JoinWith(delim string) func(arr []string, sel [][]int) []string {
-	return func(arr []string, sel [][]int) []string {
-		res := []string{}
-		var last int
-		for _, selection := range sel {
-			res = append(res, arr[last:selection[0]]...)
-			res = append(res, Join[string](delim)(arr[selection[0]:selection[1]+1]))
-			last = selection[1] + 1
-		}
-		res = append(res, arr[last:]...)
-		return res
-	}
-}
-
+// func JoinWith(delim string) func(arr []string, sel [][]int) []string {
+// 	return func(arr []string, sel [][]int) []string {
+// 		res := []string{}
+// 		var last int
+// 		for _, selection := range sel {
+// 			res = append(res, arr[last:selection[0]]...)
+// 			res = append(res, Join(delim)(arr[selection[0]:selection[1]+1]))
+// 			last = selection[1] + 1
+// 		}
+// 		res = append(res, arr[last:]...)
+// 		return res
+// 	}
+// }
+//
 func Pre(prefixes ...string) Selector[string] {
 	return func(s string) (res [][]int) {
 		for _, prefix := range prefixes {

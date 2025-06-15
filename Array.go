@@ -40,28 +40,6 @@ func (a Array[T]) Shuffle() Array[T] {
 
 func (arr Array[T]) Len() int { return len(arr) }
 
-func Get[T any](i int) func(arr []T) (res Option[T]) {
-	return func(arr []T) (res Option[T]) {
-		if i < 0         { i = len(arr) + i }
-		if i < 0         { return res.Fail() }
-		if i >= len(arr) { return res.Fail() }
-		return res.Pass(arr[i])
-	}
-}
-
-func  Slice[T any](start int, ends ...int) func(arr []T)(res []T) {
-	return func(arr []T) (res []T) {
-		l := len(arr)
-		if l == 0 { return }
-		c := Clamp(0, len(arr))
-		if start < 0 { start = l+start }
-		if len(ends) == 0 { return Array[T](arr[c(start):]) }
-		end := ends[0]
-		if end < 0 { end = l+end }
-		return arr[c(start):c(end)]
-	}
-}
-
 func Reverse[T any](arr []T) Array[T] {
 	r := make([]T, 0, len(arr))
 	for i := len(arr); i > 0; i-- {

@@ -28,19 +28,19 @@ func Input[S ~string](from ...string) Array[string] {
 
 func AllArgs(n ...int) Array[string] { return JoinAfter(Args())(Piped(os.Stdin).OrDef()) }
 
-func Args(n ...int) Array[string] {
+func Args(n ...int) []string {
 	var res []string
 	if len(os.Args) >= 1 {
 		res = os.Args[1:]
 	}
 	if len(n) == 0 {
-		return Into[A[S]](res).Value
+		return res
 	}
 	if len(res) < n[0] {
-		return []S{}
+		return res
 	}
 		
-	return Into[A[S]](res[n[0]:]).Value
+	return res[n[0]:]
 }
 
 func Arg(n int) Option[string] {
