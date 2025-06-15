@@ -39,34 +39,6 @@ import (
 // 	return res.Auto(p, os.WriteFile(p.String(), bytes, n))
 // }
 
-// SplitRegex keeps matches
-func SplitRegex(pattern string) func(input string) []string {
-	return func(input string) []string {
-		re := regexp.MustCompile(pattern)
-		indexes := re.FindAllStringIndex(input, -1)
-		if len(indexes) == 0 {
-			return []string{input}
-		}
-
-		result := make([]string, 0, 2*len(indexes)+1)
-		lastEnd := 0
-
-		for _, idx := range indexes {
-			start, end := idx[0], idx[1]
-			if start > lastEnd {
-				result = append(result, input[lastEnd:start])
-			}
-			result = append(result, input[start:end])
-			lastEnd = end
-		}
-
-		if lastEnd < len(input) {
-			result = append(result, input[lastEnd:])
-		}
-
-		return result
-	}
-}
 
 // func (s S) Listen(fn func(s S), recursive bool, ops ...fsnotify.Op) S {
 // 	Listen(fn, recursive, ops...)(s)

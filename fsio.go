@@ -3,158 +3,95 @@ package blume
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/periaate/blume/fsio"
 	"github.com/periaate/blume/pred/has"
 )
 
-func Input[S ~string](from ...string) Array[string] {
-	res := []string{}
-	for _, arg := range from {
-		switch strings.ToLower(arg) {
-		case "args":
-			res = append(res, Args()...)
-		case "pipe", "piped":
-			res = append(res, Piped(os.Stdin).Must()...)
-		}
-	}
+func AllArgs(n ...int) []string { return append(Args(), Piped(os.Stdin).OrDef()...) }
 
-	return res
-}
-
-func AllArgs(n ...int) Array[string] { return JoinAfter(Args())(Piped(os.Stdin).OrDef()) }
-
-func Args(n ...int) []string {
-	var res []string
-	if len(os.Args) >= 1 {
-		res = os.Args[1:]
-	}
-	if len(n) == 0 {
-		return res
-	}
-	if len(res) < n[0] {
-		return res
-	}
-		
+func Args(n ...int) (res []string) {
+	if len(os.Args) >= 1 { res = os.Args[1:] }
+	if len(n) == 0       { return res }
+	if len(res) < n[0]   { return res }
 	return res[n[0]:]
 }
 
-func Arg(n int) Option[string] {
-	if len(os.Args) > n+1 {
-		return Some(S(os.Args[n+1]))
-	}
+func Arg(n int) Option[string] { return Index(os.Args, n+1) }
 
-	return None[string]()
-}
-
-func Piped(input ...*os.File) Option[Array[string]] {
+func Piped(input ...*os.File) Option[[]string] {
 	var f *os.File
 	if len(input) == 0 { f = os.Stdin } else { f = input[0] }
 
-	if !has.Pipe(f) { return None[Array[string]]() }
+	if !has.Pipe(f) { return None[[]string]() }
 	return Some(Lines(f))
 }
 
-func stringify(s string) string { return string(s) }
-
-func Lines[B any](bar B) A[S] {
-	scanner := bufio.NewScanner(Buf(any(bar)))
+func Lines[B any](bar B) []string {
+	scanner := bufio.NewScanner(Buf(bar))
 	res := []string{}
 	for scanner.Scan() {
-		res = append(res, S(scanner.Text()))
+		res = append(res, scanner.Text())
 	}
 	return res
 }
 
-func Entries(s S) Result[Array[string]] {
-	if res, err := fsio.ReadDir(s); err == nil {
-		return Ok(Map[fsio.Entry, S](func(file fsio.Entry) string {
-			return string(file.Path())
-		})(res))
-	} else {
-		return Err[Array[string]](err.Error())
+func Entries(s string) (res Result[[]string]) {
+	entries, err := fsio.ReadDir(s)
+	if err != nil { return res.Fail() }
+	values := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		values = append(values, entry.Path())
 	}
-}
-//
-// func (d string) FirstFS(pred Pred[string]) Option[string] {
-// 	if res, ok := fsio.First(string(d), func(s string) bool { return pred(S(s))}); ok {
-// 		return Some(string(res))
-// 	}
-// 	return None[string]()
-// }
-//
-// func (d S) FindFS(pred Pred[string]) Option[Array[string]] {
-// 	if res := fsio.Find(string(d), pred); len(res) > 0 {
-// 		return Some(Map[string, S](stringify)(res))
-// 	}
-// 	return None[Array[string]]()
-// }
-
-// func (d string) AscendFS(pred Pred[string]) Option[string] {
-// 	if res, ok := fsio.Ascend(string(d), pred); ok {
-// 		return Some(string(res))
-// 	}
-// 	return None[string]()
-// }
-
-func Read(sar ...S) Result[string] {
-	str := Path(sar...)
-	bar, err := os.ReadFile(string(str))
-	if err != nil {
-		return Err[string](err.Error())
-	}
-	return Ok(string(bar))
+	return res.Pass(values)
 }
 
-func Reads(filepath string) string { return Read(filepath).Must() }
+func Read(sar ...string) (res Result[string]) { return res.Auto(os.ReadFile(Path(sar...))) }
 
-// func (s S) And(fns ...func(S) bool) bool { return PredAnd(fns...)(s) }
-
-func Path(sar ...S) string {
-	var fp S
-	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fps := filepath.Join(Into[[]string](sar).Value...)
-	absFp, err := filepath.Abs(fps)
-	if err != nil { fp = S(fps) } else { fp = S(absFp) }
-	if IsDir(fp) { fp = EnsureSuffix("/")(fp) }
+func Path(sar ...string) string {
+	home, err := os.UserHomeDir()
+	if err == nil { sar = Map[string, string](Replace("~", home))(sar) }
+	fp := filepath.Join(sar...)
+	absFp, err := filepath.Abs(fp)
+	if err != nil { fp = string(fp) } else { fp = string(absFp) }
+	if fsio.IsDir(fp) { fp = EnsureSuffix("/")(fp) }
 	return fp
 }
 
-// LPath resolves symlinks
-func LPath(sar ...S) string {
-	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fp := filepath.Join(From[[]S, []string](sar).Value...)
-	if IsSymlink(S(fp)).Value {
+func IsSymlink(s string) (res Result[bool]) {
+	stat, err := os.Stat(s)
+	if err != nil { return res.Fail(err) }
+	return res.Pass(stat.Mode()&fs.ModeSymlink != 0)
+}
+
+func GetPath(val string) string { return Del(Rgx(`^([A-z]*://)?[A-z|0-9|\.|-]*`))(val) }
+func GetDomain(val string) string { return ReplaceRegex(`^([A-z]*://)?([A-z|0-9|\.|-]*).*`, "$2")(val) }
+
+func Exists(s string) bool { return fsio.Exists(s) }
+func Chdir(s string) (res Result[string]) { return res.Auto(os.Chdir(s)) }
+
+func Base(s string) string { return filepath.Base(s) }
+func Dir(s string) string  { return filepath.Dir(s)+"/" }
+
+func TruePath(sar ...string) string {
+	home, err := os.UserHomeDir()
+	if err == nil { sar = Map[string, string](Replace("~", home))(sar) }
+	fp := filepath.Join(sar...)
+	if IsSymlink(string(fp)).Value {
 		evaluated, err := filepath.EvalSymlinks(fp)
-		if err != nil {
-			return S(fp)
-		}
-		fp = evaluated
+		if err == nil { fp = evaluated }
 	}
 	absFp, err := filepath.Abs(fp)
-	if err == nil {
-		return absFp
-	}
+	if err != nil { fp = string(fp) } else { fp = string(absFp) }
+	if fsio.IsDir(fp) { fp = EnsureSuffix("/")(fp) }
 	return fp
 }
 
-func Paths(v string, sar ...string) string {
-	sar = Map[S, S](Replace("~", S(Must(os.UserHomeDir()))))(sar)
-	fp := filepath.Join(From[[]S, []string](sar).Value...)
-	absFp, err := filepath.Abs(fp)
-	if err == nil {
-		return string(absFp)
-	}
-	return string(fp)
-}
-
-func AppendTo(path S) (res Result[*os.File]) {
-	return res.Auto(os.OpenFile(Path(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644))
-}
+func AppendTo(path string) (res *os.File, err error) { return os.OpenFile(Path(path), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) }
 
 func AppendLog[A any](f *os.File) (*os.File, func(a A) A) {
 	mut := sync.Mutex{}

@@ -24,23 +24,9 @@ type CmdOption func(*exec.Cmd) *exec.Cmd
 
 var CmdOpt CmdOption = func(cmd *exec.Cmd) *exec.Cmd { return cmd }
 
-// Cwd [Deprecated] use [Cd] instead
-func (prev CmdOption) Cwd(val string) CmdOption {
-	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
-		cmd = prev(cmd)
-		cmd.Dir = val
-		return cmd
-	}
-}
-
 func (prev CmdOption) Cd(val string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		cmd.Dir = Path(val)
 		return cmd
@@ -49,9 +35,7 @@ func (prev CmdOption) Cd(val string) CmdOption {
 
 func (prev CmdOption) Env(key, val string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		cmd.Env = append(cmd.Env, string(key+"="+val))
 		return cmd
@@ -60,9 +44,7 @@ func (prev CmdOption) Env(key, val string) CmdOption {
 
 func (prev CmdOption) Sid(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
@@ -74,9 +56,7 @@ func (prev CmdOption) Sid(val bool) CmdOption {
 
 func (prev CmdOption) Pgid(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil {return cmd}
 		cmd = prev(cmd)
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
@@ -88,9 +68,7 @@ func (prev CmdOption) Pgid(val bool) CmdOption {
 
 func (prev CmdOption) Foreground(val bool) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
@@ -102,9 +80,7 @@ func (prev CmdOption) Foreground(val bool) CmdOption {
 
 func (prev CmdOption) AdoptEnv() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		cmd.Env = append(os.Environ(), cmd.Env...)
 		return cmd
@@ -113,9 +89,7 @@ func (prev CmdOption) AdoptEnv() CmdOption {
 
 func (prev CmdOption) UserFacing() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		fn := prev.Env("FORCE_COLOR", "true").
 			Env("CLICOLOR_FORCE", "true")
@@ -123,37 +97,25 @@ func (prev CmdOption) UserFacing() CmdOption {
 	}
 }
 
-func SD(s []S) []string {
-	res := make([]string, 0, len(s))
-	for _, el := range s { res = append(res, string(el)) }
-	return res
-}
-
 func (prev CmdOption) Args(args ...string) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
-		cmd.Args = append(cmd.Args, SD(args)...)
+		cmd.Args = append(cmd.Args, args...)
 		return cmd
 	}
 }
 
 func (prev CmdOption) Decorate(fn func(*exec.Cmd) *exec.Cmd) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		return fn(prev(cmd))
 	}
 }
 
 func (prev CmdOption) Adopt() CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		cmd.Stdout = os.Stdout
 		cmd.Stdin = os.Stdin
@@ -164,9 +126,7 @@ func (prev CmdOption) Adopt() CmdOption {
 
 func (prev CmdOption) Signal(fn func(func(os.Signal) error)) CmdOption {
 	return func(cmd *exec.Cmd) *exec.Cmd {
-		if cmd == nil {
-			return cmd
-		}
+		if cmd == nil { return cmd }
 		cmd = prev(cmd)
 		fn(func(s os.Signal) error {
 			err := cmd.Process.Signal(s)
@@ -244,8 +204,13 @@ func (prev CmdOption) Stdin(r io.Reader) CmdOption {
 func Any[T any](a []T) (res []any) { for _, v := range a { res = append(res, any(v)) }; return }
 
 func Exec(name string, opts ...func(*exec.Cmd) *exec.Cmd) (cmd Cmd) {
-	if len(opts) == 0 { opts = append(opts, CmdOpt) }
-	return Cmd{ Name: name, opts: Pipe[CmdOption](Any(opts)...) }
+	opt := func(cmd *exec.Cmd) *exec.Cmd {
+		for _, opt := range opts {
+			cmd = opt(cmd)
+		}
+		return cmd
+	}
+	return Cmd{ Name: name, opts: opt }
 }
 
 func Execs(name string, opts ...func(*exec.Cmd) *exec.Cmd) Result[int] { return Exec(name, opts...).Exec() }
@@ -277,50 +242,5 @@ func (c Cmd) Start() Result[*exec.Cmd] {
 	return Ok(cmd)
 }
 
-// func Exec[S ~string](name S, args ...S) *Command {
-// 	return &Command{string(name), Map(StoS[S, string])(args), false}
-// }
-//
-// func (c *Command) Append(args ...string) *Command {
-// 	c.Args = append(c.Args, args...)
-// 	return c
-// }
-//
-// func (c *Command) Adopts() *Command {
-// 	c.Adopt = true
-// 	return c
-// }
-//
-// func (c *Command) Create() *exec.Cmd {
-// 	cmd := exec.Command(c.Name, Map(StoD[string])(c.Args)...)
-//     cmd.Env = append(os.Environ(), "FORCE_COLOR=true")
-//     cmd.Env = append(cmd.Env, "CLICOLOR_FORCE=1")
-// 	if c.Adopt {
-// 		cmd.Stdout = os.Stdout
-// 		cmd.Stdin = os.Stdin
-// 		cmd.Stderr = os.Stderr
-// 	}
-// 	return cmd
-// }
-//
-// func (c *Command) Run() Result[string] {
-// 	bar, err := c.Create().Output()
-// 	if err != nil { return Err[string](err) }
-// 	return Ok(string(bar))
-// }
-//
-// func Run[S ~string](name S, args ...S) Result[string] {
-// 	bar, err := Exec(name, args...).Create().Output()
-// 	if err != nil { return Err[string](err) }
-// 	return Ok(string(bar).TrimSpace())
-// }
-//
-// func Runs[S ~string](name S, args ...S) string {
-// 	bar, _ := Exec(name, args...).Create().Output()
-// 	return string(bar).TrimSpace()
-// }
-
-func Adopt(name string, args ...string) Result[int] {
-	return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv().Foreground(true)).Exec()
-}
+func Adopt(name string, args ...string) Result[int] { return Exec(name, CmdOpt.Args(args...), CmdOpt.Adopt().AdoptEnv().Foreground(true)).Exec() }
 func Adopts(name string, args ...string) { Adopt(name, args...).Must() }

@@ -3,11 +3,56 @@ package blume
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"slices"
-	"sort"
-	"strings"
 )
+
+type Value struct {
+	reflect.Value
+	Then *Value
+}
+
+func (val *Value) IsFunc  () bool { return val.Kind() == reflect.Func   }
+func (val *Value) IsBool  () bool { return val.Kind() == reflect.Bool   }
+func (val *Value) IsInt   () bool { return val.Kind() == reflect.Int    }
+func (val *Value) IsUint  () bool { return val.Kind() == reflect.Uint   }
+func (val *Value) IsUint8 () bool { return val.Kind() == reflect.Uint8  }
+func (val *Value) IsUint16() bool { return val.Kind() == reflect.Uint16 }
+func (val *Value) IsUint32() bool { return val.Kind() == reflect.Uint32 }
+func (val *Value) IsUint64() bool { return val.Kind() == reflect.Uint64 }
+func (val *Value) IsInt8  () bool { return val.Kind() == reflect.Int8   }
+func (val *Value) IsInt16 () bool { return val.Kind() == reflect.Int16  }
+func (val *Value) IsInt32 () bool { return val.Kind() == reflect.Int32  }
+func (val *Value) IsInt64 () bool { return val.Kind() == reflect.Int64  }
+
+func (val *Value) Call(args ...any) (res []reflect.Value, err error) { return val.call(Map[any, reflect.Value](reflect.ValueOf)(args), false) }
+
+func (val *Value) call(inputs []reflect.Value, fromPrevious bool) (res []reflect.Value, err error) {
+	if val.Kind() != reflect.Func {
+		if val.Then == nil || !val.Then.IsFunc() {
+			err = fmt.Errorf("attempting to call a non-function [%s] as a function", val.String())
+			return
+		}
+		return val.Then.call([]reflect.Value{val.Value}, false)
+	}
+
+	if len(inputs) < 2 {
+		res = val.Value.Call(inputs)
+		if val.Then != nil { return val.Then.call(res, true) }
+		return res, nil
+	}
+
+	if fromPrevious {
+		switch inp := inputs[len(inputs)-1].Interface().(type) {
+		case error: if inp != nil { return nil, inp }; inputs = inputs[:len(inputs)-1]
+		case bool: if !inp        { return nil, fmt.Errorf("in call to [%s] the last argument [ok != true]", val.String()) }; inputs = inputs[:len(inputs)-1] }
+	}
+
+	res = val.Value.Call(inputs)
+	if val.Then != nil { return val.Then.call(res, true) }
+	return res, nil
+}
+
+func Function(input any) (res *Value) { return &Value{ Value: reflect.ValueOf(input) } }
 
 // All returns true if all arguments pass the [Predicate].
 func All[T any](fns ...Pred[T]) Pred[[]T] {
@@ -23,9 +68,9 @@ func All[T any](fns ...Pred[T]) Pred[[]T] {
 }
 
 // Filter returns a slice of arguments that pass the [Predicate].
-func Filter[T any](fns ...Pred[T]) func(Array[T]) Array[T] {
+func Filter[T any](fns ...Pred[T]) func([]T) []T {
 	fn := PredAnd(fns...)
-	return func(args Array[T]) (res Array[T]) {
+	return func(args []T) (res []T) {
 		for _, arg := range args {
 			if fn(arg) {
 				res = append(res, arg)
@@ -35,8 +80,8 @@ func Filter[T any](fns ...Pred[T]) func(Array[T]) Array[T] {
 	}
 }
 
-func FilterMap[I, O any](fn func(I) Option[O]) func(A[I]) A[O] {
-	return func(arr A[I]) A[O] {
+func FilterMap[I, O any](fn func(I) Option[O]) func([]I) []O {
+	return func(arr []I) []O {
 		res := []O{}
 		for _, val := range arr {
 			if val := fn(val); val.IsOk() {
@@ -57,45 +102,23 @@ type TVar[T1, T2 any]    = func(T1, ...any) T2
 type Shout[T any]        = func(T)
 type Pred[T any]         = func(T) bool
 
-func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func(Array[I]) Array[O]) {
+func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func([]I) []O) {
 	switch fn := any(arg).(type) {
-	case Say     : return As(res, Each(func(t I) { fn(t) }))
-	case Shout[I]: return As(res, Each(fn))
+	case Say     : return Cast[func([]I) []O](Each(func(t I) { fn(t) })).Must()
+	case Shout[I]: return Cast[func([]I) []O](Each(fn)).Must()
 
-	case Pred   [I]   : return As(res, Filter(fn))
+	case Pred   [I]   : return Cast[func([]I) []O](Filter(fn)).Must()
 	case Flatter[I, O]: return FilterMap(fn)
 
 	case TVar  [I, O]: return Map[I, O](func(t I) O { return fn(t) })
 	case AVar  [O]   : return Map[I, O](func(t I) O { return fn(t) })
-	case TTVar [I, O]: return Map [I, O](func(t I) O { return fn(t) })
-	case Mapper[I, O]: return Map  [I, O](fn)
+	case TTVar [I, O]: return Map[I, O](func(t I) O { return fn(t) })
+	case Mapper[I, O]: return Map[I, O](fn)
 	default          : return
 	}
 }
 
-func OverCoax[I, O any](arg any) (res func(Array[I]) Array[O]) {
-	switch fn := arg.(type) {
-	case Say           : return As(res, Each(func(t I) { fn(t) }))
-	case Shout[I]      : return As(res, Each(fn))
-
-	case Pred[I]       : return As(res, Filter(fn))
-	case Flatter[I, O] : return FilterMap(fn)
-
-	case TVar[I, O]    : return Map[I, O](func(t I) O { return fn(t) })
-	case AVar[O]       : return Map[I, O](func(t I) O { return fn(t) })
-	case TTVar[I, O]   : return Map[I, O](func(t I) O { return fn(t) })
-	case Mapper[I, O]  : return Map[I, O](fn)
-	default            : return
-	}
-}
-
-func As[target any](_ target, arg any) target {
-	fn, ok := arg.(target)
-	if !ok { panic("as called wit invalid function") }
-	return fn
-}
-
-func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
+func Each[T any, Arr []T](fn func(T)) func(Arr) Arr {
 	return func(arr Arr) Arr {
 		for _, value := range arr {
 			fn(value)
@@ -106,7 +129,7 @@ func Each[T any, Arr Array[T]](fn func(T)) func(Arr) Arr {
 
 
 // Map applies the function to each argument and returns the results.
-func Map[I, O any, Fn MapFn[I, O]](arg Fn) func(Array[I]) Array[O] {
+func Map[I, O any, Fn MapFn[I, O]](arg Fn) func([]I) []O {
 	var fn func(I) O
 	switch fun := any(arg).(type) {
 	case TVar[I, O]    : fn = func(t I) O { return fun(t) }
@@ -114,28 +137,17 @@ func Map[I, O any, Fn MapFn[I, O]](arg Fn) func(Array[I]) Array[O] {
 	case TTVar[I, O]   : fn = func(t I) O { return fun(t) }
 	case Mapper[I, O]  : fn = fun }
 
-	return func(args Array[I]) (res Array[O]) {
+	return func(args []I) (res []O) {
 		res = make([]O, 0, len(args))
 		for _, arg := range args { res = append(res, fn(arg)) }
 		return res
 	}
 }
 
-func FlatMap[I, O any](fn func(I) Array[O]) func(Array[I]) Array[O] {
-	return func(args Array[I]) (res Array[O]) {
+func FlatMap[I, O any](fn func(I) []O) func([]I) []O {
+	return func(args []I) (res []O) {
 		for _, arg := range args {
 			res = append(res, fn(arg)...)
-		}
-		return res
-	}
-}
-
-// Reduce applies the function to each argument and returns the result.
-func Reduce[T any, B any](fn func(B, T) B, init B) func([]T) B {
-	return func(args []T) B {
-		res := init
-		for _, arg := range args {
-			res = fn(res, arg)
 		}
 		return res
 	}
@@ -321,40 +333,6 @@ func PredOr[T any](preds ...Pred[T]) Pred[T] {
 	}
 }
 
-func LazyW[T, B any](fn func(T) B, input T) func() B {
-	var loaded bool
-	var value B
-	return func() B {
-		if !loaded { value, loaded = fn(input), true }
-		return value
-	}
-}
-
-func Lazy[T any](fn func() T) func() T {
-	var loaded bool
-	var value T
-	return func() T {
-		if !loaded {
-			value, loaded = fn(), true
-		}
-		return value
-	}
-}
-
-func Memo[K comparable, V any](fn func(K) V) func(K) V {
-	values := map[K]V{}
-	return func(input K) (res V) {
-		res, ok := values[input]
-		if !ok {
-			res = fn(input)
-			values[input] = res
-		}
-		return res
-	}
-}
-
-func Negate[T any](fn Pred[T]) Pred[T] { return func(a T) bool { return !fn(a) } }
-
 func limit[T ~string | ~[]any](Max int) func([]T) []T {
 	return func(args []T) (res []T) {
 		for _, a := range args {
@@ -363,18 +341,6 @@ func limit[T ~string | ~[]any](Max int) func([]T) []T {
 			}
 		}
 		return
-	}
-}
-
-// Contains returns a predicate that checks if the input string contains any of the given substrings.
-func Contains(args ...string) func(string) bool {
-	return func(str string) bool {
-		for _, s := range args {
-			if strings.Contains(string(str), string(s)) {
-				return true
-			}
-		}
-		return false
 	}
 }
 
@@ -387,158 +353,13 @@ func Includes[K comparable](inclusive bool) func(args ...K) func([]K) bool {
 	}
 }
 
-// HasPrefix returns a predicate that checks if the input string has any of the given prefixes.
-func HasPrefix(args ...string) func(string) bool {
-	return func(str string) bool {
-		l := limit[string](len(str))(args)
-		for _, arg := range l {
-			if string(str[:len(arg)]) == string(arg) {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// HasSuffix returns a predicate that checks if the input string has any of the given suffixes.
-func HasSuffix(args ...string) func(string) bool {
-	return func(str string) bool {
-		l := limit[string](len(str))(args)
-		for _, arg := range l {
-			if string(str[len(str)-len(arg):]) == string(arg) {
-				return true
-			}
-		}
-		return false
-	}
-}
-
-// ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
-func ReplacePrefix(pats ...string) func(string) string {
-	return func(str string) string {
-		if len(pats)%2 != 0 {
-			return str
-		}
-		for i := 0; i < len(pats); i += 2 {
-			p := pats[i]
-			if len(p) > len(str) {
-				continue
-			}
-
-			if string(p) == string(str[:len(p)]) {
-				return string(string(pats[i+1]) + string(str[len(p):]))
-			}
-		}
-
-		return str
-	}
-}
-
-// ReplaceSuffix replaces the suffix of a string if it matches any of the given patterns.
-func ReplaceSuffix(pats ...string) func(string) string {
-	return func(str string) string {
-		if len(pats)%2 != 0 {
-			return str
-		}
-		for i := 0; i < len(pats); i += 2 {
-			if len(pats[i]) > len(str) {
-				continue
-			}
-			p := pats[i]
-
-			if string(p) == string(str[len(str)-len(p):]) {
-				// blumefmt incorrectly inlines this
-				a := string(str[:len(str)-len(p)])
-				b := string(pats[i+1])
-				return string(a + b)
-			}
-		}
-
-		return str
-	}
-}
-
-// Replace replaces any found substrings with the patterns given.
-func Replace(pats ...string) func(string) string {
-	return func(str string) string {
-		if len(pats)%2 != 0 {
-			return str
-		}
-		for i := 0; i < len(pats); i += 2 {
-			str = string(strings.ReplaceAll(string(str), string(pats[i]), string(pats[i+1])))
-		}
-		return str
-	}
-}
-
-// ReplaceRegex replaces substrings matching a regex pattern.
-func MatchRegex(pats ...string) func(string) bool {
-	funcs := make([]func(string) bool, len(pats))
-	for i, pat := range pats {
-		matcher, err := regexp.Compile(string(pat))
-		if err != nil {
-			return func(_ string) (_ bool) { return }
-		}
-		funcs[i] = func(s string) bool { return matcher.Match([]byte(s)) }
-	}
-	return PredOr(funcs...)
-}
-
-// ReplaceRegex replaces substrings matching a regex pattern.
-func ReplaceRegex(pat string, rep string) func(string) string {
-	matcher, err := regexp.Compile(pat)
-	if err != nil {
-		return func(_ string) (_ string) { return }
-	}
-	return func(s string) string { return string(matcher.ReplaceAll([]byte(string(s)), []byte(rep))) }
-}
-
-func Split(str string, keep bool, match ...string) (res []string) {
-	if len(match) == 0 || len(str) == 0 {
-		return []string{str}
-	}
-
-	sort.SliceStable(match, func(i, j int) bool {
-		return len(match[i]) > len(match[j])
-	})
-
-	var lastI int
-	for i := 0; i < len(str); i++ {
-		for _, pattern := range match {
-			switch {
-			case i+len(pattern) > len(str):
-				continue
-			case str[i:i+len(pattern)] != pattern:
-				continue
-			case len(str[lastI:i]) != 0:
-				res = append(res, str[lastI:i])
-			}
-
-			lastI = i + len(pattern)
-			if len(pattern) != 0 {
-				if keep {
-					res = append(res, str[i:len(pattern)+i])
-				}
-				i += len(pattern) - 1
-			}
-			break
-		}
-	}
-
-	if len(str[lastI:]) != 0 {
-		res = append(res, str[lastI:])
-	}
-
-	return res
-}
-
-func Vals[K comparable, V any](m map[K]V) (res Array[V]) {
+func Vals[K comparable, V any](m map[K]V) (res []V) {
 	if m == nil { return }
 	for _, v := range m {res = append(res, v)}
 	return
 }
 
-func Keys[K comparable, V any](m map[K]V) (res Array[K]) {
+func Keys[K comparable, V any](m map[K]V) (res []K) {
 	if m == nil { return }
 	for k := range m {res = append(res, k)}
 	return
