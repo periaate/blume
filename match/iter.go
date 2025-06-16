@@ -14,7 +14,11 @@ type Iter[Arr, Item any] interface {
 	Window(n int) (Arr, bool)
 	Iter() iter.Seq2[int, Item]
 	Reverse() Iter[Arr, Item]
+	I() int
 }
+
+func (itr anyIterator[Src, Arr, Item]) I() int { return itr.idx }
+func (itr sliceIterator[T]) I() int { return itr.idx }
 
 func newIter[T any](input []T) Iter[[]T, T] { return &sliceIterator[T]{ arr: input }}
 
@@ -137,9 +141,10 @@ func (itr *sliceIterator[T]) Iter() iter.Seq2[int, T] {
 func (itr *anyIterator[Src, Arr, Item]) Iter() iter.Seq2[int, Item] {
 	return func(yield func(int, Item) bool) {
 		for {
+			i := itr.idx
 			el, ok := itr.Step(0)
 			if !ok { return }
-			if !yield(itr.idx-1, el) { return }
+			if !yield(i, el) { return }
 		}
 	}
 }
