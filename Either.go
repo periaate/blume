@@ -52,12 +52,12 @@ func IsOk(handle any) (ok bool) {
 }
 
 func Or[A any](def A, in A, handle ...any) (res A) {
-	if IsOk(Index(handle, -1).Value) { return in }
+	if _, ok := Get(handle, -1); ok { return in }
 	return
 }
 
 func Must[A any](a A, handle ...any) A {
-	last, ok := Index(handle, -1).Unwrap()
+	last, ok := Get(handle, -1)
 	if !ok { last = any(a) }
 	switch val := last.(type) {
 	case bool:  if !val       { panic("must called with false bool") }
@@ -87,9 +87,9 @@ func (r Either[A, B]) Fail(val ...any) (res Either[A, B]) {
 }
 
 func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
-	val := Index(args, -1)
-	if val.IsOk() {
-		switch v := val.Value.(type) {
+	val, ok := Get(args, -1)
+	if ok {
+		switch v := val.(type) {
 		case bool:  if v        {
 			value, ok := arg.(A)
 			if !ok { return r.Fail() }

@@ -6,6 +6,19 @@ import (
 	"slices"
 )
 
+func Slice[T any](input []T, from, to int) (res []T, ok bool) {
+	s, l := min(from, to), max(from, to)
+	if s < 0 || l < s || len(input) < l { return }
+	return input[s:l], true
+}
+
+func Get[T any](arr []T, i int) (res T, ok bool) {
+	if i < 0         { i = len(arr) + i }
+	if i < 0         { return }
+	if i >= len(arr) { return }
+	return arr[i], ok
+}
+
 func Logln(args ...any) { fmt.Println(args...) }
 
 // Prepend prepends the arguments before the array; [..., arr]; As opposed to `append`

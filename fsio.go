@@ -21,7 +21,7 @@ func Args(n ...int) (res []string) {
 	return res[n[0]:]
 }
 
-func Arg(n int) Option[string] { return Index(os.Args, n+1) }
+func Arg(n int) (res Option[string]) { return res.Auto(Get(os.Args, n+1)) }
 
 func Piped(input ...*os.File) Option[[]string] {
 	var f *os.File

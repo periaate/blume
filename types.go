@@ -94,11 +94,32 @@ func embeds(car []Tree[string], delims []Delimiter) (res Tree[string], v int) {
 	return res, 0
 }
 
+// func Equals(a, b any) bool {
+// 	a_t := reflect.TypeOf(a)
+// 	b_t := reflect.TypeOf(b)
+//
+// 	a_v := reflect.ValueOf(a)
+// 	b_v := reflect.ValueOf(b)
+// 	switch {
+// 	case reflect.DeepEqual(a_t, b)
+// 	case a_t.ConvertibleTo(b_t):
+// 		a_v = a_v.Convert(b_t)
+// 		return a_v.Equal(b_v)
+// 	case a_t.Comparable() && b_t.Comparable():
+//
+//
+// 	}
+// 	reflect.DeepEqual(a, )
+// 	a_t.Comparable
+// 	a_t.Comparable()
+// 	return false
+// }
+
 func Into[Target any](arg any) (res Option[Target]) {
-	if v, ok := any(arg).(Target); ok { return res.Pass(v) }
+	if v, ok := arg.(Target); ok { return res.Pass(v) }
 
 	var try any = arg
-	var ok bool = true
+	var ok bool = false
 	var output Target
 
 	switch any(output).(type) {
