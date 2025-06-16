@@ -16,7 +16,7 @@ func Get[T any](arr []T, i int) (res T, ok bool) {
 	if i < 0         { i = len(arr) + i }
 	if i < 0         { return }
 	if i >= len(arr) { return }
-	return arr[i], ok
+	return arr[i], true
 }
 
 func Logln(args ...any) { fmt.Println(args...) }

@@ -309,7 +309,27 @@ func Pipe[Output any](values ...any) Output {
 	return composedFunc.Interface().(Output)
 }
 
-func Cat[T, B, C any](a func(T) B, b func(B) C) func(T) C { return func(c T) C { return b(a(c)) } }
+func Cat[I, T, O any](a func(I) T, b func(T) O) func(I) O { return func(c I) O { return b(a(c)) } }
+
+func String[T byte | []byte | rune | []rune | string](arg T) string { return string(arg) }
+
+func IfCat[I, T, O any](actor func(I) (T, bool), transformer func(T) O) func(I) (O, bool) {
+	return func(i I) (res O, ok bool) {
+		var b T
+		b, ok = actor(i)
+		if ok { res = transformer(b) }
+		return
+	}
+}
+
+func IfCat2[I1, I2, T, O any](actor func(I1, I2) (T, bool), transformer func(T) O) func(I1, I2) (O, bool) {
+	return func(i1 I1, i2 I2) (res O, ok bool) {
+		var b T
+		b, ok = actor(i1, i2)
+		if ok { res = transformer(b) }
+		return
+	}
+}
 
 func PredAnd[T any](preds ...Pred[T]) Pred[T] {
 	return func(a T) bool {

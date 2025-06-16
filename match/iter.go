@@ -55,8 +55,8 @@ func (itr *sliceIterator[T]) Step(n int) (res T, ok bool) {
 	if n == 0 { n=1 }
 	res, ok = itr.Index(itr.idx)
 	if ok { switch itr.rev {
-	case true:  itr.idx+=n
-	case false: itr.idx-=n } }
+	case false:  itr.idx+=n
+	case true: itr.idx-=n } }
 	return
 }
 
@@ -64,8 +64,8 @@ func (itr *anyIterator[Src, Arr, Item]) Step(n int) (res Item, ok bool) {
 	if n == 0 { n=1 }
 	res, ok = itr.Index(itr.idx)
 	if ok { switch itr.rev {
-	case true:  itr.idx+=n
-	case false: itr.idx-=n } }
+	case false:  itr.idx+=n
+	case true: itr.idx-=n } }
 	return
 }
 
@@ -73,27 +73,36 @@ type Range[Src, Arr any] func(src Src, from int, to int) (result Arr, ok bool)
 type Index[Src, Item any] func(src Src, idx int) (result Item, ok bool)
 
 
-func ToIter[Arr string | []Item, Item any | rune | byte](input Arr) (res Iter[Arr, Item], err error) {
+func ToIter[Arr string | []Item, Item any | rune | byte | string](input Arr) (res Iter[Arr, Item], err error) {
 	var item Item
 	switch value := any(input).(type) {
 	case string:
 		switch any(item).(type) {
 		case rune: return ToIterBy(
 			[]rune(value),
-			func(src []rune, idx int) (result rune, ok bool) { return blume.Get(src, idx) },
+			blume.Get[rune],
 			func(src []rune, from, to int) (result string, ok bool) {
 				val, ok := blume.Slice(src, from, to)				
-				if ok { result = string(val) }
-				return
+				if !ok { return }
+				return string(val), ok
+			},
+		).(Iter[Arr, Item]), nil
+		case string: return ToIterBy(
+			[]rune(value),
+			blume.IfCat2(blume.Get[rune], blume.String),
+			func(src []rune, from, to int) (result string, ok bool) {
+				val, ok := blume.Slice(src, from, to)				
+				if !ok { return }
+				return string(val), ok
 			},
 		).(Iter[Arr, Item]), nil
 		case byte: return ToIterBy(
 			[]byte(value),
-			func(src []byte, idx int) (result byte, ok bool) { return blume.Get(src, idx) },
+			blume.Get[byte],
 			func(src []byte, from, to int) (result string, ok bool) {
 				val, ok := blume.Slice(src, from, to)				
-				if ok { result = string(val) }
-				return
+				if !ok { return }
+				return string(val), ok
 			},
 		).(Iter[Arr, Item]), nil
 		default: return res, fmt.Errorf("illegal invariant of string: Element type must be either rune, string, or byte")
