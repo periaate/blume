@@ -111,12 +111,9 @@ func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	return Either[A, B]{}
 }
 
-func Pass[A, B any](val A) (res Either[A, B])      { return res.Pass(val) }
-func Fail[A, B any](val ...any) (res Either[A, B]) { return res.Fail(val...) }
-
 func (r Either[A, B]) Must() A              { return Must(r.Value, r.Other) }
 func (r Either[A, B]) Or(def A) A           { return Or(def, r.Value, r.Other) }
-func (r Either[A, B]) OrDef() (def A)       { return }
+func (r Either[A, B]) OrDef() (def A)       { return Or(def, r.Value, r.Other) }
 func (r Either[A, B]) OrExit(args ...any) A { return OrExit(r, args...) }
 
 func None[A any]() Option[A]          { return Option[A]{Other: false} }

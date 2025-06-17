@@ -118,14 +118,16 @@ func prettyPrintOfType[T any](t T) string {
 	case string: return `"`+blume.Replace(`\`, `\\`, `"`, `\"`)(val)+`"`
 	default: 
 		typ := reflect.TypeOf(t)
+		if typ.Kind() == reflect.Slice || typ.Kind() == reflect.Array {
+			return prettyPrintSlice[any](any(t).([]any))
+		}
 		if typ.Comparable() { return fmt.Sprint(t) }
 		return fmt.Sprintf("<%s>{%v}", typ.Name(), t)
 	}
 }
 
 func prettyPrintSlice[T any](arr []T) string {
-	if len(arr) == 0 { return "[]" }
-	return `[`+strings.Join(blume.Map[T, string](prettyPrintOfType[T])(arr), ", ")+`]`
+	return `[`+strings.Join(blume.Over[T, string](prettyPrintOfType[T])(arr), ", ")+`]`
 }
 
 func Split[Arr, Item any](itr Iter[Arr, Item], match Match[Window[Arr], SplitResult[Arr]]) (result []Arr) {

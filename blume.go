@@ -67,10 +67,156 @@ func All[T any](fns ...Pred[T]) Pred[[]T] {
 	}
 }
 
-// Filter returns a slice of arguments that pass the [Predicate].
-func Filter[T any](fns ...Pred[T]) func([]T) []T {
+type Pred[T any]         = func(T) bool
+
+type OverFn[I, O any] func([]I) []O
+
+func Map[
+	I any,
+	O any,
+	Fn func(I) O |
+	func(any) O |
+	func(...I) O |
+	func(...any) O |
+	func(I, ...I) O |
+	func(I, ...any) O |
+	func(any, ...any) O,
+](arg Fn) func([]I) []O {
+	var fn func(I) O
+	switch fun := any(arg).(type) {
+	case func(I) O: fn = fun
+	case func(any) O: fn = func(i I) O { return fn(i) }
+	case func(...I) O: fn = func(i I) O { return fn(i) }
+	case func(...any) O: fn = func(i I) O { return fn(i) }
+	case func(I, ...I) O: fn = func(i I) O { return fn(i) }
+	case func(I, ...any) O: fn = func(i I) O { return fn(i) }
+	case func(any, ...any) O: fn = func(i I) O { return fn(i) }
+
+	// this branch is only reachable via calling Map with reflection
+	default : panic(fmt.Sprintf("impossible invariant passed to Map: %s", reflect.TypeOf(arg).Name()))
+	}
+
+	return func(args []I) (res []O) {
+		res = make([]O, 0, len(args))
+		for _, arg := range args { res = append(res, fn(arg)) }
+		return res
+	}
+}
+
+
+func FilterMap[
+	I any,
+	O any,
+
+	// Filter maps
+	Fn func(I) Option[O] |
+	func(...I) Option[O] |
+	func(any) Option[O] |
+	func(...any) Option[O] |
+	func(I, ...I) Option[O] |
+	func(I, ...any) Option[O] |
+	func(any, ...any) Option[O] |
+	func(I) Result[O] |
+	func(...I) Result[O] |
+	func(any) Result[O] |
+	func(...any) Result[O] |
+	func(I, ...I) Result[O] |
+	func(I, ...any) Result[O] |
+	func(any, ...any) Result[O] |
+
+	// Filter maps native
+	func(I) (O, bool) |
+	func(...I) (O, bool) |
+	func(any) (O, bool) |
+	func(...any) (O, bool) |
+	func(I, ...I) (O, bool) |
+	func(I, ...any) (O, bool) |
+	func(any, ...any) (O, bool) |
+	func(I) (O, error) |
+	func(...I) (O, error) |
+	func(any) (O, error) |
+	func(...any) (O, error) |
+	func(I, ...I) (O, error) |
+	func(I, ...any) (O, error) |
+	func(any, ...any) (O, error),
+](arg Fn) func([]I) []O {
+	var fn func(I) (res O, ok bool)
+	
+	switch fun := any(arg).(type) {
+	// Filter maps
+	case func(I) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(...I) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(any) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(...any) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(I, ...I) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(I, ...any) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(any, ...any) Option[O]: fn = func(i I) (res O, ok bool) { return fun(i).Unwrap() }
+	case func(I) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(...I) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(any) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(...any) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(I, ...I) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(I, ...any) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+	case func(any, ...any) Result[O]: fn = func(i I) (res O, ok bool) { v, err := fun(i).Unwrap(); if err != nil { return }; return v, true }
+
+	// Filter maps native
+	case func(I) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(...I) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(any) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(...any) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(I, ...I) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(I, ...any) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(any, ...any) (O, bool): fn = func(i I) (res O, ok bool) { return fun(i) }
+	case func(I) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(...I) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(any) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(...any) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(I, ...I) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(I, ...any) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+	case func(any, ...any) (O, error): fn = func(i I) (res O, ok bool) { v, err := fun(i); if err != nil { return }; return v, true }
+
+	// this branch is only reachable via calling FilterMap with reflection
+	default : panic(fmt.Sprintf("impossible invariant passed to FilterMap: %s", reflect.TypeOf(arg).Name()))
+	}
+
+	return func(arr []I) []O {
+		res := []O{}
+		for _, val := range arr {
+			if val, ok := fn(val); ok {
+				res = append(res, val)
+			}
+		}
+		return res
+	}
+}
+
+func Filter[
+	I any,
+	Fn func(I) bool |
+	func(...I) bool |
+	func(any) bool |
+	func(...any) bool |
+	func(I, ...I) bool |
+	func(I, ...any) bool |
+	func(any, ...any) bool,
+] (args ...Fn)       func([]I) []I {
+	fns := []func(I) bool{}
+	for _, arg := range args {
+		switch fn := any(arg).(type) {
+		case func(I) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(...I) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(any) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(...any) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(I, ...I) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(I, ...any) bool: fns = append(fns, func(i I) bool { return fn(i) })
+		case func(any, ...any) bool: fns = append(fns, func(i I) bool { return fn(i) })
+
+		// this branch is only reachable via calling Filter with reflection
+		default : panic(fmt.Sprintf("impossible invariant passed to Filter: %s", reflect.TypeOf(arg).Name()))
+		}
+	}
 	fn := PredAnd(fns...)
-	return func(args []T) (res []T) {
+	return func(args []I) (res []I) {
 		for _, arg := range args {
 			if fn(arg) {
 				res = append(res, arg)
@@ -80,46 +226,8 @@ func Filter[T any](fns ...Pred[T]) func([]T) []T {
 	}
 }
 
-func FilterMap[I, O any](fn func(I) Option[O]) func([]I) []O {
-	return func(arr []I) []O {
-		res := []O{}
-		for _, val := range arr {
-			if val := fn(val); val.IsOk() {
-				res = append(res, val.Value)
-			}
-		}
-		return res
-	}
-}
-
-type MapFn[I, O any] interface { Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] }
-type Flatter[T1, T2 any] = func(T1) Option[T2]
-type Mapper[T1, T2 any]  = func(T1) T2
-type TTVar[T1, T2 any]   = func(...T1) T2
-type AVar[T any]         = func(...any) T
-type Say                 = func(...any)
-type TVar[T1, T2 any]    = func(T1, ...any) T2
-type Shout[T any]        = func(T)
-type Pred[T any]         = func(T) bool
-
-func Over[I, O any, Fn Flatter[I, O] | Mapper[I, O] | TTVar[I, O] | AVar[O] | Say | TVar[I, O] | Shout[I] | Pred[I]](arg Fn) (res func([]I) []O) {
-	switch fn := any(arg).(type) {
-	case Say     : return Cast[func([]I) []O](Each(func(t I) { fn(t) })).Must()
-	case Shout[I]: return Cast[func([]I) []O](Each(fn)).Must()
-
-	case Pred   [I]   : return Cast[func([]I) []O](Filter(fn)).Must()
-	case Flatter[I, O]: return FilterMap(fn)
-
-	case TVar  [I, O]: return Map[I, O](func(t I) O { return fn(t) })
-	case AVar  [O]   : return Map[I, O](func(t I) O { return fn(t) })
-	case TTVar [I, O]: return Map[I, O](func(t I) O { return fn(t) })
-	case Mapper[I, O]: return Map[I, O](fn)
-	default          : return
-	}
-}
-
-func Each[T any, Arr []T](fn func(T)) func(Arr) Arr {
-	return func(arr Arr) Arr {
+func Each[I any](fn func(I)) func([]I) []I {
+	return func(arr []I) []I {
 		for _, value := range arr {
 			fn(value)
 		}
@@ -127,31 +235,332 @@ func Each[T any, Arr []T](fn func(T)) func(Arr) Arr {
 	}
 }
 
+func Through[
+	I any,
+	Fn func(I) |
+	func(...I) |
+	func(any) |
+	func(...any) |
+	func(I, ...I) |
+	func(I, ...any) |
+	func(any, ...any) |
+	func(...any) (int, error) | // e.g., fmt.Print... family of functions.
 
-// Map applies the function to each argument and returns the results.
-func Map[I, O any, Fn MapFn[I, O]](arg Fn) func([]I) []O {
-	var fn func(I) O
+	// Maps
+	func(I) I |
+	func(...I) I |
+	func(any) I |
+	func(...any) I |
+	func(I, ...I) I |
+	func(I, ...any) I |
+	func(any, ...any) I |
+
+	// Filters
+	func(I) bool |
+	func(...I) bool |
+	func(any) bool |
+	func(...any) bool |
+	func(I, ...I) bool |
+	func(I, ...any) bool |
+	func(any, ...any) bool |
+
+	// Filter maps
+	func(I) Option[I] |
+	func(...I) Option[I] |
+	func(any) Option[I] |
+	func(...any) Option[I] |
+	func(I, ...I) Option[I] |
+	func(I, ...any) Option[I] |
+	func(any, ...any) Option[I] |
+	func(I) Result[I] |
+	func(...I) Result[I] |
+	func(any) Result[I] |
+	func(...any) Result[I] |
+	func(I, ...I) Result[I] |
+	func(I, ...any) Result[I] |
+	func(any, ...any) Result[I] |
+
+	// Filter maps native
+	func(I) (I, bool) |
+	func(...I) (I, bool) |
+	func(any) (I, bool) |
+	func(...any) (I, bool) |
+	func(I, ...I) (I, bool) |
+	func(I, ...any) (I, bool) |
+	func(any, ...any) (I, bool) |
+	func(I) (I, error) |
+	func(...I) (I, error) |
+	func(any) (I, error) |
+	func(...any) (I, error) |
+	func(I, ...I) (I, error) |
+	func(I, ...any) (I, error) |
+	func(any, ...any) (I, error),
+] (arg Fn) func([]I) []I {
 	switch fun := any(arg).(type) {
-	case TVar[I, O]    : fn = func(t I) O { return fun(t) }
-	case AVar[O]       : fn = func(t I) O { return fun(t) }
-	case TTVar[I, O]   : fn = func(t I) O { return fun(t) }
-	case Mapper[I, O]  : fn = fun }
+	// loops
+	case func(I): return Each[I](fun)
+	case func(any): return Each[I](func(i I) { fun(i) })
+	case func(...I): return Each[I](func(i I) { fun(i) })
+	case func(...any): return Each[I](func(i I) { fun(i) })
+	case func(I, ...I): return Each[I](func(i I) { fun(i) })
+	case func(I, ...any): return Each[I](func(i I) { fun(i) })
+	case func(any, ...any): return Each[I](func(i I) { fun(i) })
+	case func(...any) (int, error): return Each[I](func(i I) { fun(i) })
 
-	return func(args []I) (res []O) {
-		res = make([]O, 0, len(args))
-		for _, arg := range args { res = append(res, fn(arg)) }
-		return res
+	// Maps
+	case func(I) I: return Over[I, I](fun)
+	case func(...I) I: return Over[I, I](fun)
+	case func(any) I: return Over[I, I](fun)
+	case func(...any) I: return Over[I, I](fun)
+	case func(I, ...I) I: return Over[I, I](fun)
+	case func(I, ...any) I: return Over[I, I](fun)
+	case func(any, ...any) I: return Over[I, I](fun)
+
+	// Filters
+	case func(I) bool: return Filter[I](fun)
+	case func(...I) bool: return Filter[I](fun)
+	case func(any) bool: return Filter[I](fun)
+	case func(...any) bool: return Filter[I](fun)
+	case func(I, ...I) bool: return Filter[I](fun)
+	case func(I, ...any) bool: return Filter[I](fun)
+	case func(any, ...any) bool: return Filter[I](fun)
+
+	// Filter maps
+	case func(I) Option[I]: return FilterMap[I, I](fun)
+	case func(...I) Option[I]: return FilterMap[I, I](fun)
+	case func(any) Option[I]: return FilterMap[I, I](fun)
+	case func(...any) Option[I]: return FilterMap[I, I](fun)
+	case func(I, ...I) Option[I]: return FilterMap[I, I](fun)
+	case func(I, ...any) Option[I]: return FilterMap[I, I](fun)
+	case func(any, ...any) Option[I]: return FilterMap[I, I](fun)
+	case func(I) Result[I]: return FilterMap[I, I](fun)
+	case func(...I) Result[I]: return FilterMap[I, I](fun)
+	case func(any) Result[I]: return FilterMap[I, I](fun)
+	case func(...any) Result[I]: return FilterMap[I, I](fun)
+	case func(I, ...I) Result[I]: return FilterMap[I, I](fun)
+	case func(I, ...any) Result[I]: return FilterMap[I, I](fun)
+	case func(any, ...any) Result[I]: return FilterMap[I, I](fun)
+
+	// Filter maps native
+	case func(I) (I, bool): return FilterMap[I, I](fun)
+	case func(...I) (I, bool): return FilterMap[I, I](fun)
+	case func(any) (I, bool): return FilterMap[I, I](fun)
+	case func(...any) (I, bool): return FilterMap[I, I](fun)
+	case func(I, ...I) (I, bool): return FilterMap[I, I](fun)
+	case func(I, ...any) (I, bool): return FilterMap[I, I](fun)
+	case func(any, ...any) (I, bool): return FilterMap[I, I](fun)
+	case func(I) (I, error): return FilterMap[I, I](fun)
+	case func(...I) (I, error): return FilterMap[I, I](fun)
+	case func(any) (I, error): return FilterMap[I, I](fun)
+	case func(...any) (I, error): return FilterMap[I, I](fun)
+	case func(I, ...I) (I, error): return FilterMap[I, I](fun)
+	case func(I, ...any) (I, error): return FilterMap[I, I](fun)
+	case func(any, ...any) (I, error): return FilterMap[I, I](fun)
+
+	// this branch is only reachable via calling Through with reflection
+	default : panic(fmt.Sprintf("impossible invariant passed to Through: %s", reflect.TypeOf(arg).Name()))
 	}
 }
 
-func FlatMap[I, O any](fn func(I) []O) func([]I) []O {
-	return func(args []I) (res []O) {
-		for _, arg := range args {
-			res = append(res, fn(arg)...)
-		}
-		return res
+// Over generalizes array operations by type safe function type
+// Over uses runtime type checking during construction, meaning
+// once it has been called, there is no additional overhead on
+// the resulting function.
+func Over[
+	I any,
+	O any,
+	Fn func(I) O |
+	func(...I) O |
+	func(any) O |
+	func(...any) O |
+	func(I, ...I) O |
+	func(I, ...any) O |
+	func(any, ...any) O |
+
+	// Filter maps
+	func(I) Option[O] |
+	func(...I) Option[O] |
+	func(any) Option[O] |
+	func(...any) Option[O] |
+	func(I, ...I) Option[O] |
+	func(I, ...any) Option[O] |
+	func(any, ...any) Option[O] |
+	func(I) Result[O] |
+	func(...I) Result[O] |
+	func(any) Result[O] |
+	func(...any) Result[O] |
+	func(I, ...I) Result[O] |
+	func(I, ...any) Result[O] |
+	func(any, ...any) Result[O] |
+
+	// Filter maps native
+	func(I) (O, bool) |
+	func(...I) (O, bool) |
+	func(any) (O, bool) |
+	func(...any) (O, bool) |
+	func(I, ...I) (O, bool) |
+	func(I, ...any) (O, bool) |
+	func(any, ...any) (O, bool) |
+	func(I) (O, error) |
+	func(...I) (O, error) |
+	func(any) (O, error) |
+	func(...any) (O, error) |
+	func(I, ...I) (O, error) |
+	func(I, ...any) (O, error) |
+	func(any, ...any) (O, error),
+](arg Fn) (res func([]I) []O) {
+	switch fn := any(arg).(type) {
+	case func(I) O: return Map[I, O](fn)
+	case func(...I) O: return Map[I, O](fn)
+	case func(any) O: return Map[I, O](fn)
+	case func(...any) O: return Map[I, O](fn)
+	case func(I, ...I) O: return Map[I, O](fn)
+	case func(I, ...any) O: return Map[I, O](fn)
+	case func(any, ...any) O: return Map[I, O](fn)
+
+	// Filter maps
+	case func(I) Option[O]: return FilterMap[I, O](fn)
+	case func(...I) Option[O]: return FilterMap[I, O](fn)
+	case func(any) Option[O]: return FilterMap[I, O](fn)
+	case func(...any) Option[O]: return FilterMap[I, O](fn)
+	case func(I, ...I) Option[O]: return FilterMap[I, O](fn)
+	case func(I, ...any) Option[O]: return FilterMap[I, O](fn)
+	case func(any, ...any) Option[O]: return FilterMap[I, O](fn)
+	case func(I) Result[O]: return FilterMap[I, O](fn)
+	case func(...I) Result[O]: return FilterMap[I, O](fn)
+	case func(any) Result[O]: return FilterMap[I, O](fn)
+	case func(...any) Result[O]: return FilterMap[I, O](fn)
+	case func(I, ...I) Result[O]: return FilterMap[I, O](fn)
+	case func(I, ...any) Result[O]: return FilterMap[I, O](fn)
+	case func(any, ...any) Result[O]: return FilterMap[I, O](fn)
+
+	// Filter maps native
+	case func(I) (O, bool): return FilterMap[I, O](fn)
+	case func(...I) (O, bool): return FilterMap[I, O](fn)
+	case func(any) (O, bool): return FilterMap[I, O](fn)
+	case func(...any) (O, bool): return FilterMap[I, O](fn)
+	case func(I, ...I) (O, bool): return FilterMap[I, O](fn)
+	case func(I, ...any) (O, bool): return FilterMap[I, O](fn)
+	case func(any, ...any) (O, bool): return FilterMap[I, O](fn)
+	case func(I) (O, error): return FilterMap[I, O](fn)
+	case func(...I) (O, error): return FilterMap[I, O](fn)
+	case func(any) (O, error): return FilterMap[I, O](fn)
+	case func(...any) (O, error): return FilterMap[I, O](fn)
+	case func(I, ...I) (O, error): return FilterMap[I, O](fn)
+	case func(I, ...any) (O, error): return FilterMap[I, O](fn)
+	case func(any, ...any) (O, error): return FilterMap[I, O](fn)
+
+
+	// this branch is only reachable via calling Over with reflection
+	default : panic(fmt.Sprintf("impossible invariant passed to Over: %s", reflect.TypeOf(arg).Name()))
 	}
 }
+
+// ====== Through Type Variants =======
+// Loops
+var _ = Through[int](func(_ int)           { return }) // func(I)
+var _ = Through[int](func(_ any)           { return }) // func(any)
+var _ = Through[int](func(_ ...int)        { return }) // func(...I)
+var _ = Through[int](func(_ ...any)        { return }) // func(...any)
+var _ = Through[int](func(_ int, _ ...int) { return }) // func(I, ...I)
+var _ = Through[int](func(_ int, _ ...any) { return }) // func(I, ...any)
+var _ = Through[int](func(_ any, _ ...any) { return }) // func(any, ...any)
+var _ = Through[int](fmt.Print)                        // func(...any) (int, error)
+
+// Maps
+var _ = Through[int](func(int) (res int) { return })
+var _ = Through[int](func(...int) (res int) { return })
+var _ = Through[int](func(any) (res int) { return })
+var _ = Through[int](func(...any) (res int) { return })
+var _ = Through[int](func(int, ...int) (res int) { return })
+var _ = Through[int](func(int, ...any) (res int) { return })
+var _ = Through[int](func(any, ...any) (res int) { return })
+
+// Filters
+var _ = Through[int](func(int) (res bool) { return })
+var _ = Through[int](func(...int) (res bool) { return })
+var _ = Through[int](func(any) (res bool) { return })
+var _ = Through[int](func(...any) (res bool) { return })
+var _ = Through[int](func(int, ...int) (res bool) { return })
+var _ = Through[int](func(int, ...any) (res bool) { return })
+var _ = Through[int](func(any, ...any) (res bool) { return })
+
+	// Filter maps
+var _ = Through[int](func(int) (res Option[int]) { return })
+var _ = Through[int](func(...int) (res Option[int]) { return })
+var _ = Through[int](func(any) (res Option[int]) { return })
+var _ = Through[int](func(...any) (res Option[int]) { return })
+var _ = Through[int](func(int, ...int) (res Option[int]) { return })
+var _ = Through[int](func(int, ...any) (res Option[int]) { return })
+var _ = Through[int](func(any, ...any) (res Option[int]) { return })
+var _ = Through[int](func(int) (res Result[int]) { return })
+var _ = Through[int](func(...int) (res Result[int]) { return })
+var _ = Through[int](func(any) (res Result[int]) { return })
+var _ = Through[int](func(...any) (res Result[int]) { return })
+var _ = Through[int](func(int, ...int) (res Result[int]) { return })
+var _ = Through[int](func(int, ...any) (res Result[int]) { return })
+var _ = Through[int](func(any, ...any) (res Result[int]) { return })
+
+// Filter maps native
+var _ = Through[int](func(int) (res int, v bool) { return })
+var _ = Through[int](func(...int) (res int, v bool) { return })
+var _ = Through[int](func(any) (res int, v bool) { return })
+var _ = Through[int](func(...any) (res int, v bool) { return })
+var _ = Through[int](func(int, ...int) (res int, v bool) { return })
+var _ = Through[int](func(int, ...any) (res int, v bool) { return })
+var _ = Through[int](func(any, ...any) (res int, v bool) { return })
+var _ = Through[int](func(int) (res int, v error) { return })
+var _ = Through[int](func(...int) (res int, v error) { return })
+var _ = Through[int](func(any) (res int, v error) { return })
+var _ = Through[int](func(...any) (res int, v error) { return })
+var _ = Through[int](func(int, ...int) (res int, v error) { return })
+var _ = Through[int](func(int, ...any) (res int, v error) { return })
+var _ = Through[int](func(any, ...any) (res int, v error) { return })
+
+// ====== Over Type Variants =======
+// Maps
+var _ = Over[int, int64](func(int) (res int64) { return })
+var _ = Over[int, int64](func(...int) (res int64) { return })
+var _ = Over[int, int64](func(any) (res int64) { return })
+var _ = Over[int, int64](func(...any) (res int64) { return })
+var _ = Over[int, int64](func(int, ...int) (res int64) { return })
+var _ = Over[int, int64](func(int, ...any) (res int64) { return })
+var _ = Over[int, int64](func(any, ...any) (res int64) { return })
+
+// Filter maps
+var _ = Over[int, int64](func(int) (res Option[int64]) { return })
+var _ = Over[int, int64](func(...int) (res Option[int64]) { return })
+var _ = Over[int, int64](func(any) (res Option[int64]) { return })
+var _ = Over[int, int64](func(...any) (res Option[int64]) { return })
+var _ = Over[int, int64](func(int, ...int) (res Option[int64]) { return })
+var _ = Over[int, int64](func(int, ...any) (res Option[int64]) { return })
+var _ = Over[int, int64](func(any, ...any) (res Option[int64]) { return })
+var _ = Over[int, int64](func(int) (res Result[int64]) { return })
+var _ = Over[int, int64](func(...int) (res Result[int64]) { return })
+var _ = Over[int, int64](func(any) (res Result[int64]) { return })
+var _ = Over[int, int64](func(...any) (res Result[int64]) { return })
+var _ = Over[int, int64](func(int, ...int) (res Result[int64]) { return })
+var _ = Over[int, int64](func(int, ...any) (res Result[int64]) { return })
+var _ = Over[int, int64](func(any, ...any) (res Result[int64]) { return })
+
+// Filter maps native
+var _ = Over[int, int64](func(int) (res int64, v bool) { return })
+var _ = Over[int, int64](func(...int) (res int64, v bool) { return })
+var _ = Over[int, int64](func(any) (res int64, v bool) { return })
+var _ = Over[int, int64](func(...any) (res int64, v bool) { return })
+var _ = Over[int, int64](func(int, ...int) (res int64, v bool) { return })
+var _ = Over[int, int64](func(int, ...any) (res int64, v bool) { return })
+var _ = Over[int, int64](func(any, ...any) (res int64, v bool) { return })
+var _ = Over[int, int64](func(int) (res int64, v error) { return })
+var _ = Over[int, int64](func(...int) (res int64, v error) { return })
+var _ = Over[int, int64](func(any) (res int64, v error) { return })
+var _ = Over[int, int64](func(...any) (res int64, v error) { return })
+var _ = Over[int, int64](func(int, ...int) (res int64, v error) { return })
+var _ = Over[int, int64](func(int, ...any) (res int64, v error) { return })
+var _ = Over[int, int64](func(any, ...any) (res int64, v error) { return })
+
+// Any other function signature will not compile.
+// Over and Through will only ever panic if called with reflection.
 
 func Fold[T any, B any](fn func(B, T) B, init ...B) func([]T) B {
 	var in B

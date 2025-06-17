@@ -76,7 +76,6 @@ func (itr *anyIterator[Src, Arr, Item]) Step(n int) (res Item, ok bool) {
 type Range[Src, Arr any] func(src Src, from int, to int) (result Arr, ok bool)
 type Index[Src, Item any] func(src Src, idx int) (result Item, ok bool)
 
-
 func ToIter[Arr string | []Item, Item any | rune | byte | string](input Arr) (res Iter[Arr, Item], err error) {
 	var item Item
 	switch value := any(input).(type) {
