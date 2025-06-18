@@ -42,12 +42,12 @@ func Lines[B any](bar B) []string {
 
 func Entries(s string) (res Result[[]string]) {
 	entries, err := fsio.ReadDir(s)
-	if err != nil { return res.Fail() }
+	if err != nil { return Err[[]string](err) }
 	values := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		values = append(values, entry.Path())
 	}
-	return res.Pass(values)
+	return Ok(values)
 }
 
 func Read(sar ...string) (res Result[string]) { return res.Auto(os.ReadFile(Path(sar...))) }

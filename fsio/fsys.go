@@ -13,8 +13,8 @@ func Name(f string) string {
 }
 
 // IsDir checks if input is a directory.
-func IsDir[S ~string](f S) bool {
-	info, err := os.Stat(string(f))
+func IsDir(f string) bool {
+	info, err := os.Stat(f)
 	if err != nil {
 		return false
 	}
@@ -38,13 +38,13 @@ func (e Entry) Path() string { return filepath.Join(e.root, e.Name()) }
 func ReadDir(root string) (res []Entry, err error) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
-		return
+		return res, err
 	}
 	res = make([]Entry, 0, len(entries))
 	for _, v := range entries {
 		res = append(res, Entry{v, root})
 	}
-	return
+	return res, nil
 }
 
 func Traverse(root string, walk func(path Entry) (skip, stop bool)) (err error) {

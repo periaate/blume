@@ -3,6 +3,7 @@ package blume
 import (
 	"fmt"
 	"math/rand"
+	"reflect"
 	"slices"
 )
 
@@ -20,6 +21,36 @@ func Get[T any](arr []T, i int) (res T, ok bool) {
 }
 
 func Logln(args ...any) { fmt.Println(args...) }
+func Log[T any](arg T) T { fmt.Print(arg); return arg}
+func Fmt(format string) func(...any) string  {
+	return func(t ...any) string {
+		return fmt.Sprintf(format, t...)
+	}
+}
+
+func FmtFields(format string, fields ...string) func(any) string  {
+	return func(t any) string {
+		return fmt.Sprintf(format, DestructureFields(t, fields...)...)
+	}
+}
+
+// will panic if t is not struct
+func Destructure(t any) (res []any) {
+	v := reflect.ValueOf(t)
+	for i := range v.NumField() {
+		res = append(res, v.Field(i).Interface())
+	}
+	return
+}
+
+// will panic if t is not struct
+func DestructureFields(t any, fields ...string) (res []any) {
+	v := reflect.ValueOf(t)
+	for _, field := range fields {
+		res = append(res, v.FieldByName(field).Interface())
+	}
+	return
+}
 
 // Prepend prepends the arguments before the array; [..., arr]; As opposed to `append`
 func Prepend[T any](arr []T, args ...T) []T { return append(args, arr...) }
@@ -92,8 +123,8 @@ func Seen[K comparable]() func(K) bool {
 
 func SeenBy[T any, K comparable](fn func(T) K) func(T) bool { return Cat(fn, Seen[K]()) }
 
-func Unique[K comparable](slice []K) []K { return Filter(Not(Seen[K]()))(slice) }
-func UniqueBy[T any, K comparable](fn func(T) K, slice []T) []T { return Filter(Not(SeenBy(fn)))(slice) }
+func Unique[K comparable](slice []K) []K { return Filter[K](Not(Seen[K]()))(slice) }
+func UniqueBy[T any, K comparable](fn func(T) K, slice []T) []T { return Filter[T](Not(SeenBy(fn)))(slice) }
 
 func Pair[T any](arr []T) (res Result[[][]T]) {
 	l := len(arr)

@@ -166,8 +166,8 @@ func Split(str string, keep bool, match ...string) (res []string) {
 	return res
 }
 
-func Join(sep string) func(args []any) string {
-	return func(args []any) string {
+func Join[T any](sep string) func(args []T) string {
+	return func(args []T) string {
 		res := []string{}
 		for _, arg := range args {
 			res = append(res, fmt.Sprint(arg))
@@ -175,6 +175,7 @@ func Join(sep string) func(args []any) string {
 		return strings.Join(res, sep)
 	}
 }
+
 
 func EnsurePrefix(fix string) func(string) string {
 	return func(s string) string {

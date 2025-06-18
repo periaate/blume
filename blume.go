@@ -85,12 +85,12 @@ func Map[
 	var fn func(I) O
 	switch fun := any(arg).(type) {
 	case func(I) O: fn = fun
-	case func(any) O: fn = func(i I) O { return fn(i) }
-	case func(...I) O: fn = func(i I) O { return fn(i) }
-	case func(...any) O: fn = func(i I) O { return fn(i) }
-	case func(I, ...I) O: fn = func(i I) O { return fn(i) }
-	case func(I, ...any) O: fn = func(i I) O { return fn(i) }
-	case func(any, ...any) O: fn = func(i I) O { return fn(i) }
+	case func(any) O: fn = func(i I) O { return fun(i) }
+	case func(...I) O: fn = func(i I) O { return fun(i) }
+	case func(...any) O: fn = func(i I) O { return fun(i) }
+	case func(I, ...I) O: fn = func(i I) O { return fun(i) }
+	case func(I, ...any) O: fn = func(i I) O { return fun(i) }
+	case func(any, ...any) O: fn = func(i I) O { return fun(i) }
 
 	// this branch is only reachable via calling Map with reflection
 	default : panic(fmt.Sprintf("impossible invariant passed to Map: %s", reflect.TypeOf(arg).Name()))
@@ -235,6 +235,10 @@ func Each[I any](fn func(I)) func([]I) []I {
 	}
 }
 
+// Through generalizes array operations by type safe function type
+// Through uses runtime type checking during construction, meaning
+// once it has been called, there is no additional overhead on
+// the resulting function.
 func Through[
 	I any,
 	Fn func(I) |

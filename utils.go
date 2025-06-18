@@ -28,11 +28,11 @@ func Pattern[T any, Fn Op[T, bool]](pred Fn, args ...T) (ok bool) {
 
 // Exit the program with a console log
 func Exit(args ...any) {
-	fmt.Printf("%s\n", Join(" ")(args))
+	fmt.Printf("%s\n", Join[any](" ")(args))
 	os.Exit(1)
 }
 
-func ExitWith(n int, args ...any) { fmt.Printf("%s", Join(" ")(args)); os.Exit(n) }
+func ExitWith(n int, args ...any) { fmt.Printf("%s", Join[any](" ")(args)); os.Exit(n) }
 
 func ExitsWith[A any](n int) func(arg A) A { return func(arg A) A { ExitWith(n, arg); return arg } }
 

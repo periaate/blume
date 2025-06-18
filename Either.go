@@ -45,8 +45,10 @@ func (r Either[A, B]) Else(fn any, args ...any) (res Either[A, B]) {
 
 func IsOk(handle any) (ok bool) {
 	switch val := handle.(type) {
-	case bool: return val
-	case error: return val == nil
+	case bool:
+		return val
+	case error:
+		return val == nil
 	default: return
 	}
 }
@@ -103,9 +105,9 @@ func (r Either[A, B]) Auto(arg any, args ...any) Either[A, B] {
 	}
 
 	switch v := any(arg).(type) {
-	case Either[A, bool] : if v.IsOk() { return r.Pass(v.Value)
+	case Either[A, bool] : if v.Other { return r.Pass(v.Value)
                          } else        { return r.Fail()        }
-	case Either[A, error]: if v.IsOk() { return r.Pass(v.Value)
+	case Either[A, error]: if v.Other == nil { return r.Pass(v.Value)
                          } else        { return r.Fail(v.Other) }
 	}
 	return Either[A, B]{}
