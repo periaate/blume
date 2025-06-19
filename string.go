@@ -47,6 +47,26 @@ func HasSuffix(args ...string) func(string) bool {
 	}
 }
 
+// StartsWith is the new variant of HasPrefix. To be made parametric and work with [match.Iter]
+func StartsWith(arg string) func(string) bool {
+	return func(str string) bool {
+		if string(str[:len(arg)]) == string(arg) {
+			return true
+		}
+		return false
+	}
+}
+
+// EndsWith is the new variant of HasSuffix. To be made parametric and work with [match.Iter]
+func EndsWith(arg string) func(string) bool {
+	return func(str string) bool {
+		if string(str[len(str)-len(arg):]) == string(arg) {
+			return true
+		}
+		return false
+	}
+}
+
 // ReplacePrefix replaces the prefix of a string if it matches any of the given patterns.
 func ReplacePrefix(pats ...string) func(string) string {
 	return func(str string) string {

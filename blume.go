@@ -6,54 +6,6 @@ import (
 	"slices"
 )
 
-type Value struct {
-	reflect.Value
-	Then *Value
-}
-
-func (val *Value) IsFunc  () bool { return val.Kind() == reflect.Func   }
-func (val *Value) IsBool  () bool { return val.Kind() == reflect.Bool   }
-func (val *Value) IsInt   () bool { return val.Kind() == reflect.Int    }
-func (val *Value) IsUint  () bool { return val.Kind() == reflect.Uint   }
-func (val *Value) IsUint8 () bool { return val.Kind() == reflect.Uint8  }
-func (val *Value) IsUint16() bool { return val.Kind() == reflect.Uint16 }
-func (val *Value) IsUint32() bool { return val.Kind() == reflect.Uint32 }
-func (val *Value) IsUint64() bool { return val.Kind() == reflect.Uint64 }
-func (val *Value) IsInt8  () bool { return val.Kind() == reflect.Int8   }
-func (val *Value) IsInt16 () bool { return val.Kind() == reflect.Int16  }
-func (val *Value) IsInt32 () bool { return val.Kind() == reflect.Int32  }
-func (val *Value) IsInt64 () bool { return val.Kind() == reflect.Int64  }
-
-func (val *Value) Call(args ...any) (res []reflect.Value, err error) { return val.call(Map[any, reflect.Value](reflect.ValueOf)(args), false) }
-
-func (val *Value) call(inputs []reflect.Value, fromPrevious bool) (res []reflect.Value, err error) {
-	if val.Kind() != reflect.Func {
-		if val.Then == nil || !val.Then.IsFunc() {
-			err = fmt.Errorf("attempting to call a non-function [%s] as a function", val.String())
-			return
-		}
-		return val.Then.call([]reflect.Value{val.Value}, false)
-	}
-
-	if len(inputs) < 2 {
-		res = val.Value.Call(inputs)
-		if val.Then != nil { return val.Then.call(res, true) }
-		return res, nil
-	}
-
-	if fromPrevious {
-		switch inp := inputs[len(inputs)-1].Interface().(type) {
-		case error: if inp != nil { return nil, inp }; inputs = inputs[:len(inputs)-1]
-		case bool: if !inp        { return nil, fmt.Errorf("in call to [%s] the last argument [ok != true]", val.String()) }; inputs = inputs[:len(inputs)-1] }
-	}
-
-	res = val.Value.Call(inputs)
-	if val.Then != nil { return val.Then.call(res, true) }
-	return res, nil
-}
-
-func Function(input any) (res *Value) { return &Value{ Value: reflect.ValueOf(input) } }
-
 // All returns true if all arguments pass the [Predicate].
 func All[T any](fns ...Pred[T]) Pred[[]T] {
 	fn := PredAnd(fns...)
@@ -67,9 +19,8 @@ func All[T any](fns ...Pred[T]) Pred[[]T] {
 	}
 }
 
-type Pred[T any]         = func(T) bool
-
 type OverFn[I, O any] func([]I) []O
+type Pred[T any] = func(T) bool
 
 func Map[
 	I any,
@@ -302,14 +253,14 @@ func Through[
 ] (arg Fn) func([]I) []I {
 	switch fun := any(arg).(type) {
 	// loops
-	case func(I): return Each[I](fun)
-	case func(any): return Each[I](func(i I) { fun(i) })
-	case func(...I): return Each[I](func(i I) { fun(i) })
-	case func(...any): return Each[I](func(i I) { fun(i) })
-	case func(I, ...I): return Each[I](func(i I) { fun(i) })
-	case func(I, ...any): return Each[I](func(i I) { fun(i) })
-	case func(any, ...any): return Each[I](func(i I) { fun(i) })
-	case func(...any) (int, error): return Each[I](func(i I) { fun(i) })
+	case func(I): return Each(fun)
+	case func(any): return Each(func(i I) { fun(i) })
+	case func(...I): return Each(func(i I) { fun(i) })
+	case func(...any): return Each(func(i I) { fun(i) })
+	case func(I, ...I): return Each(func(i I) { fun(i) })
+	case func(I, ...any): return Each(func(i I) { fun(i) })
+	case func(any, ...any): return Each(func(i I) { fun(i) })
+	case func(...any) (int, error): return Each(func(i I) { fun(i) })
 
 	// Maps
 	case func(I) I: return Over[I, I](fun)
@@ -364,6 +315,51 @@ func Through[
 	// this branch is only reachable via calling Through with reflection
 	default : panic(fmt.Sprintf("impossible invariant passed to Through: %s", reflect.TypeOf(arg).Name()))
 	}
+}
+
+
+type FilterMaps[I, O any] interface{
+	func(I) O |
+	func(...I) O |
+	func(any) O |
+	func(...any) O |
+	func(I, ...I) O |
+	func(I, ...any) O |
+	func(any, ...any) O |
+
+	// Filter maps
+	func(I) Option[O] |
+	func(...I) Option[O] |
+	func(any) Option[O] |
+	func(...any) Option[O] |
+	func(I, ...I) Option[O] |
+	func(I, ...any) Option[O] |
+	func(any, ...any) Option[O] |
+
+	func(I) Result[O] |
+	func(...I) Result[O] |
+	func(any) Result[O] |
+	func(...any) Result[O] |
+	func(I, ...I) Result[O] |
+	func(I, ...any) Result[O] |
+	func(any, ...any) Result[O] |
+
+	// Filter maps native
+	func(I) (O, bool) |
+	func(...I) (O, bool) |
+	func(any) (O, bool) |
+	func(...any) (O, bool) |
+	func(I, ...I) (O, bool) |
+	func(I, ...any) (O, bool) |
+	func(any, ...any) (O, bool) |
+
+	func(I) (O, error) |
+	func(...I) (O, error) |
+	func(any) (O, error) |
+	func(...any) (O, error) |
+	func(I, ...I) (O, error) |
+	func(I, ...any) (O, error) |
+	func(any, ...any) (O, error)
 }
 
 // Over generalizes array operations by type safe function type
@@ -611,18 +607,6 @@ func FindFirst[T any](fns ...Pred[T]) func([]T) Option[T] {
 	}
 }
 
-func ABC(values ...any) (res *Value, ok bool){
-	var top *Value
-	var last *Value
-	for _, val := range values {
-		fc := Function(val)
-		if top == nil { top = fc; last = top; continue }
-		last.Then = fc
-		last = fc
-	}
-	return top, true
-}
-
 // Pipe runs a value through a pipeline or composes functions.
 //
 // If the first argument is a value, it executes a pipeline:
@@ -722,9 +706,12 @@ func Pipe[Output any](values ...any) Output {
 	return composedFunc.Interface().(Output)
 }
 
+func String[T byte | []byte | rune | []rune | string](arg T) string { return string(arg) }
+
+func FromTo[I, O []rune | []byte | string](input I) O { return O(string(input)) }
+
 func Cat[I, T, O any](a func(I) T, b func(T) O) func(I) O { return func(c I) O { return b(a(c)) } }
 
-func String[T byte | []byte | rune | []rune | string](arg T) string { return string(arg) }
 
 func IfCat[I, T, O any](actor func(I) (T, bool), transformer func(T) O) func(I) (O, bool) {
 	return func(i I) (res O, ok bool) {

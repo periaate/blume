@@ -12,37 +12,6 @@ type Either[A, B any] struct {
 
 func (r Either[A, B]) Unwrap() (A, B) { return r.Value, r.Other }
 
-func (r Either[A, B]) Map(fn any, args ...any) (res Either[A, B]) {
-	if !r.IsOk() { return r }
-	if f, ok := fn.(func(A) A); ok { return res.Pass(f(r.Value)) }
-	Function(fn).Call(args...)
-	return r
-}
-
-func (r Either[A, B]) Then(fn any, args ...any) (res Either[A, B]) {
-	if !r.IsOk() { return r }
-	switch {
-	case len(args) > 0: Function(fn).Call(args...)
-	default: switch f := fn.(type) {
-	case func(A) A: return res.Pass(f(r.Value))
-	case func(Either[A, B]) Either[A, B]: return f(r)
-	case func(A): f(r.Value)
-	}}
-	return r
-}
-
-func (r Either[A, B]) Else(fn any, args ...any) (res Either[A, B]) {
-	if !r.IsOk() { return r }
-	switch {
-	case len(args) > 0: Function(fn).Call(args...)
-	default: switch f := fn.(type) {
-	case func(A) B: return res.Fail(f(r.Value))
-	case func(Either[A, B]) Either[A, B]: return f(r)
-	case func(B): f(r.Other)
-	}}
-	return r
-}
-
 func IsOk(handle any) (ok bool) {
 	switch val := handle.(type) {
 	case bool:
