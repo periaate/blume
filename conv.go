@@ -27,7 +27,7 @@ func ToAutos[A, B any](fn func(A) (B, error)) func(A) B {
 
 func (s String) ParseDuration() Result[time.Duration] {
 	var value time.Duration
-	for _, v := range s.Split(false, " ").Value {
+	for _, v := range s.Split(false, " ") {
 		var res time.Duration
 		res, err := time.ParseDuration(v.String())
 		if err != nil {

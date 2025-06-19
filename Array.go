@@ -18,14 +18,14 @@ import (
 
 func Prepend[A any](arg A, arr []A) []A { return append([]A{arg}, arr...) }
 
-type Array[A any] struct{ Value []A }
+type Array[A any] []A 
 
 func (a Array[A]) Pattern(selector Selector[Array[A]], actor func(Array[A], [][]int) Array[A]) Array[A] {
 	return Pattern(selector, actor)(a)
 }
 
 func (a Array[A]) Shuffle() Array[A] {
-	args := a.Value
+	args := a
 	rand.Shuffle(len(args), func(i, j int) {
 		temp := args[j]
 		args[j] = args[i]
@@ -34,69 +34,56 @@ func (a Array[A]) Shuffle() Array[A] {
 	return ToArray(args)
 }
 
-
-type Length int
-
-func (l Length) Is(i int) bool { return int(l) == i }
-func (l Length) Gt(i int) bool { return int(l) > i }
-func (l Length) Lt(i int) bool { return int(l) < i }
-func (l Length) Ge(i int) bool { return int(l) >= i }
-func (l Length) Le(i int) bool { return int(l) <= i }
-func (l Length) Eq(i int) bool { return int(l) == i }
-func (l Length) Ne(i int) bool { return int(l) != i }
-
-func (arr Array[A]) Len() Length { return Length(len(arr.Value)) }
-
 func (arr Array[A]) Get(i int) (res Option[A]) {
 	if i < 0 {
-		i = len(arr.Value) + i
+		i = len(arr) + i
 	}
 	if i < 0 {
 		return res.Fail()
 	}
-	if i >= len(arr.Value) {
+	if i >= len(arr) {
 		return res.Fail()
 	}
-	return res.Pass(arr.Value[i])
+	return res.Pass(arr[i])
 }
 
 func (arr Array[A]) Slice(start int, ends ...int) (res Array[A]) {
-	l := len(arr.Value)
+	l := len(arr)
 	if l == 0 { return }
-	c := Clamp(0, len(arr.Value))
+	c := Clamp(0, len(arr))
 	if start < 0 { start = l+start }
-	if len(ends) == 0 { return ToArray(arr.Value[c(start):]) }
+	if len(ends) == 0 { return ToArray(arr[c(start):]) }
 	end := ToArray(ends).Gets(0)
 	if end   < 0 { end   = l+end }
-	return ToArray(arr.Value[c(start):c(end)])
+	return ToArray(arr[c(start):c(end)])
 }
 
 func (arr Array[A]) Contains(a any) bool { return arr.First(Cat[A](ToString, Is(P.S(a)))).IsOk() }
 
 func (arr Array[A]) Gets(i int) A { return arr.Get(i).Must() }
 func (arr Array[A]) Reverse() Array[A] {
-	r := make([]A, 0, len(arr.Value))
-	for i := len(arr.Value); i > 0; i-- {
-		r = append(r, arr.Value[i-1])
+	r := make([]A, 0, len(arr))
+	for i := len(arr); i > 0; i-- {
+		r = append(r, arr[i-1])
 	}
 	return ToArray(r)
 }
 
-func Arr[A any](args ...A) Array[A] { return Array[A]{Value: args} }
-func ToArray[A any](a []A) Array[A] { return Array[A]{a} }
+func Arr[A any](args ...A) Array[A] { return args }
+func ToArray[A any](a []A) Array[A] { return a }
 
 func (arr Array[A]) Filter(fn Pred[A]) Array[A] {
 	res := []A{}
-	for _, val := range arr.Value {
+	for _, val := range arr {
 		if fn(val) {
 			res = append(res, val)
 		}
 	}
-	return Array[A]{Value: res}
+	return res
 }
 
 func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
-	for _, val := range arr.Value {
+	for _, val := range arr {
 		if fn(val) {
 			return res.Pass(val)
 		}
@@ -106,54 +93,26 @@ func (arr Array[A]) First(fn Pred[A]) (res Option[A]) {
 
 func (arr Array[A]) Then(fn func(Array[A]) Array[A]) Array[A] { return fn(arr) }
 
-func (arr Array[A]) V(f any) Array[A] {
-	switch fn := f.(type) {
-	case func(A)            : return arr.Each(fn)
-	case func(A) A          : return arr.Map(fn)
-	case func(A) Option[A]  : return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
-	case func(A) Result[A]  : return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(fn)(arr.Value))
-	case func(A) []A        : return arr.Flat(fn)
-	case func(A) Array[A]   : return arr.AFlat(fn)
-	case func(...A)         : return arr.Each(func(a A) { fn(a) })
-	case func(...A) A       : return arr.Map(V2M(fn))
-	case func(...A) Option[A]: return Reduce(func(a Array[A], o Option[A]) Array[A] { if o.Other { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
-	case func(...A) Result[A]: return Reduce(func(a Array[A], o Result[A]) Array[A] { if o.IsOk() { return a.Append(o.Value) }; return a }, Arr[A]())(Map(V2M(fn))(arr.Value))
-	case func(...A) []A     : return arr.Flat(V2M(fn))
-	case func(...A) Array[A]: return arr.AFlat(V2M(fn))
-
-	case func(any)            : return arr.Each( func(a A)          { fn(a) })
-	case func(any) A          : return arr.Map(  func(a A) A        { return fn(a) })
-	case func(any) []A        : return arr.Flat( func(a A) []A      { return fn(a) })
-	case func(any) Array[A]   : return arr.AFlat(func(a A) Array[A] { return fn(a) })
-	case func(...any)         : return arr.Each (func(a A)          { fn(a) })
-	case func(...any) A       : return arr.Map  (func(a A) A        { return fn(a) })
-	case func(...any) []A     : return arr.Flat (func(a A) []A      { return fn(a) })
-	case func(...any) Array[A]: return arr.AFlat(func(a A) Array[A] { return fn(a) })
-
-	default                 : panic("Array[A].V(fn) called with illegal invariant of func(A) A")
-	}
-}
-
 func (arr Array[A]) Map(fn func(A) A) Array[A] {
-	res := make([]A, len(arr.Value))
-	for i, val := range arr.Value {
+	res := make([]A, len(arr))
+	for i, val := range arr {
 		res[i] = fn(val)
 	}
-	return Array[A]{Value: res}
+	return res
 }
 
 func (arr Array[A]) Reduce(fn func(A, A) A, initial A) A {
-	for _, val := range arr.Value {
+	for _, val := range arr {
 		initial = fn(initial, val)
 	}
 	return initial
 }
 
-func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr.Value)) }
-func (arr Array[A]) AFlat(fn func(A) Array[A]) Array[A] { return ToArray(FlatMap(func(a A) []A { return fn(a).Value })(arr.Value)) }
+func (arr Array[A]) Flat(fn func(A) []A) Array[A] { return ToArray(FlatMap(fn)(arr)) }
+func (arr Array[A]) AFlat(fn func(A) Array[A]) Array[A] { return ToArray(FlatMap(func(a A) []A { return fn(a) })(arr)) }
 
 func (arr Array[A]) Each(fn func(A)) Array[A] {
-	for _, value := range arr.Value {
+	for _, value := range arr {
 		fn(value)
 	}
 	return arr
@@ -161,7 +120,7 @@ func (arr Array[A]) Each(fn func(A)) Array[A] {
 
 func Each[A any](fn func(A)) func(Array[A]) {
 	return func(arr Array[A]) {
-		for _, value := range arr.Value {
+		for _, value := range arr {
 			fn(value)
 		}
 	}
@@ -170,7 +129,7 @@ func Each[A any](fn func(A)) func(Array[A]) {
 func ForSafe[A, B any](fn func(A)) Option[func(B) B] {
 	var b B
 	switch any(b).(type) {
-	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr })
+	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr { fn(value) }; return arr })
 	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr })
 	}
 	return None[func(B) B]()
@@ -179,7 +138,7 @@ func ForSafe[A, B any](fn func(A)) Option[func(B) B] {
 func For[B, A any](fn func(A)) func(B) B {
 	var b B
 	switch any(b).(type) {
-	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr.Value { fn(value) }; return arr }).Must()
+	case Array[A]: return Cast[func(B) B](func(arr Array[A]) Array[A] { for _, value := range arr { fn(value) }; return arr }).Must()
 	case []A: return Cast[func(B) B](func(arr []A) []A { for _, value := range arr { fn(value) }; return arr }).Must()
 	}
 	panic("unsafe call to blume.Each; input type `B` did not match `Array[A]` or `[]A`; input type B must be array-like")
@@ -188,43 +147,43 @@ func For[B, A any](fn func(A)) func(B) B {
 func Forn[B, A any](fn func(A)) func(B) { return Ignore(For[B, A](fn)) }
 
 // Join fuck it everything is just strings now
-func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(arr.Value)) }
+func (arr Array[A]) Join(sep String) String { return Join(sep)(Map[A](Sprint)(arr)) }
 
 func Sprint[A any](a A) String { return S(fmt.Sprint(a)) }
 
 func (arr Array[A]) Append(val A, rest ...A) Array[A] {
-	return ToArray(append(arr.Value, Prepend(val, rest)...))
+	return ToArray(append(arr, Prepend(val, rest)...))
 }
 
 // JoinAfter joins input after this array
 // [this, ...]
-func (this Array[A]) JoinAfter(input Array[A]) Array[A] { return Array[A]{ Value: append(this.Value, input.Value...) }}
+func (this Array[A]) JoinAfter(input Array[A]) Array[A] { return append(this, input...) }
 
 // JoinBefore joins input before this array
 // [..., this]
-func (this Array[A]) JoinBefore(input Array[A]) Array[A] { return Array[A]{ Value: append(input.Value, this.Value...) }}
+func (this Array[A]) JoinBefore(input Array[A]) Array[A] { return append(input, this...) }
 
 func (arr Array[A]) Prepend(val A, rest ...A) Array[A] {
-	return ToArray(append(Prepend(val, rest), arr.Value...))
+	return ToArray(append(Prepend(val, rest), arr...))
 }
 
 func (arr Array[A]) Appends(val A, rest ...A) []A {
-	return append(arr.Value, Prepend(val, rest)...)
+	return append(arr, Prepend(val, rest)...)
 }
 
 func (arr Array[A]) Prepends(val A, rest ...A) []A {
-	return append(Prepend(val, rest), arr.Value...)
+	return append(Prepend(val, rest), arr...)
 }
 
 func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
 	arr_1 := []A{}
 	arr_2 := []A{}
-	for i, val := range arr.Value {
+	for i, val := range arr {
 		if !fn(val) {
 			arr_1 = append(arr_1, val)
 			continue
 		}
-		arr_2 = arr.Value[i+1:]
+		arr_2 = arr[i+1:]
 		break
 	}
 
@@ -232,23 +191,23 @@ func (arr Array[A]) Split(fn Pred[A]) (HasNot Array[A], Has Array[A]) {
 }
 
 func (arr Array[A]) From(n int) Array[A] {
-	if n <= 0 || len(arr.Value) == 0 {
+	if n <= 0 || len(arr) == 0 {
 		return arr
 	}
-	if len(arr.Value) > n {
-		arr.Value = arr.Value[n:]
+	if len(arr) > n {
+		arr = arr[n:]
 	}
 	return arr
 }
 
-func (arr Array[A]) Froms(n int) []A { return arr.From(n).Value }
+func (arr Array[A]) Froms(n int) []A { return arr.From(n) }
 
 func Flag(arr Array[String], flags ...String) (Array[String], bool) {
 	pred := Is(flags...)
-	new_arr := make([]String, 0, len(arr.Value))
-	for i, val := range arr.Value {
+	new_arr := make([]String, 0, len(arr))
+	for i, val := range arr {
 		if pred(val) {
-			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+			return ToArray(append(new_arr, arr[i+1:]...)), true
 		}
 		new_arr = append(new_arr, val)
 	}
@@ -257,10 +216,10 @@ func Flag(arr Array[String], flags ...String) (Array[String], bool) {
 }
 
 func (arr Array[A]) Flag(fn Pred[A]) (Array[A], bool) {
-	new_arr := make([]A, 0, len(arr.Value))
-	for i, val := range arr.Value {
+	new_arr := make([]A, 0, len(arr))
+	for i, val := range arr {
 		if fn(val) {
-			return ToArray(append(new_arr, arr.Value[i+1:]...)), true
+			return ToArray(append(new_arr, arr[i+1:]...)), true
 		}
 		new_arr = append(new_arr, val)
 	}
@@ -311,30 +270,30 @@ func ToString[A any](a A) S { return P.S(a) }
 
 
 func Pair[A any](arr Array[A]) (res Result[Array[Array[A]]]) {
-	l := len(arr.Value)
+	l := len(arr)
 	if l%2 != 0 { return res.Fail("pair called with an uneven array") }
 	arrs := make([]Array[A], 0, l/2)
 	for i := range l/2 {
 		n := i*2
-		arrs = append(arrs, Array[A]{ Value: []A{ arr.Value[n], arr.Value[n+1] } })
+		arrs = append(arrs, Array[A]{arr[n], arr[n+1]})
 	}
-	return res.Pass(Array[Array[A]]{Value: arrs})
+	return res.Pass(arrs)
 }
 
 func Pairs[A any](arr Array[A]) (res Array[Array[A]]) {
-	l := len(arr.Value)
+	l := len(arr)
 	if l%2 != 0 { Exit("pairs called with an uneven array") }
 	arrs := make([]Array[A], 0, l/2)
 	for i := range l/2 {
 		n := i*2
-		arrs = append(arrs, Array[A]{ Value: []A{ arr.Value[n], arr.Value[n+1] } })
+		arrs = append(arrs, []A{ arr[n], arr[n+1]})
 	}
-	return Array[Array[A]]{Value: arrs}
+	return arrs
 }
 
 func ArrayFlat[A any](arr Array[Array[A]]) Array[A] {
 	res := Arr[A]()
-	for _, a := range arr.Value {
+	for _, a := range arr {
 		res = res.JoinAfter(a)
 	}
 	return res

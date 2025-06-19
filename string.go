@@ -17,7 +17,7 @@ func Join(arg String) func(args []String) String {
 }
 
 func Joins[S ~string](arr Array[S], arg string) S {
-	return S(strings.Join(Map(StoD[S])(arr.Value), arg))
+	return S(strings.Join(Map(StoD[S])(arr), arg))
 }
 
 type String string

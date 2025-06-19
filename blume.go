@@ -55,8 +55,8 @@ func Map[A, B any](fn func(A) B) func([]A) []B {
 
 func AMap[A, B any](fn func(A) B) func(Array[A]) Array[B] {
 	return func(args Array[A]) Array[B] {
-		res := make([]B, 0, len(args.Value))
-		for _, arg := range args.Value {
+		res := make([]B, 0, len(args))
+		for _, arg := range args {
 			res = append(res, fn(arg))
 		}
 		return ToArray(res)
