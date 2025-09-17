@@ -18,7 +18,7 @@ func Zero[K comparable](input K) bool {
 // Equal returns a predicate which checks if the input is equivalent to the argument.
 func Equal[K comparable](arg K) func(K) bool { return func(i K) bool { return arg == i } }
 
-func Type[T any](arg any) bool {
+func Type[I, T any](arg I) bool {
 	_, ok := reflect.TypeAssert[T](reflect.ValueOf(arg))
 	return ok
 }
