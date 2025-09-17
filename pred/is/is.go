@@ -1,5 +1,7 @@
 package is
 
+import "reflect"
+
 func NotEmpty[K comparable](input []K) bool { return len(input) != 0 }
 func Empty[K comparable](input []K) bool    { return len(input) == 0 }
 
@@ -15,6 +17,11 @@ func Zero[K comparable](input K) bool {
 
 // Equal returns a predicate which checks if the input is equivalent to the argument.
 func Equal[K comparable](arg K) func(K) bool { return func(i K) bool { return arg == i } }
+
+func Type[T any](arg any) bool {
+	_, ok := reflect.TypeAssert[T](reflect.ValueOf(arg))
+	return ok
+}
 
 // // Any returns a predicate which checks if the input is equivalent to any of the arguments.
 // func Any[K comparable](args ...K) func(K) bool  { return pred.Is(args...) }
